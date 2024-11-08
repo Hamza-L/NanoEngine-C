@@ -1,6 +1,5 @@
-#include "NanoShader.hpp"
-#include "NanoError.hpp"
-#include "NanoLogger.hpp"
+#include "NanoShader.h"
+#include "NanoError.h"
 
 #ifdef _WIN64
 #include <windows.h>

@@ -1,15 +1,13 @@
 #ifndef NANOGRAPHICS_H_
 #define NANOGRAPHICS_H_
 
-#include "NanoLogger.hpp"
-#include "NanoWindow.hpp"
+#include "NanoWindow.h"
 
-class NanoGraphics{
+struct NanoGraphics{
     public:
         ERR Init(NanoWindow& window);
         ERR DrawFrame();
         ERR CleanUp();
-    private:
 };
 
 #endif // NANOGRAPHICS_H_

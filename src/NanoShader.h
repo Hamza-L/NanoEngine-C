@@ -1,7 +1,7 @@
 #ifndef NANOSHADER_H_
 #define NANOSHADER_H_
 
-#include "NanoError.hpp"
+#include "NanoError.h"
 
 #include "vulkan/vulkan_core.h"
 #include <string>

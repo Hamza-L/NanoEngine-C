@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.17)
 
 # must be set before project()
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 set(CMAKE_BUILD_TYPE "Debug")
 if (WIN32)
@@ -22,26 +23,24 @@ set(ROOT_NAMESPACE NanoEngine)
 # Source groups
 ################################################################################
 set(Headers
-    "src/NanoEngine.hpp"
-    "src/NanoWindow.hpp"
-    "src/NanoGraphics.hpp"
-    "src/NanoGraphicsPipeline.hpp"
-    "src/NanoError.hpp"
-    "src/NanoUtility.hpp"
-    "src/NanoLogger.hpp"
-    "src/NanoShader.hpp"
+    "src/NanoEngine.h"
+    "src/NanoWindow.h"
+    "src/NanoGraphics.h"
+    "src/NanoGraphicsPipeline.h"
+    "src/NanoError.h"
+    "src/NanoUtility.h"
+    "src/NanoShader.h"
 )
 
 source_group("Headers" FILES ${Headers})
 
 set(Sources
-    "src/NanoEngine.cpp"
-    "src/NanoWindow.cpp"
-    "src/NanoGraphics.cpp"
-    "src/NanoGraphicsPipeline.cpp"
-    "src/NanoLogger.cpp"
-    "src/NanoShader.cpp"
-    "src/main.cpp"
+    "src/NanoEngine.c"
+    "src/NanoWindow.c"
+    "src/NanoGraphics.c"
+    "src/NanoGraphicsPipeline.c"
+    "src/NanoShader.c"
+    "src/main.c"
 )
 
 source_group("Sources" FILES ${Sources})
@@ -77,7 +76,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "vulkan-1.lib")
 
     #only remove deprecation warning for NanoGraphics (no warning for using strcpy_s)
-    set_source_files_properties("src/NanoGraphics.cpp" PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    set_source_files_properties("src/NanoGraphics.c" PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
 
 elseif(APPLE)
     message("Starting the Macos Build")

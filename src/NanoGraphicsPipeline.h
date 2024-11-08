@@ -1,7 +1,7 @@
 #ifndef NANOGRAPHICSPIPELINE_H_
 #define NANOGRAPHICSPIPELINE_H_
 
-#include "NanoShader.hpp"
+#include "NanoShader.h"
 #include "vulkan/vulkan_core.h"
 
 class NanoGraphicsPipeline{

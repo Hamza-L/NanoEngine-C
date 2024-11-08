@@ -1,11 +1,10 @@
-#include "NanoGraphics.hpp"
-#include "NanoConfig.hpp"
-#include "NanoError.hpp"
-#include "NanoLogger.hpp"
-#include "NanoUtility.hpp"
-#include "NanoWindow.hpp"
-#include "NanoShader.hpp"
-#include "NanoGraphicsPipeline.hpp"
+#include "NanoGraphics.h"
+#include "NanoConfig.h"
+#include "NanoError.h"
+#include "NanoUtility.h"
+#include "NanoWindow.h"
+#include "NanoShader.h"
+#include "NanoGraphicsPipeline.h"
 
 #include "vulkan/vulkan_core.h"
 #include <cstdint>

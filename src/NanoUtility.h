@@ -2,7 +2,7 @@
 #define NANOUTILITY_H_
 
 #include <cstdio>
-#include <NanoError.hpp>
+#include <NanoError.h>
 
 #define PRINTFLUSH(content, ...) printf(content, __VA_ARGS__); fflush(stdout)
 

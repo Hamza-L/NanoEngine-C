@@ -1,4 +1,4 @@
-#include "NanoGraphicsPipeline.hpp"
+#include "NanoGraphicsPipeline.h"
 #include "vulkan/vulkan_core.h"
 
 //TODO ; Match the init design of the NanoGraphics class

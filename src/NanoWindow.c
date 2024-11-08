@@ -1,7 +1,6 @@
-#include "NanoWindow.hpp"
+#include "NanoWindow.h"
 
-#include "NanoLogger.hpp"
-#include "NanoConfig.hpp"
+#include "NanoConfig.h"
 
 struct NanoWindowContext{
     GLFWwindow* window;

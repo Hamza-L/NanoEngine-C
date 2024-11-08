@@ -1,7 +1,9 @@
 #ifndef NANOERROR_H_
 #define NANOERROR_H_
 
-#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
 #ifndef NDEBUG
 #   define ASSERT(Expr, Msg) \
@@ -14,20 +16,20 @@ inline void __Assert(const char* expr_str, bool expr, const char* file, int line
 {
     if (!expr)
     {
-        std::cerr << "Assert failed:\t" << msg << "\n"
-            << "Expected:\t" << expr_str << "\n"
-            << "Source:\t\t" << file << ", line " << line << "\n";
+        fprintf(stderr,"Assert failed:\t %s\n", msg);
+        fprintf(stderr,"Expected:\t %s\n", expr_str);
+        fprintf(stderr,"Source:\t\t %s, line %d\n",file, line);
         abort();
     }
 }
 
-enum class ERRLevel {
+enum ERRLevel {
     FATAL,
     WARNING,
     INFO,
     DEBUG,
 };
 
-enum class ERR { OK, NOT_INITIALIZED, NOT_FOUND, WRONG_ARGUMENT, UNDEFINED, INVALID };
+enum ERR { OK, NOT_INITIALIZED, NOT_FOUND, WRONG_ARGUMENT, UNDEFINED, INVALID };
 
 #endif // NANOERROR_H_
