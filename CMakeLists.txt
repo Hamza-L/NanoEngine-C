@@ -30,6 +30,7 @@ set(Headers
     "src/NanoError.h"
     "src/NanoUtility.h"
     "src/NanoShader.h"
+    "src/StrUtil.h"
 )
 
 source_group("Headers" FILES ${Headers})
@@ -40,6 +41,7 @@ set(Sources
     "src/NanoGraphics.c"
     "src/NanoGraphicsPipeline.c"
     "src/NanoShader.c"
+    "src/StrUtil.c"
     "src/main.c"
 )
 

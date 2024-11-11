@@ -1,29 +1,29 @@
 #ifndef NANOCONFIG_H_
 #define NANOCONFIG_H_
 
-#include <cstdint>
 #include <vulkan/vulkan_core.h>
+#include <stdbool.h>
 
-namespace Config {
-constexpr uint16_t WINDOW_WIDTH = 800;
-constexpr uint16_t WINDOW_HEIGHT = 600;
-constexpr const char *APP_NAME = "NanoApplication";
-constexpr const char *ENGINE_NAME = "NanoEngine";
-constexpr int MAX_FRAMES_IN_FLIGHT = 2;
+const uint16_t WINDOW_WIDTH = 800;
+const uint16_t WINDOW_HEIGHT = 600;
+#define MAX_FRAMES_IN_FLIGHT 2
+#define ENGINE_NAME "NanoEngine"
+#define APP_NAME "NanoApplication"
+#define MAX_FILEPATH_LENGTH 512
 
 
 #ifdef NDEBUG
-constexpr bool enableValidationLayers = false;
+const bool enableValidationLayers = false;
 #else
-constexpr bool enableValidationLayers = true;
+const bool enableValidationLayers = true;
 #endif
 
-constexpr const char *desiredValidationLayers[] = {
+const char *desiredValidationLayers[] = {
     "VK_LAYER_KHRONOS_validation",
     NULL // to allow for while loops without crash
 };
 
-constexpr const char *desiredDeviceExtensions[] = {
+const char *desiredDeviceExtensions[] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 #ifdef __APPLE__
     "VK_KHR_portability_subset",
@@ -31,13 +31,12 @@ constexpr const char *desiredDeviceExtensions[] = {
     NULL // to allow for while loops without crash
 };
 
-constexpr const char *desiredInstanceExtensions[] = {
+const char *desiredInstanceExtensions[] = {
 #ifdef __APPLE__
     VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
     "VK_KHR_get_physical_device_properties2",
 #endif
     NULL // to allow for while loops without crash
 };
-} // namespace Config
 
 #endif // NANOCONFIG_H_

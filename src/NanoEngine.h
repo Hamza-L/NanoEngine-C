@@ -5,15 +5,15 @@
 #include "NanoWindow.h"
 
 
+enum ERR Init();
+ERR Run();
+ERR CleanUp();
 
-struct NanoEngine {
-  enum ERR Init();
-  ERR Run();
-  ERR CleanUp();
+ERR MainLoop();
 
-  ERR MainLoop();
-  NanoGraphics m_NanoGraphics;
-  NanoWindow m_NanoWindow;
-};
+/* struct NanoEngine { */
+/*   NanoGraphics m_NanoGraphics; */
+/*   NanoWindow m_NanoWindow; */
+/* }; */
 
 #endif // NANOENGINE_H_

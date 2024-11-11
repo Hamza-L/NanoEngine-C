@@ -8,6 +8,7 @@
 
 #include "vulkan/vulkan_core.h"
 #include <cstdint>
+#include <stdint.h>
 #include <stdio.h>
 
 #define GLFW_INCLUDE_VULKAN
@@ -21,23 +22,31 @@
 
 #define _CRT_SECURE_NO_WARNINGS
 
-struct QueueFamilyIndices {
-    int32_t graphicsFamily = -1;
-    int32_t presentFamily = -1;
+typedef struct QueueFamilyIndices QueueFamilyIndices;
+typedef struct SwapchainDetails SwapchainDetails;
+typedef struct SwapchainSyncObjects SwapchainSyncObjects;
+typedef struct SwapchainContext SwapchainContext;
+typedef struct NanoVKContext NanoVKContext;
 
-    bool IsValid() { // helper function to validate queue indices
-        return graphicsFamily != -1 && presentFamily != -1;
-    }
+struct QueueFamilyIndices{
+    int32_t graphicsFamily;
+    int32_t presentFamily;
 };
 
+_Bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper function to validate queue indices
+    return queueFamily.graphicsFamily != -1 && queueFamily.presentFamily != -1;
+}
+
 struct SwapchainDetails {
-    VkSurfaceCapabilitiesKHR capabilities{};
+    VkSurfaceCapabilitiesKHR capabilities;
 
-    std::vector<VkSurfaceFormatKHR> formats{};
-    VkSurfaceFormatKHR selectedFormat{};
+    VkSurfaceFormatKHR* formats; //array
+    uint32_t formats_size;
+    VkSurfaceFormatKHR selectedFormat;
 
-    std::vector<VkPresentModeKHR> presentModes{};
-    VkPresentModeKHR selectedPresentMode{};
+    VkPresentModeKHR* presentModes; //array
+    uint32_t presentModes_size;
+    VkPresentModeKHR selectedPresentMode;
 
     VkExtent2D currentExtent;
 
@@ -45,50 +54,50 @@ struct SwapchainDetails {
 };
 
 struct SwapchainSyncObjects {
-    VkSemaphore imageAvailableSemaphore{};
-    VkSemaphore renderFinishedSemaphore{};
-    VkFence inFlightFence{};
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    VkFence inFlightFence;
 };
 
 struct SwapchainContext{
-    VkSwapchainKHR swapchain{};
+    VkSwapchainKHR swapchain;
 
-    struct SwapchainDetails info {};
-    std::vector<VkImage> images{};
-    std::vector<VkImageView> imageViews{};
-    std::vector<VkFramebuffer> framebuffers;
+    struct SwapchainDetails info;
+    VkImage* images;
+    VkImageView* imageViews;
+    VkFramebuffer* framebuffers;
 
-    uint32_t currentFrame = 0;
-    VkCommandBuffer commandBuffer[Config::MAX_FRAMES_IN_FLIGHT]{};
-    SwapchainSyncObjects syncObjects[Config::MAX_FRAMES_IN_FLIGHT]{};
+    uint32_t currentFrame;
+    VkCommandBuffer commandBuffer[MAX_FRAMES_IN_FLIGHT];
+    SwapchainSyncObjects syncObjects[MAX_FRAMES_IN_FLIGHT];
 };
 
 struct NanoVKContext {
-    VkInstance instance{};
-    VkPhysicalDevice physicalDevice{};
-    VkDevice device{};
+    VkInstance instance;
+    VkPhysicalDevice physicalDevice;
+    VkDevice device;
 
-    struct QueueFamilyIndices queueIndices {};
-    VkQueue graphicsQueue{};
-    VkQueue presentQueue{};
+    QueueFamilyIndices queueIndices ;
+    VkQueue graphicsQueue;
+    VkQueue presentQueue;
 
-    VkSurfaceKHR surface{};
+    VkSurfaceKHR surface;
 
-    VkRenderPass renderpass{};
+    VkRenderPass renderpass;
 
-    std::vector<NanoGraphicsPipeline> graphicsPipelines{};
-    NanoGraphicsPipeline* currentGraphicsPipeline{};
+    NanoGraphicsPipeline* graphicsPipelines; // array of graphicsPipeline
+    uint32_t currentGraphicsPipeline;
 
-    VkCommandPool commandPool{};
+    VkCommandPool commandPool;
 
-    SwapchainContext swapchainContext{};
+    SwapchainContext swapchainContext;
 
-    void AddGraphicsPipeline(const NanoGraphicsPipeline& graphicsPipeline){
-        graphicsPipelines.push_back(std::move(graphicsPipeline));
-        //for now use the last graphics pipeline we added as the current pipeline
-        currentGraphicsPipeline = &graphicsPipelines.back();
-    }
-} _NanoContext;
+} _NanoGraphicsContext;
+
+void AddGraphicsPipeline(const NanoGraphicsPipeline* graphicsPipeline){
+
+    _NanoGraphicsContext.graphicsPipelines;
+}
 
 VkDebugUtilsMessengerEXT debugMessenger{};
 
@@ -309,7 +318,7 @@ static ERR createInstance(const char *applicationName, const char *engineName, V
     ERR err = ERR::OK;
 
     if (Config::enableValidationLayers && !checkValidationLayerSupport(Config::desiredValidationLayers)) {
-        LOG_MSG(ERRLevel::FATAL, "Number of Desired Layers %zu\n", Utility::SizeOf(Config::desiredValidationLayers));
+        LOG_MSG(ERRLevel::FATAL, "Number of Desired Layers %zu\n", SizeOf(Config::desiredValidationLayers));
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -337,7 +346,7 @@ static ERR createInstance(const char *applicationName, const char *engineName, V
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
     if (Config::enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(Utility::SizeOf(Config::desiredValidationLayers));
+        createInfo.enabledLayerCount = static_cast<uint32_t>(SizeOf(Config::desiredValidationLayers));
         createInfo.ppEnabledLayerNames = Config::desiredValidationLayers;
 
         populateDebugMessengerCreateInfo(debugCreateInfo);
@@ -567,10 +576,10 @@ ERR createLogicalDevice(VkPhysicalDevice &physicalDevice, QueueFamilyIndices &in
     VkPhysicalDeviceFeatures deviceFeatures{}; // defaults all the features to false for now
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(Utility::SizeOf(Config::desiredDeviceExtensions));
+    createInfo.enabledExtensionCount = static_cast<uint32_t>(SizeOf(Config::desiredDeviceExtensions));
     createInfo.ppEnabledExtensionNames = Config::desiredDeviceExtensions;
     if (Config::enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(Utility::SizeOf(Config::desiredValidationLayers));
+        createInfo.enabledLayerCount = static_cast<uint32_t>(SizeOf(Config::desiredValidationLayers));
         createInfo.ppEnabledLayerNames = Config::desiredValidationLayers;
     } else {
         createInfo.enabledLayerCount = 0;
@@ -952,7 +961,7 @@ ERR createSwapchainSyncObjects(VkDevice& device ,SwapchainSyncObjects* syncObjec
     return err;
 }
 
-ERR NanoGraphics::Init(NanoWindow &window) {
+ERR Init(NanoGraphics& nanoGraphics, NanoWindow& window) {
     ERR err = ERR::OK;
     // Here the err validation is not that useful
     // a iferr_return can be added at the end of each statement to check it's state and exit (or at least warn) if an error did occur

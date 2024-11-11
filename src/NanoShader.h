@@ -2,26 +2,23 @@
 #define NANOSHADER_H_
 
 #include "NanoError.h"
+#include "NanoConfig.h"
 
 #include "vulkan/vulkan_core.h"
-#include <string>
-#include <vector>
 
-class NanoShader{
-    public:
-        void Init(VkDevice& device, const std::string& shaderCodeFile);
-        int Compile(bool forceCompile = false);
-        void CleanUp();
-        bool IsCompiled(){return m_isCompiled;};
-        std::vector<char>& GetByteCode(){return m_rawShaderCode;};
-        VkShaderModule& GetShaderModule(){return m_shaderModule;};
-    private:
-        VkDevice _device;
-        std::string m_fileFullPath{};
-        std::vector<char> m_rawShaderCode{};
-        bool m_isCompiled = false;
+typedef struct NanoShader NanoShader;
 
-        VkShaderModule m_shaderModule{};
+struct NanoShader{
+        char m_fileFullPath[MAX_FILEPATH_LENGTH];
+        char* m_rawShaderCode;
+        uint32_t m_rawShaderCodeSize;
+        bool m_isCompiled;
+
+        VkShaderModule m_shaderModule;
 };
+
+void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile);
+int CompileShader(NanoShader* shaderToInitialize, bool forceCompile);
+void CleanUpShader(NanoShader* shaderToInitialize);
 
 #endif // NANOSHADER_H_

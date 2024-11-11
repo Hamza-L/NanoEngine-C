@@ -1,5 +1,7 @@
 #include "NanoShader.h"
+#include "NanoConfig.h"
 #include "NanoError.h"
+#include <string.h>
 
 #ifdef _WIN64
 #include <windows.h>
@@ -8,25 +10,25 @@
 #endif
 
 #include <fstream>
+#include <StrUtil.h>
 
-void NanoShader::CleanUp(){
-    vkDestroyShaderModule(_device, m_shaderModule, nullptr);
+void CleanUp(NanoShader* shaderToInitialize){
+    vkDestroyShaderModule(shaderToInitialize->_device, shaderToInitialize->m_shaderModule, NULL);
 }
 
-static VkShaderModule CreateShaderModule(VkDevice& device, NanoShader& shader) {
-  ERR err = ERR::OK;
+static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
   VkShaderModule shaderModule = {};
-  if(!shader.IsCompiled()){
-      LOG_MSG(ERRLevel::WARNING, "Attempting to create a shader module from uncompiled shader");
+  if(!shader->m_isCompiled){
+      fprintf(stderr, "Attempting to create a shader module from uncompiled shader");
       return shaderModule; // failed the re-attempt at compiling
   }
 
-  VkShaderModuleCreateInfo createInfo{};
+  VkShaderModuleCreateInfo createInfo;
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-  createInfo.codeSize = shader.GetByteCode().size();
-  createInfo.pCode = reinterpret_cast<const uint32_t*>(shader.GetByteCode().data());
+  createInfo.codeSize = shader->m_rawShaderCodeSize;
+  createInfo.pCode = (const uint32_t*)shader->m_rawShaderCode;
 
-  if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) != VK_SUCCESS) {
+  if (vkCreateShaderModule(device, &createInfo, NULL, &shaderModule) != VK_SUCCESS) {
     throw std::runtime_error("failed to create shader module!");
   }
 
@@ -129,37 +131,40 @@ static std::vector<char> ReadBinaryFile(const std::string& filename) {
     return buffer;
 }
 
-void NanoShader::Init(VkDevice& device, const std::string& shaderCodeFile){
-    m_fileFullPath = shaderCodeFile;
-    _device = device;
+void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile){
+    AppendString(shaderToInitialize->m_fileFullPath, shaderCodeFile);
 }
 
-int NanoShader::Compile(bool forceCompile){
+int CompileShader(NanoShader* shaderToInitialize, _Bool forceCompile){
     int exitCode = 1;
-    std::string outputFile = "./src/shader/";
+    char outputFile[MAX_FILEPATH_LENGTH] = "./src/shader/";
 
-    if(m_fileFullPath.find(".vert") != std::string::npos){
-        outputFile.append("vert");
-    } else if (m_fileFullPath.find(".frag") != std::string::npos){
-        outputFile.append("frag");
-    } else if (m_fileFullPath.find(".comp") != std::string::npos){
-        outputFile.append("comp");
+    if(FindString(shaderToInitialize->m_fileFullPath, ".vert") >= 0){
+        AppendString(outputFile, "vert");
+    } else if (FindString(shaderToInitialize->m_fileFullPath, ".frag") >= 0){
+        AppendString(outputFile, "frag");
+    } else if (FindString(shaderToInitialize->m_fileFullPath, ".comp") >= 0){
+        AppendString(outputFile, "comp");
     }
-    outputFile.append("_");
+    AppendString(outputFile, "_");
 
-    int startIndx = m_fileFullPath.find_last_of("/") + 1;
-    int endIndx = m_fileFullPath.find_last_of(".");
-    std::string fileName = m_fileFullPath.substr(startIndx, endIndx-startIndx);
+    int startIndx = FindLastString(shaderToInitialize->m_fileFullPath, "/");
+    int endIndx = FindLastString(shaderToInitialize->m_fileFullPath, ".");
 
-    outputFile.append(fileName.c_str());
-    outputFile.append(".spv");
+    char filename[256] = {};
+    strcpy(filename, shaderToInitialize->m_fileFullPath);
+    SubString(filename, startIndx, endIndx-startIndx);
 
-    std::string cmdArgument = " ";
-    cmdArgument.append(m_fileFullPath);
-    cmdArgument.append(" -o ");
-    cmdArgument.append(outputFile);
+    AppendString(outputFile, filename);
+    AppendString(outputFile, ".spv");
 
-    char const *argv[] = {m_fileFullPath.c_str(), "-o", outputFile.c_str()};
+    char cmdArgument[256] = " ";
+    AppendString(cmdArgument, filename);
+    AppendString(cmdArgument, shaderToInitialize->m_fileFullPath);
+    AppendString(cmdArgument, " -o ");
+    AppendString(cmdArgument, outputFile);
+
+    char const *argv[] = { shaderToInitialize->m_fileFullPath, "-o", outputFile};
 #ifdef __APPLE__
     const char* executable = "./external/VULKAN/mac/glslc";
 #elif _WIN32
@@ -167,16 +172,16 @@ int NanoShader::Compile(bool forceCompile){
 #else
     const char* executable = "./external/VULKAN/linux/glslc";
 #endif
-    exitCode = RunGLSLCompiler(executable, m_fileFullPath.c_str(), outputFile.c_str(), m_fileFullPath.substr(startIndx).c_str());
+    exitCode = RunGLSLCompiler(executable, shaderToInitialize->m_fileFullPath, outputFile, &shaderToInitialize->m_fileFullPath[startIndx]);
 
     if(!exitCode){
-      LOG_MSG(ERRLevel::INFO, "Successfully compiled")
-      m_isCompiled = true;
-      LOG_MSG(ERRLevel::INFO, "reading raw shader code from: %s", outputFile.c_str());
-      m_rawShaderCode = ReadBinaryFile(outputFile);
-      m_shaderModule = CreateShaderModule(_device, *this);
+      fprintf(stdout, "Successfully compiled");
+      shaderToInitialize->m_isCompiled = true;
+      fprintf(stdout, "reading raw shader code from: %s", outputFile);
+      shaderToInitialize->m_rawShaderCode = ReadBinaryFile(outputFile);
+      shaderToInitialize->m_shaderModule = CreateShaderModule(_device, *this);
     } else {
-      m_isCompiled = false;
+      shaderToInitialize->m_isCompiled = false;
     }
 
     return exitCode;

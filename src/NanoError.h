@@ -31,5 +31,6 @@ enum ERRLevel {
 };
 
 enum ERR { OK, NOT_INITIALIZED, NOT_FOUND, WRONG_ARGUMENT, UNDEFINED, INVALID };
+typedef enum ERR ERR;
 
 #endif // NANOERROR_H_

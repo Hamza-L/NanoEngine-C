@@ -1,13 +1,9 @@
 #include <stdio.h>
+#include <stdlib.h>
 
-#include "NanoError.h"
 #include "NanoEngine.h"
+#include "StrUtil.h"
 
 int main(int argc, char *argv[]) {
-
-    struct NanoEngine engine;
-    engine.Init();
-    engine.Run();
-
     return EXIT_SUCCESS;
 }

@@ -2,56 +2,57 @@
 
 #include "NanoConfig.h"
 
-struct NanoWindowContext{
-    GLFWwindow* window;
-}_NanoWindow;
+static NanoWindow* s_window;
 
-ERR NanoWindow::Init(const int32_t width, const int32_t height, bool forceReInit){
-    ERR err = ERR::OK;
-    if(m_isInit && !forceReInit)
-        return ERR::NOT_INITIALIZED;
+ERR CleanUp(){
+    if(!s_window || !s_window->m_isInit){
+        return NOT_INITIALIZED;
+    }
+    glfwDestroyWindow(s_window->window);
+    glfwTerminate();
+    free(s_window);
+    s_window = NULL;
+    return OK;
+}
+
+NanoWindow* InitWindow(const int32_t width, const int32_t height, bool forceReInit){
+    if(s_window && s_window->m_isInit && !forceReInit){
+        return s_window;
+    }
 
     CleanUp();
+    s_window = (NanoWindow*)malloc(sizeof(NanoWindow));
+
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    _NanoWindow.window = glfwCreateWindow(width, height, Config::APP_NAME, nullptr, nullptr);
-    if(_NanoWindow.window){
-        m_isInit = true;
+    s_window->window = glfwCreateWindow(width, height, APP_NAME, NULL, NULL);
+    if(s_window->window){
+        s_window->m_isInit = true;
     } else {
-        m_isInit = false;
-        err = ERR::NOT_INITIALIZED;
+        s_window->m_isInit = false;
+        return NULL;
     }
-    return err;
+    return s_window;
 }
 
-ERR NanoWindow::Init(){
-    return Init(Config::WINDOW_WIDTH, Config::WINDOW_HEIGHT, false);
+void PollEvents(){
+    if(s_window && s_window->m_isInit){
+        glfwPollEvents();
+    } else {
+        fprintf(stderr, "Polling GLFW events of unintialized glfwwindow");
+    }
 }
 
-void NanoWindow::PollEvents(){
-    glfwPollEvents();
-}
-
-bool NanoWindow::ShouldWindowClose(){
-    if(!m_isInit){
+bool ShouldWindowClose(){
+    if(!s_window || !s_window->m_isInit){
         return true;
     }
-
-    return glfwWindowShouldClose(_NanoWindow.window);
+    return glfwWindowShouldClose(s_window->window);
 }
 
-GLFWwindow* NanoWindow::getGLFWwindow(){
-    return m_isInit ? _NanoWindow.window : nullptr;
+GLFWwindow* getGLFWwindow(){
+    return s_window && s_window->m_isInit ? s_window->window : NULL;
 }
 
-ERR NanoWindow::CleanUp(){
-    ERR err = ERR::OK;
-    if(!m_isInit){
-        return ERR::NOT_INITIALIZED;
-    }
-    glfwDestroyWindow(_NanoWindow.window);
-    glfwTerminate();
-    return err;
-}
