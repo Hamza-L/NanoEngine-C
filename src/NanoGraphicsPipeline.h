@@ -12,6 +12,7 @@ struct NanoGraphicsPipeline{
         VkExtent2D m_extent;
         NanoShader* m_vertShader;
         NanoShader* m_fragShader;
+        NanoShader* m_otherShaders; //optional
         VkPipelineLayout m_pipelineLayout;
         VkPipeline m_pipeline;
 };

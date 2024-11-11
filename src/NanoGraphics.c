@@ -7,105 +7,32 @@
 #include "NanoGraphicsPipeline.h"
 
 #include "vulkan/vulkan_core.h"
-#include <cstdint>
 #include <stdint.h>
+#include <string.h>
 #include <stdio.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <algorithm>
-#include <iostream>
-#include <map>
-#include <set>
-#include <vector>
-
 #define _CRT_SECURE_NO_WARNINGS
-
-typedef struct QueueFamilyIndices QueueFamilyIndices;
-typedef struct SwapchainDetails SwapchainDetails;
-typedef struct SwapchainSyncObjects SwapchainSyncObjects;
-typedef struct SwapchainContext SwapchainContext;
-typedef struct NanoVKContext NanoVKContext;
-
-struct QueueFamilyIndices{
-    int32_t graphicsFamily;
-    int32_t presentFamily;
-};
 
 _Bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper function to validate queue indices
     return queueFamily.graphicsFamily != -1 && queueFamily.presentFamily != -1;
 }
 
-struct SwapchainDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
 
-    VkSurfaceFormatKHR* formats; //array
-    uint32_t formats_size;
-    VkSurfaceFormatKHR selectedFormat;
-
-    VkPresentModeKHR* presentModes; //array
-    uint32_t presentModes_size;
-    VkPresentModeKHR selectedPresentMode;
-
-    VkExtent2D currentExtent;
-
-    uint32_t imageCount;
-};
-
-struct SwapchainSyncObjects {
-    VkSemaphore imageAvailableSemaphore;
-    VkSemaphore renderFinishedSemaphore;
-    VkFence inFlightFence;
-};
-
-struct SwapchainContext{
-    VkSwapchainKHR swapchain;
-
-    struct SwapchainDetails info;
-    VkImage* images;
-    VkImageView* imageViews;
-    VkFramebuffer* framebuffers;
-
-    uint32_t currentFrame;
-    VkCommandBuffer commandBuffer[MAX_FRAMES_IN_FLIGHT];
-    SwapchainSyncObjects syncObjects[MAX_FRAMES_IN_FLIGHT];
-};
-
-struct NanoVKContext {
-    VkInstance instance;
-    VkPhysicalDevice physicalDevice;
-    VkDevice device;
-
-    QueueFamilyIndices queueIndices ;
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
-
-    VkSurfaceKHR surface;
-
-    VkRenderPass renderpass;
-
-    NanoGraphicsPipeline* graphicsPipelines; // array of graphicsPipeline
-    uint32_t currentGraphicsPipeline;
-
-    VkCommandPool commandPool;
-
-    SwapchainContext swapchainContext;
-
-} _NanoGraphicsContext;
-
-void AddGraphicsPipeline(const NanoGraphicsPipeline* graphicsPipeline){
-
-    _NanoGraphicsContext.graphicsPipelines;
+void AddGraphicsPipeline(NanoGraphics* nanoGraphics, const NanoGraphicsPipeline* graphicsPipeline){
+    int indx = nanoGraphics->m_pNanoContext->currentGraphicsPipeline;
+    nanoGraphics->m_pNanoContext->graphicsPipelines[indx + 1] = *graphicsPipeline;
 }
 
-VkDebugUtilsMessengerEXT debugMessenger{};
+VkDebugUtilsMessengerEXT debugMessenger;
 
 // We have to look up the address of the debug callback create function ourselves using vkGetInstanceProcAddr
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
                                       const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
+    PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != NULL) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -114,8 +41,8 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 
 // We have to look up the address of the debug callback destroy function ourselves using vkGetInstanceProcAddr
 void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks *pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
+    PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != NULL) {
         func(instance, debugMessenger, pAllocator);
     }
 }
@@ -124,115 +51,119 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
                                                     VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
 
-    std::string message{};
-    ERRLevel messageLevel{};
+    char message[1024];
+    ERRLevel messageLevel;
 
     switch (messageSeverity) {
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-        messageLevel = ERRLevel::DEBUG;
+        messageLevel = NANO_DEBUG;
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-        messageLevel = ERRLevel::INFO;
+        messageLevel = NANO_INFO;
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-        messageLevel = ERRLevel::WARNING;
+        messageLevel = NANO_WARNING;
         break;
     case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-        messageLevel = ERRLevel::FATAL;
+        messageLevel = NANO_FATAL;
         break;
     default:
-        messageLevel = ERRLevel::INFO;
+        messageLevel = NANO_INFO;
         break;
     }
 
-    LOG_MSG(messageLevel, "%s", pCallbackData->pMessage);
+    fprintf(stderr, "%s", pCallbackData->pMessage);
     fprintf(stderr, "Objects involved: \n");
+
     for (int i = 0; i < pCallbackData->objectCount; i++) {
         fprintf(stderr, "\t%s\n", pCallbackData->pObjects[i].pObjectName);
     }
+
     fprintf(stderr, "\n");
 
-    if (messageLevel == ERRLevel::FATAL)
-        throw std::runtime_error("Validation layer has returned fatal error");
+    if (messageLevel == NANO_FATAL){
+        abort();
+    }
 
     return VK_FALSE;
 }
 
-static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo) {
-    createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT* createInfo) {
+    createInfo->sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInfo->messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    createInfo.pfnUserCallback = debugCallback;
-    createInfo.pUserData = nullptr;
+    createInfo->pfnUserCallback = debugCallback;
+    createInfo->pUserData = NULL;
+    createInfo->pNext = NULL;
 }
 
-void cleanupSwapChainContext(const VkDevice& device, SwapchainContext& swapchainContext) {
-    for (auto framebuffer : swapchainContext.framebuffers) {
-        vkDestroyFramebuffer(device, framebuffer, nullptr);
+void cleanupSwapChainContext(const VkDevice device, SwapchainContext* swapchainContext) {
+    for (int i = 0 ; i < swapchainContext->info.imageCount; i++) {
+        vkDestroyFramebuffer(device, swapchainContext->framebuffers[i], NULL);
+        vkDestroyImageView(device, swapchainContext->imageViews[i], NULL);
     }
-
-    for (auto imageView : swapchainContext.imageViews) {
-        vkDestroyImageView(device, imageView, nullptr);
-    }
-
-    vkDestroySwapchainKHR(device, swapchainContext.swapchain, nullptr);
+    vkDestroySwapchainKHR(device, swapchainContext->swapchain, NULL);
 }
 
-ERR NanoGraphics::CleanUp() {
-    ERR err = ERR::OK;
+ERR CleanUpGraphics(NanoGraphics* nanoGraphics){
+    ERR err = OK;
 
-    vkDeviceWaitIdle(_NanoContext.device);
-    for(int i = 0; i < Config::MAX_FRAMES_IN_FLIGHT; i++){
-        vkDestroySemaphore(_NanoContext.device, _NanoContext.swapchainContext.syncObjects[i].imageAvailableSemaphore, nullptr);
-        vkDestroySemaphore(_NanoContext.device, _NanoContext.swapchainContext.syncObjects[i].renderFinishedSemaphore, nullptr);
-        vkDestroyFence(_NanoContext.device, _NanoContext.swapchainContext.syncObjects[i].inFlightFence, nullptr);
+    // wait in case there are any pending tasks
+    vkDeviceWaitIdle(nanoGraphics->m_pNanoContext->device);
+    for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        vkDestroySemaphore(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].imageAvailableSemaphore, NULL);
+        vkDestroySemaphore(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, NULL);
+        vkDestroyFence(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
     }
 
-    vkDestroyCommandPool(_NanoContext.device, _NanoContext.commandPool, nullptr);
+    // clean commandPool and incidently the commandbuffers acquired from them
+    vkDestroyCommandPool(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->commandPool, NULL);
 
-    for (auto framebuffer : _NanoContext.swapchainContext.framebuffers) {
-        vkDestroyFramebuffer(_NanoContext.device, framebuffer, nullptr);
+    // clean swapchain framebuffers
+    for (int i = 0 ; i < nanoGraphics->m_pNanoContext->swapchainContext.info.imageCount; i++) {
+        vkDestroyFramebuffer(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.framebuffers[i], NULL);
+    }
+    // clean swapchain imageviews
+    for (int i = 0 ; i < nanoGraphics->m_pNanoContext->swapchainContext.info.imageCount; i++) {
+        vkDestroyImageView(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.imageViews[i], NULL);
     }
 
-    for (auto& graphicsPipeline : _NanoContext.graphicsPipelines){
-        graphicsPipeline.CleanUp();
+    // clean graphic pipelines
+    for (int i = 0 ; i < nanoGraphics->m_pNanoContext->graphicPipelinesCount; i++) {
+        CleanUpGraphicsPipeline(&nanoGraphics->m_pNanoContext->graphicsPipelines[i]);
     }
 
-    vkDestroyRenderPass(_NanoContext.device, _NanoContext.renderpass, nullptr);
+    // clean renderpass
+    vkDestroyRenderPass(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->renderpass, NULL);
 
-    for (auto& imageView : _NanoContext.swapchainContext.imageViews) {
-        vkDestroyImageView(_NanoContext.device, imageView, nullptr);
+    vkDestroySwapchainKHR(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.swapchain, NULL);
+
+    vkDestroySurfaceKHR(nanoGraphics->m_pNanoContext->instance, nanoGraphics->m_pNanoContext->surface, NULL);
+
+    vkDestroyDevice(nanoGraphics->m_pNanoContext->device, NULL);
+
+    if (enableValidationLayers) {
+        DestroyDebugUtilsMessengerEXT(nanoGraphics->m_pNanoContext->instance, debugMessenger, NULL);
     }
 
-    vkDestroySwapchainKHR(_NanoContext.device, _NanoContext.swapchainContext.swapchain, nullptr);
-
-    vkDestroySurfaceKHR(_NanoContext.instance, _NanoContext.surface, nullptr);
-
-    vkDestroyDevice(_NanoContext.device, nullptr);
-
-    if (Config::enableValidationLayers) {
-        DestroyDebugUtilsMessengerEXT(_NanoContext.instance, debugMessenger, nullptr);
-    }
-
-    vkDestroyInstance(_NanoContext.instance, nullptr);
+    vkDestroyInstance(nanoGraphics->m_pNanoContext->instance, NULL);
 
     return err;
 }
 
 static bool checkValidationLayerSupport(const char *const *validationLayers) {
     uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    vkEnumerateInstanceLayerProperties(&layerCount, NULL);
 
-    std::vector<VkLayerProperties> availableLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+    VkLayerProperties availableLayers[layerCount];
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers);
 
     int indx = 0;
     while (validationLayers[indx]) {
         bool layerFound = false;
-        for (const auto &layerProperties : availableLayers) {
-            if (strcmp(validationLayers[indx], layerProperties.layerName) == 0) {
+        for (int i = 0; i < layerCount ; i++) {
+            if (strcmp(validationLayers[indx], availableLayers[i].layerName) == 0) {
                 layerFound = true;
                 break;
             }
@@ -252,53 +183,64 @@ SwapchainDetails querySwapChainSupport(const VkPhysicalDevice device, const VkSu
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, NULL);
 
     if (formatCount != 0) {
-        details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+        details.formats = (VkSurfaceFormatKHR*)malloc(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats);
     }
 
     uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, NULL);
 
     if (presentModeCount != 0) {
-        details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+        details.presentModes = (VkPresentModeKHR*)malloc(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes);
     }
 
     return details;
 }
 
-static std::vector<const char *> getRequiredInstanceExtensions() {
-    uint32_t glfwExtensionCount = 0;
-    const char **glfwExtensions;
+void getRequiredInstanceExtensions(char (*requiredInstanceExtensions)[128], uint32_t* numOfInstanceExtensions){
+    const char** glfwExtensions;
 
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME, NULL, NULL);
+
+    glfwExtensions = glfwGetRequiredInstanceExtensions(numOfInstanceExtensions);
+    /* printf("num of instance extensions: %d", *numOfInstanceExtensions); */
 
     // additional instance extension we may want to add
-    std::vector<const char *> instanceExtensions;
+    // 64 additional extensions that we can potentially add
     int extIdx = 0;
-    while (Config::desiredInstanceExtensions[extIdx]) {
-        instanceExtensions.emplace_back(Config::desiredInstanceExtensions[extIdx]);
+    while (desiredInstanceExtensions[extIdx]){
+        strcpy(requiredInstanceExtensions[extIdx], desiredInstanceExtensions[extIdx]);
         extIdx++;
     }
 
-    for (uint32_t i = 0; i < glfwExtensionCount; i++) {
-        instanceExtensions.emplace_back(glfwExtensions[i]);
+    for (uint32_t i = 0; i < *numOfInstanceExtensions; i++) {
+        strcpy(requiredInstanceExtensions[extIdx], glfwExtensions[i]);
+        extIdx++;
     }
 
-    if (Config::enableValidationLayers) {
-        instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    if (enableValidationLayers) {
+        strcpy(requiredInstanceExtensions[extIdx], VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        extIdx++;
     }
 
-    return instanceExtensions;
+    *numOfInstanceExtensions = extIdx;
+
     // ----------------------------------------
+    glfwDestroyWindow(window);
+    glfwTerminate();
 }
 
-static std::vector<VkExtensionProperties> &getSupportedInstanceExtensions(std::vector<VkExtensionProperties> &extensions) {
-    uint32_t extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+static void getSupportedInstanceExtensions(VkExtensionProperties* extensions, uint32_t* extensionCount) {
+    *extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(NULL, extensionCount, NULL);
 
     extensions.resize(extensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
@@ -961,8 +903,9 @@ ERR createSwapchainSyncObjects(VkDevice& device ,SwapchainSyncObjects* syncObjec
     return err;
 }
 
-ERR Init(NanoGraphics& nanoGraphics, NanoWindow& window) {
+ERR InitGraphics(NanoGraphics* nanoGraphics, NanoWindow* window){
     ERR err = ERR::OK;
+    nanoGraphics->m_pNanoContext = (NanoVKContext*)malloc(sizeof(NanoVKContext));
     // Here the err validation is not that useful
     // a iferr_return can be added at the end of each statement to check it's state and exit (or at least warn) if an error did occur
     err = createInstance(Config::APP_NAME,
@@ -1028,7 +971,7 @@ ERR Init(NanoGraphics& nanoGraphics, NanoWindow& window) {
     return err;
 }
 
-ERR NanoGraphics::DrawFrame(){
+ERR DrawFrame(NanoGraphics* nanoGraphics){
     ERR err = ERR::OK;
 
     vkWaitForFences(_NanoContext.device, 1, &_NanoContext.swapchainContext.syncObjects[_NanoContext.swapchainContext.currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);

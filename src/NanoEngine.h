@@ -4,11 +4,16 @@
 #include "NanoGraphics.h"
 #include "NanoWindow.h"
 
+typedef struct NanoEngine NanoEngine;
 
-enum ERR Init();
+struct NanoEngine{
+    NanoGraphics* m_pGraphics;
+    NanoWindow* m_pWindow;
+};
+
+ERR InitEngine(NanoEngine* nanoEngine);
+ERR CleanUpEngine(NanoEngine* nanoEngine);
 ERR Run();
-ERR CleanUp();
-
 ERR MainLoop();
 
 /* struct NanoEngine { */

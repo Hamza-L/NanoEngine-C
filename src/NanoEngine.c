@@ -1,24 +1,20 @@
 #include "NanoEngine.h"
 
-NanoEngine::~NanoEngine(){
-    CleanUp();
-}
-
-ERR NanoEngine::CleanUp(){
+ERR CleanUpEngine(NanoEngine* nanoEngine){
     ERR err = ERR::OK;
-    m_NanoWindow.CleanUp();
-    m_NanoGraphics.CleanUp();
+    s_NanoWindow.CleanUp();
+    s_NanoGraphics.CleanUp();
     return err;
 }
 
-ERR NanoEngine::Init(){
+ERR InitEngine(NanoEngine* nanoEngine){
     ERR err = ERR::OK;
-    err = m_NanoWindow.Init();
-    err = m_NanoGraphics.Init(m_NanoWindow);
+    err = s_NanoWindow.Init();
+    err = s_NanoGraphics.Init(m_NanoWindow);
     return err;
 }
 
-ERR NanoEngine::Run(){
+ERR NanoEngineRun(){
     ERR err = ERR::OK;
     while(!m_NanoWindow.ShouldWindowClose()){
 
@@ -30,7 +26,7 @@ ERR NanoEngine::Run(){
     return err;
 }
 
-ERR NanoEngine::MainLoop(){
+ERR MainLoop(){
     ERR err = ERR::OK;
 
     m_NanoGraphics.DrawFrame();

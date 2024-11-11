@@ -1,12 +1,12 @@
 #ifndef NANOSHADER_H_
 #define NANOSHADER_H_
 
-#include "NanoError.h"
 #include "NanoConfig.h"
 
 #include "vulkan/vulkan_core.h"
 
 typedef struct NanoShader NanoShader;
+typedef struct NanoGraphics NanoGraphics;
 
 struct NanoShader{
         char m_fileFullPath[MAX_FILEPATH_LENGTH];
@@ -17,8 +17,10 @@ struct NanoShader{
         VkShaderModule m_shaderModule;
 };
 
+struct NanoGraphics;
+
 void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile);
-int CompileShader(NanoShader* shaderToInitialize, bool forceCompile);
-void CleanUpShader(NanoShader* shaderToInitialize);
+int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool forceCompile);
+void CleanUpShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCleanUp);
 
 #endif // NANOSHADER_H_
