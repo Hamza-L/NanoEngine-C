@@ -1,6 +1,8 @@
 #include "NanoWindow.h"
-
 #include "NanoConfig.h"
+
+#include <stdlib.h>
+#include <stdio.h>
 
 static NanoWindow* s_window;
 

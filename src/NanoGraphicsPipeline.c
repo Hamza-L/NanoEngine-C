@@ -1,6 +1,8 @@
 #include "NanoGraphicsPipeline.h"
 #include "NanoShader.h"
 #include "vulkan/vulkan_core.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 //TODO ; Match the init design of the NanoGraphics class
 void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice device, const VkExtent2D extent){
@@ -8,17 +10,17 @@ void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice devic
     graphicsPipeline->m_extent = extent;
 }
 
-void AddVertShaderToNGPipeline(NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
+void AddVertShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
     NanoShader* vertShader = (NanoShader*)malloc(sizeof(NanoShader));
     InitShader(vertShader, vertShaderFile);
-    CompileShader(vertShader, true);
+    CompileShader(nanoGraphics, vertShader, true);
     graphicsPipeline->m_vertShader = vertShader;
 }
 
-void AddFragShaderToNGPipeline(NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
+void AddFragShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
     NanoShader* fragShader = (NanoShader*)malloc(sizeof(NanoShader));
     InitShader(fragShader, fragShaderFile);
-    CompileShader(fragShader, true);
+    CompileShader(nanoGraphics, fragShader, true);
     graphicsPipeline->m_vertShader = fragShader;
 }
 
@@ -211,9 +213,9 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
     return err;
 }
 
-void CleanUpGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline){
+void CleanUpGraphicsPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline){
     vkDestroyPipeline(graphicsPipeline->_device, graphicsPipeline->m_pipeline, NULL);
     vkDestroyPipelineLayout(graphicsPipeline->_device, graphicsPipeline->m_pipelineLayout, NULL);
-    CleanUpShader(graphicsPipeline->m_vertShader);
-    CleanUpShader(graphicsPipeline->m_fragShader);
+    CleanUpShader(nanoGraphics, graphicsPipeline->m_vertShader);
+    CleanUpShader(nanoGraphics, graphicsPipeline->m_fragShader);
 }

@@ -24,14 +24,13 @@ set(ROOT_NAMESPACE NanoEngine)
 ################################################################################
 set(Headers
     # "src/NanoEngine.h"
-    # "src/NanoWindow.h"
+    "src/NanoWindow.h"
     # "src/NanoGraphics.h"
-    # "src/NanoGraphicsPipeline.h"
-    # "src/NanoError.h"
-    # "src/NanoUtility.h"
+    "src/NanoGraphicsPipeline.h"
+    "src/NanoError.h"
+    "src/NanoUtility.h"
     "src/NanoConfig.h"
     "src/NanoShader.h"
-    "src/NanoUtility.h"
     "src/StrUtil.h"
 )
 
@@ -39,12 +38,13 @@ source_group("Headers" FILES ${Headers})
 
 set(Sources
     # "src/NanoEngine.c"
-    # "src/NanoWindow.c"
+    "src/NanoWindow.c"
     # "src/NanoGraphics.c"
-    # "src/NanoGraphicsPipeline.c"
+    "src/NanoGraphicsPipeline.c"
+    "src/NanoError.c"
+    "src/NanoUtility.c"
     "src/NanoConfig.c"
     "src/NanoShader.c"
-    "src/NanoUtility.c"
     "src/StrUtil.c"
     "src/main.c"
 )

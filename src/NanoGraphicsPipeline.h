@@ -2,6 +2,7 @@
 #define NANOGRAPHICSPIPELINE_H_
 
 #include "NanoShader.h"
+#include "NanoError.h"
 #include "vulkan/vulkan_core.h"
 
 typedef struct NanoGraphicsPipeline NanoGraphicsPipeline;
@@ -18,9 +19,9 @@ struct NanoGraphicsPipeline{
 };
 
 void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice device, const VkExtent2D extent);
-void AddVertShaderToNGPipeline(NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile);
-void AddFragShaderToNGPipeline(NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile);
+void AddVertShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile);
+void AddFragShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile);
 ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile);
-void CleanUpGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline);
+void CleanUpGraphicsPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline);
 
 #endif // NANOGRAPHICSPIPELINE_H_

@@ -1,4 +1,5 @@
 #include "NanoUtility.h"
+#include <stdlib.h>
 
 size_t SizeOf(const char* const* array){
     size_t size = 0;
