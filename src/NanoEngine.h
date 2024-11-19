@@ -7,14 +7,13 @@
 typedef struct NanoEngine NanoEngine;
 
 struct NanoEngine{
-    NanoGraphics* m_pGraphics;
-    NanoWindow* m_pWindow;
+    NanoGraphics m_Graphics;
+    NanoWindow m_Window;
 };
 
 ERR InitEngine(NanoEngine* nanoEngine);
 ERR CleanUpEngine(NanoEngine* nanoEngine);
-ERR Run();
-ERR MainLoop();
+ERR RunEngine(NanoEngine* nanoEngine);
 
 /* struct NanoEngine { */
 /*   NanoGraphics m_NanoGraphics; */

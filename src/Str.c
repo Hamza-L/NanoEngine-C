@@ -164,6 +164,7 @@ void SubString(String* srcString, int offset, int size){
     for(int i = 0; i < upperLimit; i++){
         srcString->m_data[i] = srcString->m_data[i+offset];
     }
+    srcString->m_data[upperLimit] = '\0';
 }
 
 // It is up to the caller to make sure src string has enough memory to append the new string

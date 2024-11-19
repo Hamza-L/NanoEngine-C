@@ -10,18 +10,17 @@
 #include <stdbool.h>
 
 struct NanoWindow {
-  GLFWwindow* window;
+  GLFWwindow* _window;
   int32_t width;
   int32_t height;
   bool m_isInit;
 };
 typedef struct NanoWindow NanoWindow;
 
-NanoWindow* InitWindow(const int32_t width, const int32_t height, bool forceReInit);
-ERR CleanUp();
-void PollEvents();
-bool ShouldWindowClose();
-GLFWwindow* getGLFWwindow();
+NanoWindow* InitWindow(NanoWindow* window, const int32_t width, const int32_t height, bool forceReInit);
+ERR CleanUpWindow(NanoWindow* window);
+void PollEvents(NanoWindow window);
+bool ShouldWindowClose(NanoWindow window);
 
 
 #endif // NANOWINDOW_H_

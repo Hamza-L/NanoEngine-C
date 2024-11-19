@@ -1,35 +1,37 @@
 #include "NanoEngine.h"
+#include "NanoConfig.h"
+#include "NanoGraphics.h"
+#include "NanoShader.h"
+#include "NanoWindow.h"
 
 ERR CleanUpEngine(NanoEngine* nanoEngine){
-    ERR err = ERR::OK;
-    s_NanoWindow.CleanUp();
-    s_NanoGraphics.CleanUp();
+    ERR err = OK;
+    CleanUpWindow(&nanoEngine->m_Window);
+    CleanUpGraphics(&nanoEngine->m_Graphics);
     return err;
 }
 
 ERR InitEngine(NanoEngine* nanoEngine){
-    ERR err = ERR::OK;
-    err = s_NanoWindow.Init();
-    err = s_NanoGraphics.Init(m_NanoWindow);
+    ERR err = OK;
+    InitWindow(&nanoEngine->m_Window, WINDOW_WIDTH, WINDOW_HEIGHT, true);
+    InitGraphics(&nanoEngine->m_Graphics, &nanoEngine->m_Window);
     return err;
 }
 
-ERR NanoEngineRun(){
-    ERR err = ERR::OK;
-    while(!m_NanoWindow.ShouldWindowClose()){
+ERR MainLoop(NanoGraphics* nanoGraphics){
+    ERR err = OK;
+    DrawFrame(nanoGraphics);
+    return err;
+}
 
-        m_NanoWindow.PollEvents();
+ERR RunEngine(NanoEngine* nanoEngine){
+    ERR err = OK;
+    while(!ShouldWindowClose(nanoEngine->m_Window)){
 
-        MainLoop();
+        PollEvents(nanoEngine->m_Window);
+        MainLoop(&nanoEngine->m_Graphics);
 
     }
     return err;
 }
 
-ERR MainLoop(){
-    ERR err = ERR::OK;
-
-    m_NanoGraphics.DrawFrame();
-
-    return err;
-}

@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include "NanoConfig.h"
 
+#define NULL_STR "\0"
+
 struct String{
     char m_data[DEFAULT_STRING_ALLOC_LENGTH];
     uint32_t m_size;

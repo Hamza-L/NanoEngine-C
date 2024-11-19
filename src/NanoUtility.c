@@ -1,9 +1,9 @@
 #include "NanoUtility.h"
 #include <stdlib.h>
 
-size_t SizeOf(const char* const* array){
+size_t SizeOf(const char** array){
     size_t size = 0;
-    while(array[size]){
+    while(*array[size]){
         size++;
     }
     return size;
@@ -65,4 +65,11 @@ close_file:
     }
 
     return buffer;
+}
+
+int clamp(int val, int max, int min){
+    ASSERT(max < min, "Clamp used with min value larger than max\n");
+    val = val > max ? max : val;
+    val = val < min ? min : val;
+    return val;
 }
