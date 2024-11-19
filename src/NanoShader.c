@@ -1,8 +1,7 @@
 #include "NanoShader.h"
 #include "NanoGraphics.h"
-#include "NanoError.h"
 #include "NanoUtility.h"
-#include <StrUtil.h>
+#include "Str.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,10 +45,13 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
    STARTUPINFO si;
    PROCESS_INFORMATION pi;
 
-   std::string command = "glslc ";
-   command.append(fileName);
-   command.append(" -o ");
-   command.append(outputFileName);
+   String command = CreateString("glslc ");
+   AppendToString(&command, fileName);
+   AppendToString(&command, " -o ");
+   AppendToString(&command, outputFileName);
+   /* command.append(fileName); */
+   /* command.append(" -o "); */
+   /* command.append(outputFileName); */
 
    // set the size of the structures
    ZeroMemory( &si, sizeof(si) );
@@ -58,7 +60,7 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
 
   // start the program up
   bool test = CreateProcess( executable,   // the path
-    const_cast<char*>(command.c_str()),           // Command line
+    command.m_data,           // Command line
     NULL,           // Process handle not inheritable
     NULL,           // Thread handle not inheritable
     FALSE,          // Set handle inheritance to FALSE
@@ -70,14 +72,14 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
     );
 
   // Wait until child process exits.
-  LOG_MSG(INFO, "compiling : %s", fileName);
+  fprintf(stderr, "compiling : %s", fileName);
   WaitForSingleObject( pi.hProcess, INFINITE );
 
   DWORD exit_code;
   GetExitCodeProcess(pi.hProcess, &exit_code);
 
   int compilerExitCode = (int)exit_code;
-  LOG_MSG(ERRLevel::INFO, "finished compiling: %s\t with exit code: %d", shaderName, compilerExitCode);
+  fprintf(stderr, "finished compiling: %s\t with exit code: %d", shaderName, compilerExitCode);
 
   // Close process and thread handles.
   CloseHandle( pi.hProcess );
@@ -122,39 +124,39 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
 
 
 void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile){
-    AppendString(shaderToInitialize->m_fileFullPath, shaderCodeFile);
+    InitString(&shaderToInitialize->m_fileFullPath, shaderCodeFile);
 }
 
 int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool forceCompile){
     int exitCode = 1;
-    char outputFile[MAX_FILEPATH_LENGTH] = "./src/shader/";
+    String outputFile = CreateString("./src/shader/");
 
-    if(FindString(shaderToCompile->m_fileFullPath, ".vert") >= 0){
-        AppendString(outputFile, "vert");
-    } else if (FindString(shaderToCompile->m_fileFullPath, ".frag") >= 0){
-        AppendString(outputFile, "frag");
-    } else if (FindString(shaderToCompile->m_fileFullPath, ".comp") >= 0){
-        AppendString(outputFile, "comp");
+    if(FindRawString(shaderToCompile->m_fileFullPath.m_data, ".vert") >= 0){
+        AppendToString(&outputFile, "vert");
+    } else if (FindRawString(shaderToCompile->m_fileFullPath.m_data, ".frag") >= 0){
+        AppendToString(&outputFile, "frag");
+    } else if (FindRawString(shaderToCompile->m_fileFullPath.m_data, ".comp") >= 0){
+        AppendToString(&outputFile, "comp");
     }
-    AppendString(outputFile, "_");
+    AppendToString(&outputFile, "_");
 
-    int startIndx = FindLastString(shaderToCompile->m_fileFullPath, "/") + 1; //we don't want to include the "/"
-    int endIndx = FindLastString(shaderToCompile->m_fileFullPath, ".");
+    int startIndx = FindLastRawString(shaderToCompile->m_fileFullPath.m_data, "/") + 1; //we don't want to include the "/"
+    int endIndx = FindLastRawString(shaderToCompile->m_fileFullPath.m_data, ".");
 
-    char filename[256] = {};
-    strcpy(filename, shaderToCompile->m_fileFullPath);
-    SubString(filename, startIndx, endIndx-startIndx);
+    String filename;
+    InitString(&filename, shaderToCompile->m_fileFullPath.m_data);
+    SubString(&filename, startIndx, endIndx-startIndx);
 
-    AppendString(outputFile, filename);
-    AppendString(outputFile, ".spv");
+    AppendToString(&outputFile, filename.m_data);
+    AppendToString(&outputFile, ".spv");
 
-    char cmdArgument[256] = " ";
-    AppendString(cmdArgument, filename);
-    AppendString(cmdArgument, shaderToCompile->m_fileFullPath);
-    AppendString(cmdArgument, " -o ");
-    AppendString(cmdArgument, outputFile);
+    String cmdArgument = CreateString(" ");
+    AppendToString(&cmdArgument, filename.m_data);
+    AppendToString(&cmdArgument, shaderToCompile->m_fileFullPath.m_data);
+    AppendToString(&cmdArgument, " -o ");
+    AppendToString(&cmdArgument, outputFile.m_data);
 
-    char const *argv[] = { shaderToCompile->m_fileFullPath, "-o", outputFile};
+    char const *argv[] = { shaderToCompile->m_fileFullPath.m_data, "-o", outputFile.m_data};
 #ifdef __APPLE__
     const char* executable = "./external/VULKAN/mac/glslc";
 #elif _WIN32
@@ -162,13 +164,16 @@ int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool 
 #else
     const char* executable = "./external/VULKAN/linux/glslc";
 #endif
-    exitCode = RunGLSLCompiler(executable, shaderToCompile->m_fileFullPath, outputFile, &shaderToCompile->m_fileFullPath[startIndx]);
+    exitCode = RunGLSLCompiler(executable,
+                               shaderToCompile->m_fileFullPath.m_data,
+                               outputFile.m_data,
+                               &shaderToCompile->m_fileFullPath.m_data[startIndx]);
 
     if(!exitCode){
       fprintf(stdout, "Successfully compiled\n");
       shaderToCompile->m_isCompiled = true;
-      fprintf(stdout, "reading raw shader code from: %s\n", outputFile);
-      shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile);
+      fprintf(stdout, "reading raw shader code from: %s\n", outputFile.m_data);
+      shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data);
       //shaderToCompile->m_shaderModule = CreateShaderModule(nanoGraphics->m_pNanoContext->device, shaderToCompile);
     } else {
       shaderToCompile->m_isCompiled = false;

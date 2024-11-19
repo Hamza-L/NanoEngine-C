@@ -12,9 +12,6 @@ void __Assert(const char* expr_str, bool expr, const char* file, int line, const
 #   define ASSERT(Expr, Msg) ;
 #endif
 
-typedef enum ERR ERR;
-typedef enum ERRLevel ERRLevel;
-
 enum ERRLevel {
     NANO_FATAL,
     NANO_WARNING,
@@ -23,5 +20,8 @@ enum ERRLevel {
 };
 
 enum ERR { OK, NOT_INITIALIZED, NOT_FOUND, WRONG_ARGUMENT, UNDEFINED, INVALID };
+
+typedef enum ERR ERR;
+typedef enum ERRLevel ERRLevel;
 
 #endif // NANOERROR_H_

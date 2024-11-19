@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.17)
 
 # must be set before project()
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 set(CMAKE_BUILD_TYPE "Debug")
 if (WIN32)
@@ -31,7 +31,7 @@ set(Headers
     "src/NanoUtility.h"
     "src/NanoConfig.h"
     "src/NanoShader.h"
-    "src/StrUtil.h"
+    "src/Str.h"
 )
 
 source_group("Headers" FILES ${Headers})
@@ -45,7 +45,7 @@ set(Sources
     "src/NanoUtility.c"
     "src/NanoConfig.c"
     "src/NanoShader.c"
-    "src/StrUtil.c"
+    "src/Str.c"
     "src/main.c"
 )
 
@@ -83,6 +83,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
     #only remove deprecation warning for NanoGraphics (no warning for using strcpy_s)
     set_source_files_properties("src/NanoGraphics.c" PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 elseif(APPLE)
     message("Starting the Macos Build")

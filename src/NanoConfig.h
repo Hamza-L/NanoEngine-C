@@ -7,7 +7,16 @@
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_GRAPHICS_PIPELINE 16
 #define MAX_FILEPATH_LENGTH 512
+#define DEFAULT_STRING_ALLOC_LENGTH 512
 #define MAX_ARRAY_OF_EXTENSIONS 256
+
+struct NamedStringConstant{
+    char extensionName[128];
+};
+
+typedef struct NamedStringConstant DeviceExtension;
+typedef struct NamedStringConstant InstanceExtension;
+typedef struct NamedStringConstant ValidationLayer;
 
 extern const int WINDOW_WIDTH;
 extern const int WINDOW_HEIGHT;

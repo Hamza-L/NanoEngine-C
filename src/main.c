@@ -4,7 +4,7 @@
 
 #include "NanoEngine.h"
 #include "NanoShader.h"
-#include "StrUtil.h"
+#include "Str.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -12,7 +12,7 @@
 
 #include "NanoConfig.h"
 
-void getRequiredInstanceExtensions(char (*requiredInstanceExtensions)[128], uint32_t* numOfInstanceExtensions){
+void getRequiredInstanceExtensions(InstanceExtension* requiredInstanceExtensions, uint32_t* numOfInstanceExtensions){
     const char** glfwExtensions;
 
     glfwInit();
@@ -28,17 +28,17 @@ void getRequiredInstanceExtensions(char (*requiredInstanceExtensions)[128], uint
     // 64 additional extensions that we can potentially add
     int extIdx = 0;
     while (desiredInstanceExtensions[extIdx]){
-        strcpy(requiredInstanceExtensions[extIdx], desiredInstanceExtensions[extIdx]);
+        strcpy(requiredInstanceExtensions[extIdx].extensionName, desiredInstanceExtensions[extIdx]);
         extIdx++;
     }
 
     for (uint32_t i = 0; i < *numOfInstanceExtensions; i++) {
-        strcpy(requiredInstanceExtensions[extIdx], glfwExtensions[i]);
+        strcpy(requiredInstanceExtensions[extIdx].extensionName, glfwExtensions[i]);
         extIdx++;
     }
 
     if (enableValidationLayers) {
-        strcpy(requiredInstanceExtensions[extIdx], VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        strcpy(requiredInstanceExtensions[extIdx].extensionName, VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         extIdx++;
     }
 
@@ -50,18 +50,16 @@ void getRequiredInstanceExtensions(char (*requiredInstanceExtensions)[128], uint
 }
 
 int main(int argc, char *argv[]) {
-    char (*instanceExtensions)[128] = calloc(MAX_ARRAY_OF_EXTENSIONS, sizeof(*instanceExtensions));
-    int test = sizeof(*instanceExtensions);
-    uint32_t numExtensions;
-    getRequiredInstanceExtensions(instanceExtensions, &numExtensions);
+    /* NanoShader nanoShader; */
+    /* InitShader(&nanoShader, "./src/shader/shader.vert"); */
+    /* CompileShader(nullptr, &nanoShader, true); */
 
-    int i = 0;
-    printf("num of instance extensions: %d\n", numExtensions);
-    while(*instanceExtensions[i]){
-        printf("%s\n", instanceExtensions[i]);
-        i++;
-    }
+    String testString;
+    HeapString testHeapString;
+    InitString(&testString, "Hello");
+    InitHeapString(&testHeapString, "Hello");
 
-    free(instanceExtensions);
+    AppendToString(&testString, " World!\n");
+    AppendToHeapString(&testHeapString, " World!\n");
     return EXIT_SUCCESS;
 }

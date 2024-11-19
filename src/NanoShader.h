@@ -2,6 +2,7 @@
 #define NANOSHADER_H_
 
 #include "NanoConfig.h"
+#include "Str.h"
 
 #include "vulkan/vulkan_core.h"
 
@@ -9,7 +10,7 @@ typedef struct NanoShader NanoShader;
 typedef struct NanoGraphics NanoGraphics;
 
 struct NanoShader{
-        char m_fileFullPath[MAX_FILEPATH_LENGTH];
+        String m_fileFullPath;
         char* m_rawShaderCode;
         uint32_t m_rawShaderCodeSize;
         bool m_isCompiled;
