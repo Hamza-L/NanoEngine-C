@@ -18,6 +18,7 @@ endif()
 project(NanoEngine)
 set(PROJECT_NAME NanoEngine)
 set(ROOT_NAMESPACE NanoEngine)
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 
 ################################################################################zZ
 # Source groups
