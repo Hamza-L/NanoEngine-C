@@ -29,32 +29,31 @@ close_file:
     }
 }
 
-char* ReadBinaryFile(const char* filename) {
-    FILE* file;
-    char* buffer;
-    long int fileSize = 0;
+char* ReadBinaryFile(const char* filename, uint32_t* sizeOfBuffer) {
+    FILE* file = NULL;
+    char *buffer = NULL;
 
     if ((file = fopen(filename, "rb")) == NULL ) {
         fprintf(stderr, "failed to open file!\n");
-        goto close_file;
+        return buffer;
     }
 
     if(fseek(file, 0, SEEK_END) != 0){ // get the file size by seeking the end of file
         fprintf(stderr, "failed to seek eof!\n");
         goto close_file;
     } else {
-        fileSize = ftell(file); // get file size
-        if(fileSize == -1){
+        *sizeOfBuffer = ftell(file); // get file size
+        if(*sizeOfBuffer == -1){
             fprintf(stderr, "failed to ftell the file pointer location!\n");
             goto close_file;
         }
         fseek(file, 0, SEEK_SET); // get back to the start of the file
     }
 
-    buffer = (char*)malloc(sizeof(char)*fileSize);
+    buffer = (char*)malloc(sizeof(char) * (*sizeOfBuffer));
 
     int numOfElementsToRead = 1;
-    if(fread(buffer, fileSize, numOfElementsToRead, file) != numOfElementsToRead){
+    if(fread(buffer, *sizeOfBuffer, numOfElementsToRead, file) != numOfElementsToRead){
         fprintf(stderr, "failed to read file!\n");
         goto close_file;
     }

@@ -105,7 +105,7 @@ int FindRawString(const char* srcString, const char* stringToFind){
     if(strlen(srcString) < strlen(stringToFind))
         return -1;
 
-    while(ptr1){
+    while(*ptr1){
         while(*ptr1 && *ptr1 == *ptr2){
             ptr1++;
             ptr2++;

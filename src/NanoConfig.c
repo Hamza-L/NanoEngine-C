@@ -12,12 +12,12 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
-char desiredValidationLayers[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH] = {
+const char* desiredValidationLayers[MAX_ARRAY_OF_EXTENSIONS] = {
     "VK_LAYER_KHRONOS_validation",
     NULL_STR // to allow for while loops without crash
 };
 
-char desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH] = {
+const char* desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 #ifdef __APPLE__
     "VK_KHR_portability_subset",
@@ -25,7 +25,7 @@ char desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH] =
     NULL_STR // to allow for while loops without crash
 };
 
-char desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH] = {
+const char* desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS] = {
 #ifdef __APPLE__
     VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
     "VK_KHR_get_physical_device_properties2",

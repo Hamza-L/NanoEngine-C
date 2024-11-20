@@ -17,7 +17,7 @@ int main(int argc, char *argv[]) {
     /* InitShader(&nanoShader, "./src/shader/shader.vert"); */
     /* CompileShader(nullptr, &nanoShader, true); */
 
-    NanoEngine nanoEngine;
+    NanoEngine nanoEngine = {};
     InitEngine(&nanoEngine);
     RunEngine(&nanoEngine);
     CleanUpEngine(&nanoEngine);

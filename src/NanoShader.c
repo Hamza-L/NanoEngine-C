@@ -2,6 +2,7 @@
 #include "NanoGraphics.h"
 #include "NanoUtility.h"
 #include "Str.h"
+#include "vulkan/vulkan_core.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,14 +73,14 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
     );
 
   // Wait until child process exits.
-  fprintf(stderr, "compiling : %s", fileName);
+  fprintf(stderr, "compiling : %s\n", fileName);
   WaitForSingleObject( pi.hProcess, INFINITE );
 
   DWORD exit_code;
   GetExitCodeProcess(pi.hProcess, &exit_code);
 
   int compilerExitCode = (int)exit_code;
-  fprintf(stderr, "finished compiling: %s\t with exit code: %d", shaderName, compilerExitCode);
+  fprintf(stderr, "finished compiling: %s\t with exit code: %d\n", shaderName, compilerExitCode);
 
   // Close process and thread handles.
   CloseHandle( pi.hProcess );
@@ -125,6 +126,9 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
 
 void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile){
     InitString(&shaderToInitialize->m_fileFullPath, shaderCodeFile);
+    shaderToInitialize->m_rawShaderCodeSize = 0;
+    shaderToInitialize->m_isCompiled = false;
+    shaderToInitialize->m_shaderModule = VK_NULL_HANDLE;
 }
 
 int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool forceCompile){
@@ -151,7 +155,6 @@ int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool 
     AppendToString(&outputFile, ".spv");
 
     String cmdArgument = CreateString(" ");
-    AppendToString(&cmdArgument, filename.m_data);
     AppendToString(&cmdArgument, shaderToCompile->m_fileFullPath.m_data);
     AppendToString(&cmdArgument, " -o ");
     AppendToString(&cmdArgument, outputFile.m_data);
@@ -170,11 +173,11 @@ int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool 
                                &shaderToCompile->m_fileFullPath.m_data[startIndx]);
 
     if(!exitCode){
-      fprintf(stdout, "Successfully compiled\n");
+      fprintf(stderr, "Successfully compiled\n");
       shaderToCompile->m_isCompiled = true;
-      fprintf(stdout, "reading raw shader code from: %s\n", outputFile.m_data);
-      shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data);
-      //shaderToCompile->m_shaderModule = CreateShaderModule(nanoGraphics->m_pNanoContext->device, shaderToCompile);
+      fprintf(stderr, "reading raw shader code from: %s\n", outputFile.m_data);
+      shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);
+      shaderToCompile->m_shaderModule = CreateShaderModule(nanoGraphics->m_pNanoContext->device, shaderToCompile);
     } else {
       shaderToCompile->m_isCompiled = false;
     }

@@ -15,7 +15,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#define _CRT_SECURE_NO_WARNINGS
+/* #define _CRT_SECURE_NO_WARNINGS */
 
 bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper function to validate queue indices
     return queueFamily.graphicsFamily != -1 && queueFamily.presentFamily != -1;
@@ -23,11 +23,21 @@ bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper funct
 
 
 void AddGraphicsPipelineToNanoContext(NanoGraphics* nanoGraphics, const NanoGraphicsPipeline* graphicsPipeline){
-    int indx = nanoGraphics->m_pNanoContext->currentGraphicsPipeline;
-    nanoGraphics->m_pNanoContext->graphicsPipelines[indx + 1] = *graphicsPipeline;
+    if(!graphicsPipeline){
+        return;
+    }
+
+    uint32_t indx = nanoGraphics->m_pNanoContext->currentGraphicsPipeline;
+    if(nanoGraphics->m_pNanoContext->graphicPipelinesCount != 0){
+        indx++;
+    }
+
+    nanoGraphics->m_pNanoContext->graphicsPipelines[indx] = *graphicsPipeline;
+    nanoGraphics->m_pNanoContext->currentGraphicsPipeline = indx;
+    nanoGraphics->m_pNanoContext->graphicPipelinesCount++;
 }
 
-VkDebugUtilsMessengerEXT debugMessenger;
+VkDebugUtilsMessengerEXT gDebugMessenger;
 
 // We have to look up the address of the debug callback create function ourselves using vkGetInstanceProcAddr
 VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
@@ -145,7 +155,7 @@ ERR CleanUpGraphics(NanoGraphics* nanoGraphics){
     vkDestroyDevice(nanoGraphics->m_pNanoContext->device, NULL);
 
     if (enableValidationLayers) {
-        DestroyDebugUtilsMessengerEXT(nanoGraphics->m_pNanoContext->instance, debugMessenger, NULL);
+        DestroyDebugUtilsMessengerEXT(nanoGraphics->m_pNanoContext->instance, gDebugMessenger, NULL);
     }
 
     vkDestroyInstance(nanoGraphics->m_pNanoContext->instance, NULL);
@@ -153,7 +163,7 @@ ERR CleanUpGraphics(NanoGraphics* nanoGraphics){
     return err;
 }
 
-static bool checkValidationLayerSupport(const char *const *validationLayers) {
+static bool checkValidationLayerSupport(const char* validationLayers[]) {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, NULL);
 
@@ -161,7 +171,7 @@ static bool checkValidationLayerSupport(const char *const *validationLayers) {
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers);
 
     int indx = 0;
-    while (validationLayers[indx]) {
+    while (*validationLayers[indx]) {
         bool layerFound = false;
         for (int i = 0; i < layerCount ; i++) {
             if (strcmp(validationLayers[indx], availableLayers[i].layerName) == 0) {
@@ -179,7 +189,7 @@ static bool checkValidationLayerSupport(const char *const *validationLayers) {
     return true;
 }
 
-SwapchainDetails querySwapChainSupport(const VkPhysicalDevice device, const VkSurfaceKHR surface) {
+SwapchainDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
     SwapchainDetails details;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
@@ -187,7 +197,7 @@ SwapchainDetails querySwapChainSupport(const VkPhysicalDevice device, const VkSu
     vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, NULL);
 
     if (formatCount != 0) {
-        details.formats = (VkSurfaceFormatKHR*)malloc(formatCount);
+        details.formats = (VkSurfaceFormatKHR*)calloc(formatCount, sizeof(VkSurfaceFormatKHR));
         details.formats_size = formatCount;
         vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats);
     }
@@ -196,7 +206,7 @@ SwapchainDetails querySwapChainSupport(const VkPhysicalDevice device, const VkSu
     vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, NULL);
 
     if (presentModeCount != 0) {
-        details.presentModes = (VkPresentModeKHR*)malloc(presentModeCount);
+        details.presentModes = (VkPresentModeKHR*)calloc(presentModeCount, sizeof(VkPresentModeKHR));
         details.presentModes_size = presentModeCount;
         vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes);
     }
@@ -204,15 +214,8 @@ SwapchainDetails querySwapChainSupport(const VkPhysicalDevice device, const VkSu
     return details;
 }
 
-void getRequiredInstanceExtensions(char requiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH], uint32_t* numOfInstanceExtensions){
+void getRequiredInstanceExtensions(char* requiredInstanceExtensions[], uint32_t* numOfInstanceExtensions){
     const char** glfwExtensions;
-
-    glfwInit();
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, APP_NAME, NULL, NULL);
-
     glfwExtensions = glfwGetRequiredInstanceExtensions(numOfInstanceExtensions);
     /* printf("num of instance extensions: %d", *numOfInstanceExtensions); */
 
@@ -225,23 +228,19 @@ void getRequiredInstanceExtensions(char requiredInstanceExtensions[MAX_ARRAY_OF_
     }
 
     for (uint32_t i = 0; i < *numOfInstanceExtensions; i++) {
-        strcpy(requiredInstanceExtensions[extIdx], glfwExtensions[i]);
+        requiredInstanceExtensions[extIdx] = (char*)glfwExtensions[i];
         extIdx++;
     }
 
     if (enableValidationLayers) {
-        strcpy(requiredInstanceExtensions[extIdx], VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        requiredInstanceExtensions[extIdx] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
         extIdx++;
     }
 
     //null terminated for size measurement
-    strcpy(requiredInstanceExtensions[extIdx], NULL_STR);
+    requiredInstanceExtensions[extIdx] = NULL_STR;
 
     *numOfInstanceExtensions = extIdx;
-
-    // ----------------------------------------
-    glfwDestroyWindow(window);
-    glfwTerminate();
 }
 
 //WARNING: Need to clean the extensions allocated array
@@ -249,23 +248,15 @@ static void getSupportedInstanceExtensions(VkExtensionProperties* extensions, ui
     *extensionCount = 0;
     vkEnumerateInstanceExtensionProperties(NULL, extensionCount, NULL);
 
-    extensions = (VkExtensionProperties*)malloc(sizeof(VkExtensionProperties) * (*extensionCount));
+    extensions = (VkExtensionProperties*)calloc(*extensionCount, sizeof(VkExtensionProperties));
     vkEnumerateInstanceExtensionProperties(nullptr, extensionCount, extensions);
-
-#ifdef _DEBUG
-    printf("available extensions:\n");
-    for (const auto &extension : extensions) {
-        std::cout << '\t' << extension.extensionName << '\n';
-    }
-    std::cout.flush();
-#endif
 }
 
 static ERR createInstance(const char *applicationName, const char *engineName, VkInstance* instance) {
     ERR err = OK;
 
-    if (enableValidationLayers && !checkValidationLayerSupport((const char**)desiredValidationLayers)) {
-        fprintf(stderr, "Number of Desired Layers %zu\n", SizeOf((const char**)desiredValidationLayers));
+    if (enableValidationLayers && !checkValidationLayerSupport(desiredValidationLayers)) {
+        fprintf(stderr, "Number of Desired Layers %zu\n", SizeOf(desiredValidationLayers));
         fprintf(stderr, "validation layers requested, but not available!");
         abort();
     }
@@ -288,16 +279,16 @@ static ERR createInstance(const char *applicationName, const char *engineName, V
     //std::vector<VkExtensionProperties> test = {};
     //getSupportedInstanceExtensions(test);
 
-    char instanceExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH] = {};
+    const char* instanceExtensions[MAX_ARRAY_OF_EXTENSIONS] = {};
     uint32_t numInstanceExtensions = 0;
-    getRequiredInstanceExtensions(instanceExtensions, &numInstanceExtensions);
+    getRequiredInstanceExtensions((char **)instanceExtensions, &numInstanceExtensions);
     createInfo.enabledExtensionCount = numInstanceExtensions;
     createInfo.ppEnabledExtensionNames = (const char* const*)instanceExtensions;
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
     if (enableValidationLayers) {
-        createInfo.enabledLayerCount = SizeOf((const char**)desiredValidationLayers);
-        createInfo.ppEnabledLayerNames = (const char**)desiredValidationLayers;
+        createInfo.enabledLayerCount = SizeOf(desiredValidationLayers);
+        createInfo.ppEnabledLayerNames = (const char *const *)desiredValidationLayers;
 
         populateDebugMessengerCreateInfo(&debugCreateInfo);
         createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT *)&debugCreateInfo;
@@ -362,25 +353,27 @@ ERR checkDeviceExtensionSupport(VkPhysicalDevice device) {
     VkExtensionProperties availableExtensions[extensionCount] = {};
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions);
 
-    char requiredExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH] = {};
+    const char* requiredExtensions[MAX_ARRAY_OF_EXTENSIONS] = {};
     int extIdx = 0;
     while (*desiredDeviceExtensions[extIdx]) {
-        strcpy(requiredExtensions[extIdx], desiredDeviceExtensions[extIdx]);
+        requiredExtensions[extIdx] = desiredDeviceExtensions[extIdx];
         extIdx++;
     }
 
     // make sure we go through all the list of desiredExtensions and "check off" all of them
     int numFoundExtensions = 0;
     for (int i = 0; i < extensionCount ; i++) {
-        for (int j ; i < extIdx ; i++){
-            if(strcmp(requiredExtensions[j], availableExtensions[i].extensionName)){
+        for (int j = 0 ; j < extIdx ; j++){
+            if(strcmp(requiredExtensions[j], availableExtensions[i].extensionName) == 0){
                 numFoundExtensions++;
+                if(numFoundExtensions == extIdx){
+                    return OK;
+                }
             }
         }
     }
 
-    err = numFoundExtensions == extIdx ? OK : NOT_FOUND;
-    return err;
+    return NOT_FOUND;
 }
 
 int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surface, QueueFamilyIndices* queueIndices) {
@@ -437,7 +430,7 @@ int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surf
 static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface, QueueFamilyIndices* queueIndices,
                               VkPhysicalDevice* physicalDevice) {
     ERR err = OK;
-    physicalDevice = VK_NULL_HANDLE;
+    *physicalDevice = VK_NULL_HANDLE;
 
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -459,11 +452,11 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
         int score = rateDeviceSuitability(devices[i], surface, queueIndices);
         if (score > 0 && score > bestScore) {
             bestScore = score;
-            physicalDevice = &devices[i];
+            *physicalDevice = devices[i];
         }
     }
 
-    if (physicalDevice == VK_NULL_HANDLE) {
+    if (*physicalDevice == VK_NULL_HANDLE) {
         err = NOT_FOUND;
         fprintf(stderr, "failed to find a suitable GPU!\n");
         abort();
@@ -499,8 +492,8 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
 
 ERR createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
                         QueueFamilyIndices indices,
-                        VkQueue *graphicsQueue, VkQueue *presentQueue,
-                        VkDevice device) {
+                        VkQueue* graphicsQueue, VkQueue *presentQueue,
+                        VkDevice* device) {
     ERR err = OK;
 
     if (!IsQueueFamilyIndicesValid(indices) && NOT_FOUND == findQueueFamilies(physicalDevice, surface, &indices)) {
@@ -542,24 +535,24 @@ ERR createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKH
     VkPhysicalDeviceFeatures deviceFeatures = {}; // defaults all the features to false for now
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    createInfo.enabledExtensionCount = (uint32_t)SizeOf((const char**)desiredDeviceExtensions);
+    createInfo.enabledExtensionCount = (uint32_t)SizeOf(desiredDeviceExtensions);
     createInfo.ppEnabledExtensionNames = (const char**)desiredDeviceExtensions;
     if (enableValidationLayers) {
-        createInfo.enabledLayerCount = (uint32_t)SizeOf((const char**)desiredValidationLayers);
+        createInfo.enabledLayerCount = (uint32_t)SizeOf(desiredValidationLayers);
         createInfo.ppEnabledLayerNames = (const char**)desiredValidationLayers;
     } else {
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, device) != VK_SUCCESS) {
         fprintf(stderr, "failed to create logical device!");
         abort();
     }
 
     if (IsQueueFamilyIndicesValid(indices)) {
-        vkGetDeviceQueue(device, indices.graphicsFamily, 0, graphicsQueue); // The graphics queue is already created if we have successfully created
+        vkGetDeviceQueue(*device, indices.graphicsFamily, 0, graphicsQueue); // The graphics queue is already created if we have successfully created
                                                                              // a logical device. This is only to retrieve the handle
-        vkGetDeviceQueue(device, indices.presentFamily, 0, presentQueue); // The graphics queue is already created if we have successfully created a
+        vkGetDeviceQueue(*device, indices.presentFamily, 0, presentQueue); // The graphics queue is already created if we have successfully created a
                                                                            // logical device. This is only to retrieve the handle
     }
 
@@ -585,7 +578,6 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* availableFo
             fprintf(stderr, "swapchain colorspace used: VK_COLOR_SPACE_SRGB_NONLINEAR_KHR\n");
             return availableFormats[i];
         }
-        i++;
     }
     return availableFormats[0]; // pick the first available format if we do not find the format desired
 }
@@ -681,7 +673,7 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
         swapchainContext->info.imageCount = swapchainContext->info.capabilities.maxImageCount;
     }
 
-    fprintf(stderr, "Number of images used by the swapchain: %d", swapchainContext->info.imageCount);
+    fprintf(stderr, "Number of images used by the swapchain: %d\n", swapchainContext->info.imageCount);
 
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -760,12 +752,6 @@ ERR createGraphicsPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* gra
     VkDevice device = nanoGraphics->m_pNanoContext->device;
     VkExtent2D extent = nanoGraphics->m_pNanoContext->swapchainContext.info.currentExtent;
     VkRenderPass renderpass = nanoGraphics->m_pNanoContext->renderpass;
-
-    /* graphicsPipeline.Init(device, swapchainDetails.currentExtent); */
-    /* graphicsPipeline.AddVertShader("./src/shader/shader.vert"); */
-    /* graphicsPipeline.AddFragShader("./src/shader/shader.frag"); */
-    /* graphicsPipeline.AddRenderPass(renderpass); */
-    /* graphicsPipeline.Compile(); */
 
     InitGraphicsPipeline(graphicsPipeline, device, extent);
     AddVertShaderToNGPipeline(nanoGraphics, graphicsPipeline, "./src/shader/shader.vert");
@@ -952,65 +938,65 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
 
 ERR InitGraphics(NanoGraphics* nanoGraphics, NanoWindow* window){
     ERR err = OK;
-    nanoGraphics->m_pNanoContext = (NanoVKContext*)malloc(sizeof(NanoVKContext));
+    nanoGraphics->m_pNanoContext = (NanoVKContext*)calloc(1, sizeof(NanoVKContext));
     // Here the err validation is not that useful
     // a iferr_return can be added at the end of each statement to check it's state and exit (or at least warn) if an error did occur
-    err = createInstance(APP_NAME,
+    createInstance(APP_NAME,
                          ENGINE_NAME,
                          &nanoGraphics->m_pNanoContext->instance); // APP_NAME and ENGINE_NAME is defined in NanoConfig
 
-    err = setupDebugMessenger(nanoGraphics->m_pNanoContext->instance,
-                              &debugMessenger); // this depends on whether we are running in debug or not
+    setupDebugMessenger(nanoGraphics->m_pNanoContext->instance,
+                              &gDebugMessenger); // this depends on whether we are running in debug or not
 
-    err = createSurface(nanoGraphics->m_pNanoContext->instance,
+    createSurface(nanoGraphics->m_pNanoContext->instance,
                         window->_window,
                         &nanoGraphics->m_pNanoContext->surface);
 
-    err = pickPhysicalDevice(nanoGraphics->m_pNanoContext->instance,
+    pickPhysicalDevice(nanoGraphics->m_pNanoContext->instance,
                              nanoGraphics->m_pNanoContext->surface,
                              &nanoGraphics->m_pNanoContext->queueIndices,
                              &nanoGraphics->m_pNanoContext->physicalDevice); // physical device is not created but picked based on scores dictated by the number of supported features
 
-    err = createLogicalDeviceAndGetQueues(nanoGraphics->m_pNanoContext->physicalDevice,
+    createLogicalDeviceAndGetQueues(nanoGraphics->m_pNanoContext->physicalDevice,
                               nanoGraphics->m_pNanoContext->surface,
                               nanoGraphics->m_pNanoContext->queueIndices,
-                              &nanoGraphics->m_pNanoContext->presentQueue,
                               &nanoGraphics->m_pNanoContext->graphicsQueue,
-                              nanoGraphics->m_pNanoContext->device); // Logical device *is* created and therefore has to be destroyed
+                              &nanoGraphics->m_pNanoContext->presentQueue,
+                              &nanoGraphics->m_pNanoContext->device); // Logical device *is* created and therefore has to be destroyed
 
-    err = createSwapchain(nanoGraphics->m_pNanoContext->physicalDevice,
+    createSwapchain(nanoGraphics->m_pNanoContext->physicalDevice,
                           nanoGraphics->m_pNanoContext->device,
                           window->_window,
                           nanoGraphics->m_pNanoContext->surface,
                           &nanoGraphics->m_pNanoContext->swapchainContext);
 
-    err = createSCImageViews(nanoGraphics->m_pNanoContext->device,
+    createSCImageViews(nanoGraphics->m_pNanoContext->device,
                              &nanoGraphics->m_pNanoContext->swapchainContext);
 
-    err = createRenderPass(nanoGraphics->m_pNanoContext->device,
+    createRenderPass(nanoGraphics->m_pNanoContext->device,
                            nanoGraphics->m_pNanoContext->swapchainContext.info,
                            &nanoGraphics->m_pNanoContext->renderpass);
 
-    NanoGraphicsPipeline* graphicsPipeline = (NanoGraphicsPipeline*)malloc(sizeof(NanoGraphicsPipeline));
-    err = createGraphicsPipeline(nanoGraphics,
+    NanoGraphicsPipeline* graphicsPipeline = (NanoGraphicsPipeline*)calloc(1, sizeof(NanoGraphicsPipeline));
+    createGraphicsPipeline(nanoGraphics,
                                  graphicsPipeline);
 
     AddGraphicsPipelineToNanoContext(nanoGraphics, graphicsPipeline);
 
-    err = createFramebuffer(nanoGraphics->m_pNanoContext->device,
+    createFramebuffer(nanoGraphics->m_pNanoContext->device,
                             nanoGraphics->m_pNanoContext->renderpass,
                             &nanoGraphics->m_pNanoContext->swapchainContext);
 
-    err = createCommandPool(nanoGraphics->m_pNanoContext->device,
+    createCommandPool(nanoGraphics->m_pNanoContext->device,
                             nanoGraphics->m_pNanoContext->queueIndices,
                             &nanoGraphics->m_pNanoContext->commandPool);
 
-    err = createCommandBuffer(nanoGraphics->m_pNanoContext->device,
+    createCommandBuffer(nanoGraphics->m_pNanoContext->device,
                               nanoGraphics->m_pNanoContext->commandPool,
                               nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer,
                               MAX_FRAMES_IN_FLIGHT);
 
-    err = createSwapchainSyncObjects(nanoGraphics->m_pNanoContext->device,
+    createSwapchainSyncObjects(nanoGraphics->m_pNanoContext->device,
                                      nanoGraphics->m_pNanoContext->swapchainContext.syncObjects,
                                      MAX_FRAMES_IN_FLIGHT);
 

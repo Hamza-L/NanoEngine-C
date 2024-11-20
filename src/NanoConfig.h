@@ -18,8 +18,8 @@ extern const char* ENGINE_NAME;
 extern const char* APP_NAME;
 extern const bool enableValidationLayers;
 
-extern char desiredValidationLayers[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH];
-extern char desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH];
-extern char desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS][MAX_SHORT_STRING_LENGTH];
+extern const char* desiredValidationLayers[MAX_ARRAY_OF_EXTENSIONS];
+extern const char* desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS];
+extern const char* desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS];
 
 #endif // NANOCONFIG_H_

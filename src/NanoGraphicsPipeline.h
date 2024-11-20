@@ -16,6 +16,8 @@ struct NanoGraphicsPipeline{
         NanoShader* m_otherShaders; //optional
         VkPipelineLayout m_pipelineLayout;
         VkPipeline m_pipeline;
+        bool m_isInitialized;
+        bool m_isCompiled;
 };
 
 void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice device, const VkExtent2D extent);

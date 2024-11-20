@@ -8,20 +8,21 @@
 void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice device, const VkExtent2D extent){
     graphicsPipeline->_device = device;
     graphicsPipeline->m_extent = extent;
+    graphicsPipeline->m_isInitialized = true;
 }
 
 void AddVertShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
-    NanoShader* vertShader = (NanoShader*)malloc(sizeof(NanoShader));
+    NanoShader* vertShader = (NanoShader*)calloc(1, sizeof(NanoShader));
     InitShader(vertShader, vertShaderFile);
     CompileShader(nanoGraphics, vertShader, true);
     graphicsPipeline->m_vertShader = vertShader;
 }
 
 void AddFragShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
-    NanoShader* fragShader = (NanoShader*)malloc(sizeof(NanoShader));
+    NanoShader* fragShader = (NanoShader*)calloc(1, sizeof(NanoShader));
     InitShader(fragShader, fragShaderFile);
     CompileShader(nanoGraphics, fragShader, true);
-    graphicsPipeline->m_vertShader = fragShader;
+    graphicsPipeline->m_fragShader = fragShader;
 }
 
 ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile){
@@ -39,7 +40,6 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
         return NOT_INITIALIZED;
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Shaders ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -209,6 +209,8 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
         fprintf(stderr, "failed to create graphics pipeline!");
         exit(0);
     }
+
+    graphicsPipeline->m_isCompiled = true;
 
     return err;
 }

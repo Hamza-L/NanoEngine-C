@@ -10,8 +10,10 @@ ERR CleanUpWindow(NanoWindow* window){
     }
     glfwDestroyWindow(window->_window);
     glfwTerminate();
-    free(window->_window);
-    window = NULL;
+    window->m_isInit = false;
+    window->width = 0;
+    window->height = 0;
+    window->_window = NULL;
     return OK;
 }
 
@@ -21,7 +23,9 @@ NanoWindow* InitWindow(NanoWindow* window, const int32_t width, const int32_t he
     }
 
     CleanUpWindow(window);
-    window = (NanoWindow*)malloc(sizeof(NanoWindow));
+    window->width = width;
+    window->height = height;
+    window->m_isInit = false;
 
     glfwInit();
 
@@ -38,15 +42,15 @@ NanoWindow* InitWindow(NanoWindow* window, const int32_t width, const int32_t he
 }
 
 void PollEvents(NanoWindow window){
-    if(window._window && window.m_isInit){
-        glfwPollEvents();
-    } else {
+    if(!window.m_isInit){
         fprintf(stderr, "Polling GLFW events of unintialized glfwwindow");
+    } else {
+        glfwPollEvents();
     }
 }
 
 bool ShouldWindowClose(NanoWindow window){
-    if(window._window || !window.m_isInit){
+    if(!window.m_isInit){
         return true;
     }
     return glfwWindowShouldClose(window._window);
