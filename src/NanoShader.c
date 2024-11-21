@@ -26,7 +26,7 @@ static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
       return shaderModule; // failed the re-attempt at compiling
   }
 
-  VkShaderModuleCreateInfo createInfo;
+  VkShaderModuleCreateInfo createInfo = {};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.codeSize = shader->m_rawShaderCodeSize;
   createInfo.pCode = (const uint32_t*)shader->m_rawShaderCode;
@@ -110,16 +110,21 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
     exit(0);
   }else{
     if(waitpid(pid, &status, 0) > 0){
-      if (WIFEXITED(status) && !WEXITSTATUS(status) && WEXITSTATUS(status) != 127){
-        //LOG_MSG(ERRLevel::INFO, "glslc ran with no issues");
-      } else{
-        fprintf(stderr, "glslc exit with error\n");
+      if (WIFEXITED(status)){
+        if(!WEXITSTATUS(status)){
+          //LOG_MSG(ERRLevel::INFO, "glslc ran with no issues");
+          fprintf(stderr, "glslc exited with no error\n");
+        } else if ( WEXITSTATUS(status) == 127){
+          fprintf(stderr, "glslc exited with error 127\n");
+        }
+      } else {
+        fprintf(stderr, "process did not exit normally\n");
       }
     } else {
-        fprintf(stderr, "error occured with waitpid");
+        fprintf(stderr, "error occured with waitpid\n");
     }
   }
-  return err;
+    return err;
 }
 #endif
 
