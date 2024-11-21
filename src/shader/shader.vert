@@ -1,20 +1,16 @@
 #version 450
 
-vec2 positions[3] = vec2[](
-    vec2(0.0, -0.5f),
-    vec2(0.5f, 0.5f),
-    vec2(-0.5f, 0.5f)
-);
+//It is important to know that some types, like dvec3 64 bit vectors, use multiple slots. That means that the index after it must be at least 2 higher
+//INPUTS--------------------------
+layout(location = 0) in vec2 inPosition;
+layout(location = 1) in vec3 inColor;
 
-vec3 colors[3] = vec3[](
-    vec3(1.0, 0.0, 0.0),
-    vec3(0.0, 1.0, 0.0),
-    vec3(0.0, 0.0, 1.0)
-);
-
+//OUTPUTS-------------------------
 layout(location = 0) out vec3 fragColor;
 
+
+
 void main() {
-    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);
-    fragColor = colors[gl_VertexIndex];
+    gl_Position = vec4(inPosition, 0.0, 1.0);
+    fragColor = inColor;
 }

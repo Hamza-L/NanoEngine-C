@@ -1,5 +1,6 @@
 #include "NanoGraphicsPipeline.h"
 #include "NanoShader.h"
+#include "NanoBuffers.h"
 #include "vulkan/vulkan_core.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -61,12 +62,18 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertexShaderStage, fragmentShaderStage};
 
+    VkVertexInputBindingDescription vertexInputBindingDescription;
+    GetVertexBindingDescription(&vertexInputBindingDescription);
+
+    VkVertexInputAttributeDescription vertexInputAttributeDescription[DATA_PER_VERTEX];
+    GetAttributeDescriptions(vertexInputAttributeDescription);
+
     VkPipelineVertexInputStateCreateInfo vertexInputInfo = {};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 0;
-    vertexInputInfo.pVertexBindingDescriptions = NULL;// TODO: To implement VertexBindingDescriptions
-    vertexInputInfo.vertexAttributeDescriptionCount = 0;
-    vertexInputInfo.pVertexAttributeDescriptions = NULL; // TODO: To Implement VertexAttributeDescriptions
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.pVertexBindingDescriptions = &vertexInputBindingDescription;// TODO: To implement VertexBindingDescriptions
+    vertexInputInfo.vertexAttributeDescriptionCount = 2;
+    vertexInputInfo.pVertexAttributeDescriptions = vertexInputAttributeDescription; // TODO: To Implement VertexAttributeDescriptions
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Input assembly ////////////////////////////////////////////////////////////////////////////////////////////////////

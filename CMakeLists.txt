@@ -25,6 +25,7 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 ################################################################################
 set(Headers
     "src/NanoEngine.h"
+    "src/NanoBuffers.h"
     "src/NanoWindow.h"
     "src/NanoGraphics.h"
     "src/NanoGraphicsPipeline.h"
@@ -39,6 +40,7 @@ source_group("Headers" FILES ${Headers})
 
 set(Sources
     "src/NanoEngine.c"
+    "src/NanoBuffers.c"
     "src/NanoWindow.c"
     "src/NanoGraphics.c"
     "src/NanoGraphicsPipeline.c"
@@ -70,17 +72,19 @@ if(WIN32)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${CMAKE_CURRENT_SOURCE_DIR}/external/GLM"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/win/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/win/include"
         "$ENV{VULKAN_SDK}/Include")
 
     target_link_directories(${PROJECT_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/win/lib-vc2022"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/win/lib/Release"
         "$ENV{VULKAN_SDK}/Lib")
 
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "glfw3.lib"
-        "vulkan-1.lib")
+        "vulkan-1.lib"
+        "cglm.lib")
 
     #only remove deprecation warning for NanoGraphics (no warning for using strcpy_s)
     set_source_files_properties("src/NanoGraphics.c" PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)

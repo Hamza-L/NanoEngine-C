@@ -5,6 +5,7 @@
 #include "NanoWindow.h"
 #include "NanoShader.h"
 #include "NanoGraphicsPipeline.h"
+#include "NanoBuffers.h"
 
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
@@ -15,7 +16,32 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-/* #define _CRT_SECURE_NO_WARNINGS */
+Mesh object;
+
+void CreateVertexData(NanoGraphics *nanoGraphics, Mesh* meshObject){
+    int numVertices = 4;
+    int numIndices = 6;
+    meshObject->pVertexData = (Vertex*)malloc(sizeof(Vertex) * numVertices);
+    meshObject->vertexDataSize = sizeof(Vertex) * numVertices;
+    meshObject->pIndexData = (uint32_t*)malloc(sizeof(uint32_t) * numIndices);
+    meshObject->indexDataSize = sizeof(uint32_t) * numIndices;
+
+    Vertex vertices[4] = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                          {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                          {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                          {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+    uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
+    memcpy(meshObject->pVertexData, vertices, meshObject->vertexDataSize);
+    memcpy(meshObject->pIndexData, indices, meshObject->indexDataSize);
+
+    meshObject->vertexMemory = CreateVertexBuffer(nanoGraphics, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshObject->pVertexData, meshObject->vertexDataSize);
+    meshObject->indexMemory = CreateIndexBuffer(nanoGraphics, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->pIndexData, meshObject->indexDataSize);
+}
+
+void CleanUpVertexData(NanoGraphics *nanoGraphics){
+    CleanUpBuffer(nanoGraphics, &object.vertexMemory);
+    CleanUpBuffer(nanoGraphics, &object.indexMemory);
+}
 
 bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper function to validate queue indices
     return queueFamily.graphicsFamily != -1 && queueFamily.presentFamily != -1;
@@ -127,6 +153,8 @@ ERR CleanUpGraphics(NanoGraphics* nanoGraphics){
         vkDestroySemaphore(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, NULL);
         vkDestroyFence(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
     }
+
+    CleanUpVertexData(nanoGraphics);
 
     // clean commandPool and incidently the commandbuffers acquired from them
     vkDestroyCommandPool(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->commandPool, NULL);
@@ -900,7 +928,14 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         scissor.extent = graphicsPipeline->m_extent;
         vkCmdSetScissor(*commandBuffer, 0, 1, &scissor);
 
-        vkCmdDraw(*commandBuffer, 3, 1, 0, 0);
+        VkBuffer vertexBuffers[] = {object.vertexMemory.buffer};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(*commandBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(*commandBuffer, object.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+
+        //vkCmdDraw(*commandBuffer, object.vertexDataSize, 1, 0, 0);
+        vkCmdDrawIndexed(*commandBuffer, (uint32_t)object.indexDataSize/sizeof(uint32_t), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(*commandBuffer);
 
@@ -932,6 +967,58 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
             fprintf(stderr, "failed to create frences!");
         }
     }
+
+    return err;
+}
+
+ERR DrawFrame(NanoGraphics* nanoGraphics){
+    ERR err = OK;
+
+    int currentFrame = nanoGraphics->m_pNanoContext->swapchainContext.currentFrame;
+    vkWaitForFences(nanoGraphics->m_pNanoContext->device, 1, &nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(nanoGraphics->m_pNanoContext->device, 1, &nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence);
+
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.swapchain,
+                          UINT64_MAX, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    vkResetCommandBuffer(nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame], 0);
+
+    int currentGraphicsPipelineIndex = nanoGraphics->m_pNanoContext->currentGraphicsPipeline;
+    recordCommandBuffer(&nanoGraphics->m_pNanoContext->graphicsPipelines[currentGraphicsPipelineIndex],
+                        &nanoGraphics->m_pNanoContext->swapchainContext.framebuffers[imageIndex], //swapchain framebuffer for the command buffer to operate on
+                        &nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame]); //command buffer to write to.
+
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSemaphore waitSemaphores[] = {nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame].imageAvailableSemaphore};
+    VkSemaphore signalSemaphores[] = {nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame].renderFinishedSemaphore};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame];
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+    submitInfo.pWaitDstStageMask = waitStages;
+
+    if (vkQueueSubmit(nanoGraphics->m_pNanoContext->graphicsQueue, 1, &submitInfo, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence) != VK_SUCCESS) {
+        fprintf(stderr, "failed to submit draw command buffer!");
+    }
+
+    VkPresentInfoKHR presentInfo = {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+    VkSwapchainKHR swapchains[] = {nanoGraphics->m_pNanoContext->swapchainContext.swapchain};
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = swapchains;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr; // Optional
+
+    vkQueuePresentKHR(nanoGraphics->m_pNanoContext->presentQueue, &presentInfo);
+
+    nanoGraphics->m_pNanoContext->swapchainContext.currentFrame = (nanoGraphics->m_pNanoContext->swapchainContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
     return err;
 }
@@ -1000,57 +1087,8 @@ ERR InitGraphics(NanoGraphics* nanoGraphics, NanoWindow* window){
                                      nanoGraphics->m_pNanoContext->swapchainContext.syncObjects,
                                      MAX_FRAMES_IN_FLIGHT);
 
-    return err;
-}
-
-ERR DrawFrame(NanoGraphics* nanoGraphics){
-    ERR err = OK;
-
-    int currentFrame = nanoGraphics->m_pNanoContext->swapchainContext.currentFrame;
-    vkWaitForFences(nanoGraphics->m_pNanoContext->device, 1, &nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(nanoGraphics->m_pNanoContext->device, 1, &nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence);
-
-    uint32_t imageIndex;
-    vkAcquireNextImageKHR(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.swapchain,
-                          UINT64_MAX, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-
-    vkResetCommandBuffer(nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame], 0);
-
-    int currentGraphicsPipelineIndex = nanoGraphics->m_pNanoContext->currentGraphicsPipeline;
-    recordCommandBuffer(&nanoGraphics->m_pNanoContext->graphicsPipelines[currentGraphicsPipelineIndex],
-                        &nanoGraphics->m_pNanoContext->swapchainContext.framebuffers[imageIndex], //swapchain framebuffer for the command buffer to operate on
-                        &nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame]); //command buffer to write to.
-
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    VkSemaphore waitSemaphores[] = {nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame].imageAvailableSemaphore};
-    VkSemaphore signalSemaphores[] = {nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame].renderFinishedSemaphore};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame];
-    submitInfo.waitSemaphoreCount = 1;
-    submitInfo.pWaitSemaphores = waitSemaphores;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = signalSemaphores;
-    submitInfo.pWaitDstStageMask = waitStages;
-
-    if (vkQueueSubmit(nanoGraphics->m_pNanoContext->graphicsQueue, 1, &submitInfo, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence) != VK_SUCCESS) {
-        fprintf(stderr, "failed to submit draw command buffer!");
-    }
-
-    VkPresentInfoKHR presentInfo = {};
-    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores = signalSemaphores;
-    VkSwapchainKHR swapchains[] = {nanoGraphics->m_pNanoContext->swapchainContext.swapchain};
-    presentInfo.swapchainCount = 1;
-    presentInfo.pSwapchains = swapchains;
-    presentInfo.pImageIndices = &imageIndex;
-    presentInfo.pResults = nullptr; // Optional
-
-    vkQueuePresentKHR(nanoGraphics->m_pNanoContext->presentQueue, &presentInfo);
-
-    nanoGraphics->m_pNanoContext->swapchainContext.currentFrame = (nanoGraphics->m_pNanoContext->swapchainContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    CreateVertexData(nanoGraphics, &object);
 
     return err;
 }
+
