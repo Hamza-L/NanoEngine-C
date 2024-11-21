@@ -78,7 +78,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
     target_link_directories(${PROJECT_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/win/lib-vc2022"
-        "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/win/lib/Release"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/win/lib/${CMAKE_BUILD_TYPE}"
         "$ENV{VULKAN_SDK}/Lib")
 
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
@@ -95,15 +95,17 @@ elseif(APPLE)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-        "${CMAKE_CURRENT_SOURCE_DIR}/external/GLM"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/mac/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/include"
         "/Users/h_lahmimsi/VulkanSDK/1.3.290.0/macOS/include")
 
     target_link_directories(${PROJECT_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/lib-universal"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/mac/lib/${CMAKE_BUILD_TYPE}"
         "/Users/h_lahmimsi/VulkanSDK/1.3.290.0/macOS/lib")
 
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
+        "libcglm.dylib"
         "libglfw.3.dylib"
         "libvulkan.dylib")
 elseif(LINUX)
