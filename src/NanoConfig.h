@@ -17,9 +17,12 @@ extern const int WINDOW_HEIGHT;
 extern const char* ENGINE_NAME;
 extern const char* APP_NAME;
 extern const bool enableValidationLayers;
+extern bool FORCE_RECOMPILE;
 
 extern const char* desiredValidationLayers[MAX_ARRAY_OF_EXTENSIONS];
 extern const char* desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS];
 extern const char* desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS];
+
+void SetForceShaderRecompile(bool isForceCompile);
 
 #endif // NANOCONFIG_H_

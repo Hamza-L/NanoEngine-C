@@ -16,6 +16,13 @@ int main(int argc, char *argv[]) {
     /* NanoShader nanoShader; */
     /* InitShader(&nanoShader, "./src/shader/shader.vert"); */
     /* CompileShader(nullptr, &nanoShader, true); */
+    if(argc > 1){
+        fprintf(stderr, "argument passed in\n");
+        if(strcmp(argv[1], "-FSC") == 0){
+            fprintf(stderr, "force shader compilation enabled\n");
+            SetForceShaderRecompile(true);
+        }
+    }
 
     NanoEngine nanoEngine = {};
     InitEngine(&nanoEngine);

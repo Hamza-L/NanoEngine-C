@@ -137,6 +137,11 @@ void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile){
 }
 
 int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool forceCompile){
+
+    FILE* file;
+    bool compileNeeded = forceCompile;
+
+    // String op to get the resulting spv path from the input shader file
     int exitCode = 1;
     String outputFile = CreateString("./src/shader/");
 
@@ -159,26 +164,38 @@ int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool 
     AppendToString(&outputFile, filename.m_data);
     AppendToString(&outputFile, ".spv");
 
-    String cmdArgument = CreateString(" ");
-    AppendToString(&cmdArgument, shaderToCompile->m_fileFullPath.m_data);
-    AppendToString(&cmdArgument, " -o ");
-    AppendToString(&cmdArgument, outputFile.m_data);
+    if(!forceCompile){
+      if ((file = fopen(outputFile.m_data, "rb")) != NULL) {
+        fprintf(stderr, "compiled shader found! ForceCompile is not enabled so no need to compile\n");
+        if(fclose(file) == EOF){
+          fprintf(stderr, "failed to close the file!\n");
+        }
+        compileNeeded = false;
+        exitCode = 0;
+      }
+    }
 
-    char const *argv[] = { shaderToCompile->m_fileFullPath.m_data, "-o", outputFile.m_data};
+    if(compileNeeded){
+      String cmdArgument = CreateString(" ");
+      AppendToString(&cmdArgument, shaderToCompile->m_fileFullPath.m_data);
+      AppendToString(&cmdArgument, " -o ");
+      AppendToString(&cmdArgument, outputFile.m_data);
+
+      char const *argv[] = { shaderToCompile->m_fileFullPath.m_data, "-o", outputFile.m_data};
 #ifdef __APPLE__
-    const char* executable = "./external/VULKAN/mac/glslc";
+      const char* executable = "./external/VULKAN/mac/glslc";
 #elif _WIN32
-    const char* executable = "./external/VULKAN/win/glslc.exe";
+      const char* executable = "./external/VULKAN/win/glslc.exe";
 #else
-    const char* executable = "./external/VULKAN/linux/glslc";
+      const char* executable = "./external/VULKAN/linux/glslc";
 #endif
-    exitCode = RunGLSLCompiler(executable,
-                               shaderToCompile->m_fileFullPath.m_data,
-                               outputFile.m_data,
-                               &shaderToCompile->m_fileFullPath.m_data[startIndx]);
+      exitCode = RunGLSLCompiler(executable,
+                                 shaderToCompile->m_fileFullPath.m_data,
+                                 outputFile.m_data,
+                                 &shaderToCompile->m_fileFullPath.m_data[startIndx]);
+    }
 
     if(!exitCode){
-      fprintf(stderr, "Successfully compiled\n");
       shaderToCompile->m_isCompiled = true;
       fprintf(stderr, "reading raw shader code from: %s\n", outputFile.m_data);
       shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);

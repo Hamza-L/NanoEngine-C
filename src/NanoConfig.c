@@ -12,6 +12,8 @@ const bool enableValidationLayers = false;
 const bool enableValidationLayers = true;
 #endif
 
+bool FORCE_RECOMPILE = false;
+
 const char* desiredValidationLayers[MAX_ARRAY_OF_EXTENSIONS] = {
     "VK_LAYER_KHRONOS_validation",
     NULL_STR // to allow for while loops without crash
@@ -33,3 +35,7 @@ const char* desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS] = {
     NULL_STR
     // to allow for while loops without crash
 };
+
+void SetForceShaderRecompile(bool isForceCompile){
+    FORCE_RECOMPILE = isForceCompile;
+}

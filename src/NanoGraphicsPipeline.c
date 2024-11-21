@@ -15,14 +15,14 @@ void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice devic
 void AddVertShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
     NanoShader* vertShader = (NanoShader*)calloc(1, sizeof(NanoShader));
     InitShader(vertShader, vertShaderFile);
-    CompileShader(nanoGraphics, vertShader, true);
+    CompileShader(nanoGraphics, vertShader, FORCE_RECOMPILE);
     graphicsPipeline->m_vertShader = vertShader;
 }
 
 void AddFragShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
     NanoShader* fragShader = (NanoShader*)calloc(1, sizeof(NanoShader));
     InitShader(fragShader, fragShaderFile);
-    CompileShader(nanoGraphics, fragShader, true);
+    CompileShader(nanoGraphics, fragShader, FORCE_RECOMPILE);
     graphicsPipeline->m_fragShader = fragShader;
 }
 
