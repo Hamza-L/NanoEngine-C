@@ -1,12 +1,12 @@
-#ifndef NANOGRAPHICS_H_
-#define NANOGRAPHICS_H_
+#ifndef NANORENDERER_H_
+#define NANORENDERER_H_
 
 #include "NanoConfig.h"
-#include "NanoWindow.h"
 #include "NanoGraphicsPipeline.h"
+#include "NanoWindow.h"
 #include <stdint.h>
 
-typedef struct NanoGraphics NanoGraphics;
+typedef struct NanoRenderer NanoRenderer;
 typedef struct QueueFamilyIndices QueueFamilyIndices;
 typedef struct SwapchainDetails SwapchainDetails;
 typedef struct SwapchainSyncObjects SwapchainSyncObjects;
@@ -75,12 +75,12 @@ struct NanoVKContext {
     SwapchainContext swapchainContext;
 };
 
-struct NanoGraphics {
+struct NanoRenderer {
     NanoVKContext* m_pNanoContext;
 };
 
-ERR InitGraphics(NanoGraphics* nanoGraphics, NanoWindow* window);
-ERR DrawFrame(NanoGraphics* nanoGraphics);
-ERR CleanUpGraphics(NanoGraphics* nanoGraphics);
+ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window);
+ERR DrawFrame(NanoRenderer* nanoRenderer);
+ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
 
-#endif // NANOGRAPHICS_H_
+#endif // NANORENDERER_H_

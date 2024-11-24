@@ -1,13 +1,13 @@
-#ifndef NANOGRAPHICSPIPELINE_H_
-#define NANOGRAPHICSPIPELINE_H_
+#ifndef NANORENDERERPIPELINE_H_
+#define NANORENDERERPIPELINE_H_
 
 #include "NanoShader.h"
 #include "NanoError.h"
 #include "vulkan/vulkan_core.h"
 
-typedef struct NanoGraphicsPipeline NanoGraphicsPipeline;
+typedef struct NanoRendererPipeline NanoGraphicsPipeline;
 
-struct NanoGraphicsPipeline{
+struct NanoRendererPipeline{
         VkDevice _device;
         VkRenderPass _renderpass;
         VkExtent2D m_extent;
@@ -21,9 +21,9 @@ struct NanoGraphicsPipeline{
 };
 
 void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice device, const VkExtent2D extent);
-void AddVertShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile);
-void AddFragShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile);
+void AddVertShaderToNGPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile);
+void AddFragShaderToNGPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile);
 ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile);
-void CleanUpGraphicsPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline);
+void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline);
 
-#endif // NANOGRAPHICSPIPELINE_H_
+#endif // NANORENDERERPIPELINE_H_

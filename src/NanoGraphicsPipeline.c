@@ -12,14 +12,14 @@ void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice devic
     graphicsPipeline->m_isInitialized = true;
 }
 
-void AddVertShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
+void AddVertShaderToNGPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
     NanoShader* vertShader = (NanoShader*)calloc(1, sizeof(NanoShader));
     InitShader(vertShader, vertShaderFile);
     CompileShader(nanoGraphics, vertShader, FORCE_RECOMPILE);
     graphicsPipeline->m_vertShader = vertShader;
 }
 
-void AddFragShaderToNGPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
+void AddFragShaderToNGPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
     NanoShader* fragShader = (NanoShader*)calloc(1, sizeof(NanoShader));
     InitShader(fragShader, fragShaderFile);
     CompileShader(nanoGraphics, fragShader, FORCE_RECOMPILE);
@@ -222,7 +222,7 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
     return err;
 }
 
-void CleanUpGraphicsPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline){
+void CleanUpGraphicsPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline){
     vkDestroyPipeline(graphicsPipeline->_device, graphicsPipeline->m_pipeline, NULL);
     vkDestroyPipelineLayout(graphicsPipeline->_device, graphicsPipeline->m_pipelineLayout, NULL);
     CleanUpShader(nanoGraphics, graphicsPipeline->m_vertShader);

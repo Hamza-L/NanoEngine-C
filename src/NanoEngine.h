@@ -1,13 +1,13 @@
 #ifndef NANOENGINE_H_
 #define NANOENGINE_H_
 
-#include "NanoGraphics.h"
+#include "NanoRenderer.h"
 #include "NanoWindow.h"
 
 typedef struct NanoEngine NanoEngine;
 
 struct NanoEngine{
-    NanoGraphics m_Graphics;
+    NanoRenderer m_Renderer;
     NanoWindow m_Window;
 };
 

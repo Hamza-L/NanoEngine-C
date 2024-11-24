@@ -1,26 +1,26 @@
 #include "NanoEngine.h"
 #include "NanoConfig.h"
-#include "NanoGraphics.h"
+#include "NanoRenderer.h"
 #include "NanoShader.h"
 #include "NanoWindow.h"
 
 ERR CleanUpEngine(NanoEngine* nanoEngine){
     ERR err = OK;
     CleanUpWindow(&nanoEngine->m_Window);
-    CleanUpGraphics(&nanoEngine->m_Graphics);
+    CleanUpRenderer(&nanoEngine->m_Renderer);
     return err;
 }
 
 ERR InitEngine(NanoEngine* nanoEngine){
     ERR err = OK;
     InitWindow(&nanoEngine->m_Window, WINDOW_WIDTH, WINDOW_HEIGHT, true);
-    InitGraphics(&nanoEngine->m_Graphics, &nanoEngine->m_Window);
+    InitRenderer(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
     return err;
 }
 
-ERR MainLoop(NanoGraphics* nanoGraphics){
+ERR MainLoop(NanoRenderer* nanoRenderer){
     ERR err = OK;
-    DrawFrame(nanoGraphics);
+    DrawFrame(nanoRenderer);
     return err;
 }
 
@@ -29,7 +29,7 @@ ERR RunEngine(NanoEngine* nanoEngine){
     while(!ShouldWindowClose(nanoEngine->m_Window)){
 
         PollEvents(nanoEngine->m_Window);
-        MainLoop(&nanoEngine->m_Graphics);
+        MainLoop(&nanoEngine->m_Renderer);
 
     }
     return err;

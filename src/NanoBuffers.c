@@ -1,5 +1,5 @@
 #include "NanoBuffers.h"
-#include "NanoGraphics.h"
+#include "NanoRenderer.h"
 #include "NanoShader.h"
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
@@ -7,9 +7,9 @@
 #include <stdio.h>
 #include <string.h>
 
-uint32_t findMemoryType(NanoGraphics* nanoGraphics, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t findMemoryType(NanoRenderer* nanoRenderer, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(nanoGraphics->m_pNanoContext->physicalDevice, &memProperties);
+    vkGetPhysicalDeviceMemoryProperties(nanoRenderer->m_pNanoContext->physicalDevice, &memProperties);
 
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -40,7 +40,7 @@ void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindi
 }
 
 // usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT for vertices
-NanoVkBufferMemory CreateBuffer(NanoGraphics* nanoGraphics, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, uint32_t dataSize){
+NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, uint32_t dataSize){
     NanoVkBufferMemory vertexMem;
 
     VkBufferCreateInfo bufferInfo = {};
@@ -49,38 +49,38 @@ NanoVkBufferMemory CreateBuffer(NanoGraphics* nanoGraphics, VkBufferUsageFlagBit
     bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; //this is only going to be accessed by the graphics queue
 
-    if (vkCreateBuffer(nanoGraphics->m_pNanoContext->device, &bufferInfo, NULL, &vertexMem.buffer) != VK_SUCCESS) {
+    if (vkCreateBuffer(nanoRenderer->m_pNanoContext->device, &bufferInfo, NULL, &vertexMem.buffer) != VK_SUCCESS) {
         fprintf(stderr, "failed to create vertex buffer!\n");
         abort();
     }
 
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(nanoGraphics->m_pNanoContext->device, vertexMem.buffer, &memRequirements);
+    vkGetBufferMemoryRequirements(nanoRenderer->m_pNanoContext->device, vertexMem.buffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(nanoGraphics, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    allocInfo.memoryTypeIndex = findMemoryType(nanoRenderer, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    if (vkAllocateMemory(nanoGraphics->m_pNanoContext->device, &allocInfo, nullptr, &vertexMem.bufferMemory) != VK_SUCCESS) {
+    if (vkAllocateMemory(nanoRenderer->m_pNanoContext->device, &allocInfo, nullptr, &vertexMem.bufferMemory) != VK_SUCCESS) {
         fprintf(stderr, "failed to allocate vertex buffer memory!\n");
         abort();
     }
 
-    vkBindBufferMemory(nanoGraphics->m_pNanoContext->device, vertexMem.buffer, vertexMem.bufferMemory, 0);
+    vkBindBufferMemory(nanoRenderer->m_pNanoContext->device, vertexMem.buffer, vertexMem.bufferMemory, 0);
 
     return vertexMem;
 }
 
-void CopyBuffer(NanoGraphics* nanoGraphics, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+void CopyBuffer(NanoRenderer* nanoRenderer, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = nanoGraphics->m_pNanoContext->commandPool;
+    allocInfo.commandPool = nanoRenderer->m_pNanoContext->commandPool;
     allocInfo.commandBufferCount = 1;
 
     VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(nanoGraphics->m_pNanoContext->device, &allocInfo, &commandBuffer);
+    vkAllocateCommandBuffers(nanoRenderer->m_pNanoContext->device, &allocInfo, &commandBuffer);
 
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -104,54 +104,54 @@ void CopyBuffer(NanoGraphics* nanoGraphics, VkBuffer srcBuffer, VkBuffer dstBuff
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &commandBuffer;
 
-    vkQueueSubmit(nanoGraphics->m_pNanoContext->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(nanoGraphics->m_pNanoContext->graphicsQueue);
+    vkQueueSubmit(nanoRenderer->m_pNanoContext->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(nanoRenderer->m_pNanoContext->graphicsQueue);
 
-    vkFreeCommandBuffers(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, 1, &commandBuffer);
 }
 
-NanoVkBufferMemory CreateVertexBuffer(NanoGraphics* nanoGraphics, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
+NanoVkBufferMemory CreateVertexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
     NanoVkBufferMemory vertexMem;
-    vertexMem = CreateBuffer(nanoGraphics, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
+    vertexMem = CreateBuffer(nanoRenderer, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
 
     NanoVkBufferMemory stagingBufferMem;
-    stagingBufferMem = CreateBuffer(nanoGraphics, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, dataSize);
+    stagingBufferMem = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, dataSize);
 
     void* data;
-    vkMapMemory(nanoGraphics->m_pNanoContext->device, stagingBufferMem.bufferMemory, 0, dataSize, 0, &data);
+    vkMapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, 0, dataSize, 0, &data);
     memcpy(data, pData, (size_t)dataSize);
-    vkUnmapMemory(nanoGraphics->m_pNanoContext->device, stagingBufferMem.bufferMemory);
+    vkUnmapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory);
 
-    CopyBuffer(nanoGraphics, stagingBufferMem.buffer, vertexMem.buffer, dataSize);
+    CopyBuffer(nanoRenderer, stagingBufferMem.buffer, vertexMem.buffer, dataSize);
 
-    vkDestroyBuffer(nanoGraphics->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
-    vkFreeMemory(nanoGraphics->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
+    vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
+    vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
     return vertexMem;
 }
 
-NanoVkBufferMemory CreateIndexBuffer(NanoGraphics* nanoGraphics, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
+NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
     NanoVkBufferMemory vertexMem;
-    vertexMem = CreateBuffer(nanoGraphics, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
+    vertexMem = CreateBuffer(nanoRenderer, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
 
     NanoVkBufferMemory stagingBufferMem;
-    stagingBufferMem = CreateBuffer(nanoGraphics, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, dataSize);
+    stagingBufferMem = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, dataSize);
 
     void* data;
-    vkMapMemory(nanoGraphics->m_pNanoContext->device, stagingBufferMem.bufferMemory, 0, dataSize, 0, &data);
+    vkMapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, 0, dataSize, 0, &data);
     memcpy(data, pData, (size_t)dataSize);
-    vkUnmapMemory(nanoGraphics->m_pNanoContext->device, stagingBufferMem.bufferMemory);
+    vkUnmapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory);
 
-    CopyBuffer(nanoGraphics, stagingBufferMem.buffer, vertexMem.buffer, dataSize);
+    CopyBuffer(nanoRenderer, stagingBufferMem.buffer, vertexMem.buffer, dataSize);
 
-    vkDestroyBuffer(nanoGraphics->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
-    vkFreeMemory(nanoGraphics->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
+    vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
+    vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
     return vertexMem;
 }
 
-void CleanUpBuffer(NanoGraphics* nanoGraphics, NanoVkBufferMemory* bufferMem){
-    vkDestroyBuffer(nanoGraphics->m_pNanoContext->device, bufferMem->buffer, nullptr);
-    vkFreeMemory(nanoGraphics->m_pNanoContext->device, bufferMem->bufferMemory, nullptr);
+void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem){
+    vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, bufferMem->buffer, nullptr);
+    vkFreeMemory(nanoRenderer->m_pNanoContext->device, bufferMem->bufferMemory, nullptr);
 }
 

@@ -3,7 +3,7 @@
 
 #include "cglm/types.h"
 #include "vulkan/vulkan.h"
-#include "NanoGraphics.h"
+#include "NanoRenderer.h"
 #include <stdint.h>
 
 #define DATA_PER_VERTEX 2
@@ -36,9 +36,9 @@ struct Mesh{
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription);
 void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindingDescription[DATA_PER_VERTEX]);
 
-NanoVkBufferMemory CreateBuffer(NanoGraphics* nanoGraphics, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, uint32_t dataSize);
-NanoVkBufferMemory CreateVertexBuffer(NanoGraphics* nanoGraphics, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize);
-NanoVkBufferMemory CreateIndexBuffer(NanoGraphics* nanoGraphics, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize);
-void CleanUpBuffer(NanoGraphics* nanoGraphics, NanoVkBufferMemory* bufferMem);
+NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, uint32_t dataSize);
+NanoVkBufferMemory CreateVertexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize);
+NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize);
+void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem);
 
 #endif // NANOBUFFERS_H_

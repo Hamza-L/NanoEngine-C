@@ -27,7 +27,7 @@ set(Headers
     "src/NanoEngine.h"
     "src/NanoBuffers.h"
     "src/NanoWindow.h"
-    "src/NanoGraphics.h"
+    "src/NanoRenderer.h"
     "src/NanoGraphicsPipeline.h"
     "src/NanoError.h"
     "src/NanoUtility.h"
@@ -42,7 +42,7 @@ set(Sources
     "src/NanoEngine.c"
     "src/NanoBuffers.c"
     "src/NanoWindow.c"
-    "src/NanoGraphics.c"
+    "src/NanoRenderer.c"
     "src/NanoGraphicsPipeline.c"
     "src/NanoError.c"
     "src/NanoUtility.c"
@@ -86,8 +86,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "vulkan-1.lib"
         "cglm.lib")
 
-    #only remove deprecation warning for NanoGraphics (no warning for using strcpy_s)
-    set_source_files_properties("src/NanoGraphics.c" PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+    #only remove deprecation warning for NanoRenderer (no warning for using strcpy_s)
+    set_source_files_properties("src/NanoRenderer.c" PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 elseif(APPLE)

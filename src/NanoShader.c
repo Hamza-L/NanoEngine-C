@@ -1,5 +1,5 @@
 #include "NanoShader.h"
-#include "NanoGraphics.h"
+#include "NanoRenderer.h"
 #include "NanoUtility.h"
 #include "Str.h"
 #include "vulkan/vulkan_core.h"
@@ -15,8 +15,8 @@
 #endif
 
 
-void CleanUpShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCleanUp){
-    vkDestroyShaderModule(nanoGraphics->m_pNanoContext->device, shaderToCleanUp->m_shaderModule, NULL);
+void CleanUpShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCleanUp){
+    vkDestroyShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->m_shaderModule, NULL);
 }
 
 static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
@@ -136,7 +136,7 @@ void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile){
     shaderToInitialize->m_shaderModule = VK_NULL_HANDLE;
 }
 
-int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool forceCompile){
+int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool forceCompile){
 
     FILE* file;
     bool compileNeeded = forceCompile;
@@ -199,7 +199,7 @@ int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool 
       shaderToCompile->m_isCompiled = true;
       fprintf(stderr, "reading raw shader code from: %s\n", outputFile.m_data);
       shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);
-      shaderToCompile->m_shaderModule = CreateShaderModule(nanoGraphics->m_pNanoContext->device, shaderToCompile);
+      shaderToCompile->m_shaderModule = CreateShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCompile);
     } else {
       shaderToCompile->m_isCompiled = false;
     }

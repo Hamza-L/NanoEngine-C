@@ -1,4 +1,4 @@
-#include "NanoGraphics.h"
+#include "NanoRenderer.h"
 #include "NanoConfig.h"
 #include "NanoError.h"
 #include "NanoUtility.h"
@@ -18,7 +18,7 @@
 
 Mesh object;
 
-void CreateVertexData(NanoGraphics *nanoGraphics, Mesh* meshObject){
+void CreateVertexData(NanoRenderer *nanoRenderer, Mesh* meshObject){
     int numVertices = 4;
     int numIndices = 6;
     meshObject->pVertexData = (Vertex*)malloc(sizeof(Vertex) * numVertices);
@@ -34,13 +34,13 @@ void CreateVertexData(NanoGraphics *nanoGraphics, Mesh* meshObject){
     memcpy(meshObject->pVertexData, vertices, meshObject->vertexDataSize);
     memcpy(meshObject->pIndexData, indices, meshObject->indexDataSize);
 
-    meshObject->vertexMemory = CreateVertexBuffer(nanoGraphics, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshObject->pVertexData, meshObject->vertexDataSize);
-    meshObject->indexMemory = CreateIndexBuffer(nanoGraphics, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->pIndexData, meshObject->indexDataSize);
+    meshObject->vertexMemory = CreateVertexBuffer(nanoRenderer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshObject->pVertexData, meshObject->vertexDataSize);
+    meshObject->indexMemory = CreateIndexBuffer(nanoRenderer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->pIndexData, meshObject->indexDataSize);
 }
 
-void CleanUpVertexData(NanoGraphics *nanoGraphics){
-    CleanUpBuffer(nanoGraphics, &object.vertexMemory);
-    CleanUpBuffer(nanoGraphics, &object.indexMemory);
+void CleanUpVertexData(NanoRenderer *nanoRenderer){
+    CleanUpBuffer(nanoRenderer, &object.vertexMemory);
+    CleanUpBuffer(nanoRenderer, &object.indexMemory);
 }
 
 bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper function to validate queue indices
@@ -48,19 +48,19 @@ bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper funct
 }
 
 
-void AddGraphicsPipelineToNanoContext(NanoGraphics* nanoGraphics, const NanoGraphicsPipeline* graphicsPipeline){
+void AddGraphicsPipelineToNanoContext(NanoRenderer* nanoRenderer, const NanoGraphicsPipeline* graphicsPipeline){
     if(!graphicsPipeline){
         return;
     }
 
-    uint32_t indx = nanoGraphics->m_pNanoContext->currentGraphicsPipeline;
-    if(nanoGraphics->m_pNanoContext->graphicPipelinesCount != 0){
+    uint32_t indx = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
+    if(nanoRenderer->m_pNanoContext->graphicPipelinesCount != 0){
         indx++;
     }
 
-    nanoGraphics->m_pNanoContext->graphicsPipelines[indx] = *graphicsPipeline;
-    nanoGraphics->m_pNanoContext->currentGraphicsPipeline = indx;
-    nanoGraphics->m_pNanoContext->graphicPipelinesCount++;
+    nanoRenderer->m_pNanoContext->graphicsPipelines[indx] = *graphicsPipeline;
+    nanoRenderer->m_pNanoContext->currentGraphicsPipeline = indx;
+    nanoRenderer->m_pNanoContext->graphicPipelinesCount++;
 }
 
 VkDebugUtilsMessengerEXT gDebugMessenger;
@@ -143,50 +143,50 @@ void cleanupSwapChainContext(const VkDevice device, SwapchainContext* swapchainC
     vkDestroySwapchainKHR(device, swapchainContext->swapchain, NULL);
 }
 
-ERR CleanUpGraphics(NanoGraphics* nanoGraphics){
+ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
     ERR err = OK;
 
     // wait in case there are any pending tasks
-    vkDeviceWaitIdle(nanoGraphics->m_pNanoContext->device);
+    vkDeviceWaitIdle(nanoRenderer->m_pNanoContext->device);
     for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        vkDestroySemaphore(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].imageAvailableSemaphore, NULL);
-        vkDestroySemaphore(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, NULL);
-        vkDestroyFence(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
+        vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].imageAvailableSemaphore, NULL);
+        vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, NULL);
+        vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
     }
 
-    CleanUpVertexData(nanoGraphics);
+    CleanUpVertexData(nanoRenderer);
 
     // clean commandPool and incidently the commandbuffers acquired from them
-    vkDestroyCommandPool(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->commandPool, NULL);
+    vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, NULL);
 
     // clean swapchain framebuffers
-    for (int i = 0 ; i < nanoGraphics->m_pNanoContext->swapchainContext.info.imageCount; i++) {
-        vkDestroyFramebuffer(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.framebuffers[i], NULL);
+    for (int i = 0 ; i < nanoRenderer->m_pNanoContext->swapchainContext.info.imageCount; i++) {
+        vkDestroyFramebuffer(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.framebuffers[i], NULL);
     }
     // clean swapchain imageviews
-    for (int i = 0 ; i < nanoGraphics->m_pNanoContext->swapchainContext.info.imageCount; i++) {
-        vkDestroyImageView(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.imageViews[i], NULL);
+    for (int i = 0 ; i < nanoRenderer->m_pNanoContext->swapchainContext.info.imageCount; i++) {
+        vkDestroyImageView(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.imageViews[i], NULL);
     }
 
     // clean graphic pipelines
-    for (int i = 0 ; i < nanoGraphics->m_pNanoContext->graphicPipelinesCount; i++) {
-        CleanUpGraphicsPipeline(nanoGraphics, &nanoGraphics->m_pNanoContext->graphicsPipelines[i]);
+    for (int i = 0 ; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++) {
+        CleanUpGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[i]);
     }
 
     // clean renderpass
-    vkDestroyRenderPass(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->renderpass, NULL);
+    vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->renderpass, NULL);
 
-    vkDestroySwapchainKHR(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.swapchain, NULL);
+    vkDestroySwapchainKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain, NULL);
 
-    vkDestroySurfaceKHR(nanoGraphics->m_pNanoContext->instance, nanoGraphics->m_pNanoContext->surface, NULL);
+    vkDestroySurfaceKHR(nanoRenderer->m_pNanoContext->instance, nanoRenderer->m_pNanoContext->surface, NULL);
 
-    vkDestroyDevice(nanoGraphics->m_pNanoContext->device, NULL);
+    vkDestroyDevice(nanoRenderer->m_pNanoContext->device, NULL);
 
     if (enableValidationLayers) {
-        DestroyDebugUtilsMessengerEXT(nanoGraphics->m_pNanoContext->instance, gDebugMessenger, NULL);
+        DestroyDebugUtilsMessengerEXT(nanoRenderer->m_pNanoContext->instance, gDebugMessenger, NULL);
     }
 
-    vkDestroyInstance(nanoGraphics->m_pNanoContext->instance, NULL);
+    vkDestroyInstance(nanoRenderer->m_pNanoContext->instance, NULL);
 
     return err;
 }
@@ -251,7 +251,7 @@ void getRequiredInstanceExtensions(char* requiredInstanceExtensions[], uint32_t*
     // 64 additional extensions that we can potentially add
     int extIdx = 0;
     while (*desiredInstanceExtensions[extIdx]){
-        requiredInstanceExtensions[extIdx] = (char*)desiredInstanceExtensions[extIdx];
+        strcpy(requiredInstanceExtensions[extIdx], desiredInstanceExtensions[extIdx]);
         extIdx++;
     }
 
@@ -512,7 +512,7 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
         default:
             strcpy(deviceType, "UNKNOWN");
         }
-        fprintf(stderr, "Physical device selected: %s [%s]\n", deviceProperties.deviceName, deviceType);
+        fprintf(stderr, "Physical device selected: %s [%s]", deviceProperties.deviceName, deviceType);
     }
 
     return OK; // this is never reached if we use try/catch.
@@ -664,7 +664,7 @@ ERR createSCImageViews(const VkDevice device, SwapchainContext* swapchainContext
     return err;
 }
 
-ERR createFramebuffer(const VkDevice device, const VkRenderPass renderpass, SwapchainContext* swapchainContext){
+ERR createFramebuffers(const VkDevice device, const VkRenderPass renderpass, SwapchainContext* swapchainContext){
     ERR err = OK;
     swapchainContext->framebuffers = (VkFramebuffer*)calloc(swapchainContext->info.imageCount, sizeof(VkFramebuffer));
 
@@ -767,7 +767,7 @@ ERR recreateSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice devi
     err = createSCImageViews(device,
                              swapChainContext);
 
-    err = createFramebuffer(device,
+    err = createFramebuffers(device,
                             renderpass,
                             swapChainContext);
 
@@ -775,15 +775,15 @@ ERR recreateSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice devi
 }
 
 
-ERR createGraphicsPipeline(NanoGraphics* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline) {
+ERR createGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline) {
     ERR err = OK;
-    VkDevice device = nanoGraphics->m_pNanoContext->device;
-    VkExtent2D extent = nanoGraphics->m_pNanoContext->swapchainContext.info.currentExtent;
-    VkRenderPass renderpass = nanoGraphics->m_pNanoContext->renderpass;
+    VkDevice device = nanoRenderer->m_pNanoContext->device;
+    VkExtent2D extent = nanoRenderer->m_pNanoContext->swapchainContext.info.currentExtent;
+    VkRenderPass renderpass = nanoRenderer->m_pNanoContext->renderpass;
 
     InitGraphicsPipeline(graphicsPipeline, device, extent);
-    AddVertShaderToNGPipeline(nanoGraphics, graphicsPipeline, "./src/shader/shader.vert");
-    AddFragShaderToNGPipeline(nanoGraphics, graphicsPipeline, "./src/shader/shader.frag");
+    AddVertShaderToNGPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.vert");
+    AddFragShaderToNGPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.frag");
     graphicsPipeline->_renderpass = renderpass;
     CompileNGPipeline(graphicsPipeline, true);
 
@@ -863,7 +863,7 @@ ERR createCommandPool(VkDevice device, const QueueFamilyIndices queueFamilyIndic
     return err;
 }
 
-ERR createCommandBuffer(VkDevice device, const VkCommandPool commandPool, VkCommandBuffer* commandBuffer, uint32_t size){
+ERR createCommandBuffers(VkDevice device, const VkCommandPool commandPool, VkCommandBuffer* commandBuffer, uint32_t size){
     ERR err = OK;
 
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -971,38 +971,38 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
     return err;
 }
 
-ERR DrawFrame(NanoGraphics* nanoGraphics){
+ERR DrawFrame(NanoRenderer* nanoRenderer){
     ERR err = OK;
 
-    int currentFrame = nanoGraphics->m_pNanoContext->swapchainContext.currentFrame;
-    vkWaitForFences(nanoGraphics->m_pNanoContext->device, 1, &nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(nanoGraphics->m_pNanoContext->device, 1, &nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence);
+    int currentFrame = nanoRenderer->m_pNanoContext->swapchainContext.currentFrame;
+    vkWaitForFences(nanoRenderer->m_pNanoContext->device, 1, &nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
+    vkResetFences(nanoRenderer->m_pNanoContext->device, 1, &nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence);
 
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(nanoGraphics->m_pNanoContext->device, nanoGraphics->m_pNanoContext->swapchainContext.swapchain,
-                          UINT64_MAX, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    vkAcquireNextImageKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain,
+                          UINT64_MAX, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-    vkResetCommandBuffer(nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame], 0);
+    vkResetCommandBuffer(nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], 0);
 
-    int currentGraphicsPipelineIndex = nanoGraphics->m_pNanoContext->currentGraphicsPipeline;
-    recordCommandBuffer(&nanoGraphics->m_pNanoContext->graphicsPipelines[currentGraphicsPipelineIndex],
-                        &nanoGraphics->m_pNanoContext->swapchainContext.framebuffers[imageIndex], //swapchain framebuffer for the command buffer to operate on
-                        &nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame]); //command buffer to write to.
+    int currentGraphicsPipelineIndex = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
+    recordCommandBuffer(&nanoRenderer->m_pNanoContext->graphicsPipelines[currentGraphicsPipelineIndex],
+                        &nanoRenderer->m_pNanoContext->swapchainContext.framebuffers[imageIndex], //swapchain framebuffer for the command buffer to operate on
+                        &nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame]); //command buffer to write to.
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    VkSemaphore waitSemaphores[] = {nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame].imageAvailableSemaphore};
-    VkSemaphore signalSemaphores[] = {nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame].renderFinishedSemaphore};
+    VkSemaphore waitSemaphores[] = {nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore};
+    VkSemaphore signalSemaphores[] = {nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].renderFinishedSemaphore};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer[nanoGraphics->m_pNanoContext->swapchainContext.currentFrame];
+    submitInfo.pCommandBuffers = &nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame];
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
 
-    if (vkQueueSubmit(nanoGraphics->m_pNanoContext->graphicsQueue, 1, &submitInfo, nanoGraphics->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence) != VK_SUCCESS) {
+    if (vkQueueSubmit(nanoRenderer->m_pNanoContext->graphicsQueue, 1, &submitInfo, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence) != VK_SUCCESS) {
         fprintf(stderr, "failed to submit draw command buffer!");
     }
 
@@ -1010,84 +1010,84 @@ ERR DrawFrame(NanoGraphics* nanoGraphics){
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
-    VkSwapchainKHR swapchains[] = {nanoGraphics->m_pNanoContext->swapchainContext.swapchain};
+    VkSwapchainKHR swapchains[] = {nanoRenderer->m_pNanoContext->swapchainContext.swapchain};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapchains;
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
 
-    vkQueuePresentKHR(nanoGraphics->m_pNanoContext->presentQueue, &presentInfo);
+    vkQueuePresentKHR(nanoRenderer->m_pNanoContext->presentQueue, &presentInfo);
 
-    nanoGraphics->m_pNanoContext->swapchainContext.currentFrame = (nanoGraphics->m_pNanoContext->swapchainContext.currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    nanoRenderer->m_pNanoContext->swapchainContext.currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
     return err;
 }
 
-ERR InitGraphics(NanoGraphics* nanoGraphics, NanoWindow* window){
+ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
     ERR err = OK;
-    nanoGraphics->m_pNanoContext = (NanoVKContext*)calloc(1, sizeof(NanoVKContext));
+    nanoRenderer->m_pNanoContext = (NanoVKContext*)calloc(1, sizeof(NanoVKContext));
     // Here the err validation is not that useful
     // a iferr_return can be added at the end of each statement to check it's state and exit (or at least warn) if an error did occur
     createInstance(APP_NAME,
-                         ENGINE_NAME,
-                         &nanoGraphics->m_pNanoContext->instance); // APP_NAME and ENGINE_NAME is defined in NanoConfig
+                   ENGINE_NAME,
+                   &nanoRenderer->m_pNanoContext->instance); // APP_NAME and ENGINE_NAME is defined in NanoConfig
 
-    setupDebugMessenger(nanoGraphics->m_pNanoContext->instance,
-                              &gDebugMessenger); // this depends on whether we are running in debug or not
+    setupDebugMessenger(nanoRenderer->m_pNanoContext->instance,
+                        &gDebugMessenger); // this depends on whether we are running in debug or not
 
-    createSurface(nanoGraphics->m_pNanoContext->instance,
-                        window->_window,
-                        &nanoGraphics->m_pNanoContext->surface);
+    createSurface(nanoRenderer->m_pNanoContext->instance,
+                  window->_window,
+                  &nanoRenderer->m_pNanoContext->surface);
 
-    pickPhysicalDevice(nanoGraphics->m_pNanoContext->instance,
-                             nanoGraphics->m_pNanoContext->surface,
-                             &nanoGraphics->m_pNanoContext->queueIndices,
-                             &nanoGraphics->m_pNanoContext->physicalDevice); // physical device is not created but picked based on scores dictated by the number of supported features
+    pickPhysicalDevice(nanoRenderer->m_pNanoContext->instance,
+                       nanoRenderer->m_pNanoContext->surface,
+                       &nanoRenderer->m_pNanoContext->queueIndices,
+                       &nanoRenderer->m_pNanoContext->physicalDevice); // physical device is not created but picked based on scores dictated by the number of supported features
 
-    createLogicalDeviceAndGetQueues(nanoGraphics->m_pNanoContext->physicalDevice,
-                              nanoGraphics->m_pNanoContext->surface,
-                              nanoGraphics->m_pNanoContext->queueIndices,
-                              &nanoGraphics->m_pNanoContext->graphicsQueue,
-                              &nanoGraphics->m_pNanoContext->presentQueue,
-                              &nanoGraphics->m_pNanoContext->device); // Logical device *is* created and therefore has to be destroyed
+    createLogicalDeviceAndGetQueues(nanoRenderer->m_pNanoContext->physicalDevice,
+                                    nanoRenderer->m_pNanoContext->surface,
+                                    nanoRenderer->m_pNanoContext->queueIndices,
+                                    &nanoRenderer->m_pNanoContext->graphicsQueue,
+                                    &nanoRenderer->m_pNanoContext->presentQueue,
+                                    &nanoRenderer->m_pNanoContext->device); // Logical device *is* created and therefore has to be destroyed
 
-    createSwapchain(nanoGraphics->m_pNanoContext->physicalDevice,
-                          nanoGraphics->m_pNanoContext->device,
-                          window->_window,
-                          nanoGraphics->m_pNanoContext->surface,
-                          &nanoGraphics->m_pNanoContext->swapchainContext);
+    createSwapchain(nanoRenderer->m_pNanoContext->physicalDevice,
+                    nanoRenderer->m_pNanoContext->device,
+                    window->_window,
+                    nanoRenderer->m_pNanoContext->surface,
+                    &nanoRenderer->m_pNanoContext->swapchainContext);
 
-    createSCImageViews(nanoGraphics->m_pNanoContext->device,
-                             &nanoGraphics->m_pNanoContext->swapchainContext);
+    createSCImageViews(nanoRenderer->m_pNanoContext->device,
+                       &nanoRenderer->m_pNanoContext->swapchainContext);
 
-    createRenderPass(nanoGraphics->m_pNanoContext->device,
-                           nanoGraphics->m_pNanoContext->swapchainContext.info,
-                           &nanoGraphics->m_pNanoContext->renderpass);
+    createRenderPass(nanoRenderer->m_pNanoContext->device,
+                     nanoRenderer->m_pNanoContext->swapchainContext.info,
+                     &nanoRenderer->m_pNanoContext->renderpass);
 
     NanoGraphicsPipeline* graphicsPipeline = (NanoGraphicsPipeline*)calloc(1, sizeof(NanoGraphicsPipeline));
-    createGraphicsPipeline(nanoGraphics,
-                                 graphicsPipeline);
+    createGraphicsPipeline(nanoRenderer,
+                           graphicsPipeline);
 
-    AddGraphicsPipelineToNanoContext(nanoGraphics, graphicsPipeline);
+    AddGraphicsPipelineToNanoContext(nanoRenderer, graphicsPipeline);
 
-    createFramebuffer(nanoGraphics->m_pNanoContext->device,
-                            nanoGraphics->m_pNanoContext->renderpass,
-                            &nanoGraphics->m_pNanoContext->swapchainContext);
+    createFramebuffers(nanoRenderer->m_pNanoContext->device,
+                      nanoRenderer->m_pNanoContext->renderpass,
+                      &nanoRenderer->m_pNanoContext->swapchainContext);
 
-    createCommandPool(nanoGraphics->m_pNanoContext->device,
-                            nanoGraphics->m_pNanoContext->queueIndices,
-                            &nanoGraphics->m_pNanoContext->commandPool);
+    createCommandPool(nanoRenderer->m_pNanoContext->device,
+                      nanoRenderer->m_pNanoContext->queueIndices,
+                      &nanoRenderer->m_pNanoContext->commandPool);
 
-    createCommandBuffer(nanoGraphics->m_pNanoContext->device,
-                              nanoGraphics->m_pNanoContext->commandPool,
-                              nanoGraphics->m_pNanoContext->swapchainContext.commandBuffer,
-                              MAX_FRAMES_IN_FLIGHT);
+    createCommandBuffers(nanoRenderer->m_pNanoContext->device,
+                        nanoRenderer->m_pNanoContext->commandPool,
+                        nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer,
+                        MAX_FRAMES_IN_FLIGHT);
 
-    createSwapchainSyncObjects(nanoGraphics->m_pNanoContext->device,
-                                     nanoGraphics->m_pNanoContext->swapchainContext.syncObjects,
-                                     MAX_FRAMES_IN_FLIGHT);
+    createSwapchainSyncObjects(nanoRenderer->m_pNanoContext->device,
+                               nanoRenderer->m_pNanoContext->swapchainContext.syncObjects,
+                               MAX_FRAMES_IN_FLIGHT);
 
-    CreateVertexData(nanoGraphics, &object);
+    CreateVertexData(nanoRenderer, &object);
 
     return err;
 }

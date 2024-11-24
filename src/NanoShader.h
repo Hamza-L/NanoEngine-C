@@ -7,7 +7,7 @@
 #include "vulkan/vulkan_core.h"
 
 typedef struct NanoShader NanoShader;
-typedef struct NanoGraphics NanoGraphics;
+typedef struct NanoRenderer NanoRenderer;
 
 struct NanoShader{
         String m_fileFullPath;
@@ -18,10 +18,10 @@ struct NanoShader{
         VkShaderModule m_shaderModule;
 };
 
-struct NanoGraphics;
+struct NanoRenderer;
 
 void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile);
-int CompileShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCompile, bool forceCompile);
-void CleanUpShader(NanoGraphics* nanoGraphics, NanoShader* shaderToCleanUp);
+int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool forceCompile);
+void CleanUpShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCleanUp);
 
 #endif // NANOSHADER_H_
