@@ -251,7 +251,7 @@ void getRequiredInstanceExtensions(char* requiredInstanceExtensions[], uint32_t*
     // 64 additional extensions that we can potentially add
     int extIdx = 0;
     while (*desiredInstanceExtensions[extIdx]){
-        strcpy(requiredInstanceExtensions[extIdx], desiredInstanceExtensions[extIdx]);
+        requiredInstanceExtensions[extIdx] = (char*)desiredInstanceExtensions[extIdx];
         extIdx++;
     }
 
