@@ -64,7 +64,7 @@ struct NanoVKContext {
 
     VkSurfaceKHR surface;
 
-    VkRenderPass renderpass;
+    VkRenderPass defaultRenderpass;
 
     NanoGraphicsPipeline graphicsPipelines[MAX_GRAPHICS_PIPELINE]; // array of graphicsPipeline
     uint32_t graphicPipelinesCount;

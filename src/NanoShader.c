@@ -1,6 +1,8 @@
 #include "NanoShader.h"
 #include "NanoRenderer.h"
 #include "NanoUtility.h"
+#include "NanoBuffers.h"
+#include "NanoError.h"
 #include "Str.h"
 #include "vulkan/vulkan_core.h"
 
@@ -17,6 +19,25 @@
 
 void CleanUpShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCleanUp){
     vkDestroyShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->m_shaderModule, NULL);
+}
+
+static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoShader* shaderToCreateDescriptorSetLayoutFor){
+    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.descriptorCount = 1; //could pass an array of uniform buffer objects
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboLayoutBinding.pImmutableSamplers = nullptr; // Optional. used for texture sampling
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    if (vkCreateDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, &layoutInfo, nullptr, &shaderToCreateDescriptorSetLayoutFor->descriptorSetLayout) != VK_SUCCESS) {
+      fprintf(stderr, "failed to create descriptor set layout!");
+      ASSERT(false, "failed to create descriptor set layout!");
+    }
 }
 
 static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
@@ -88,6 +109,7 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
 
   return compilerExitCode;
 }
+
 #elif __APPLE__
 int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const char* outputFileName, const char* shaderName)
 {

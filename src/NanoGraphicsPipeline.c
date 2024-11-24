@@ -12,33 +12,27 @@ void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice devic
     graphicsPipeline->m_isInitialized = true;
 }
 
-void AddVertShaderToNGPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
-    NanoShader* vertShader = (NanoShader*)calloc(1, sizeof(NanoShader));
-    InitShader(vertShader, vertShaderFile);
-    CompileShader(nanoGraphics, vertShader, FORCE_RECOMPILE);
-    graphicsPipeline->m_vertShader = vertShader;
+void AddVertShaderToGraphicsPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile){
+    InitShader(&graphicsPipeline->m_vertShader, vertShaderFile);
 }
 
-void AddFragShaderToNGPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
-    NanoShader* fragShader = (NanoShader*)calloc(1, sizeof(NanoShader));
-    InitShader(fragShader, fragShaderFile);
-    CompileShader(nanoGraphics, fragShader, FORCE_RECOMPILE);
-    graphicsPipeline->m_fragShader = fragShader;
+void AddFragShaderToGraphicsPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile){
+    InitShader(&graphicsPipeline->m_fragShader, fragShaderFile);
 }
 
-ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile){
+ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile){
     ERR err = OK;
 
-    NanoShader* vertShader = graphicsPipeline->m_vertShader;
-    if(!vertShader->m_isCompiled){
-        ASSERT(vertShader->m_isCompiled, "graphics pipeline's vertex shader was not compiled\n");
-        return NOT_INITIALIZED;
+    if(!graphicsPipeline->m_vertShader.m_isCompiled || forceReCompile){
+        CompileShader(nanoRenderer, &graphicsPipeline->m_vertShader, true);
+        /* ASSERT(vertShader->m_isCompiled, "graphics pipeline's vertex shader was not compiled\n"); */
+        /* return NOT_INITIALIZED; */
     }
 
-    NanoShader* fragShader = graphicsPipeline->m_fragShader;
-    if(!fragShader->m_isCompiled){
-        ASSERT(fragShader->m_isCompiled, "graphics pipeline's fragment shader was not compiled\n");
-        return NOT_INITIALIZED;
+    if(graphicsPipeline->m_fragShader.m_isCompiled || forceReCompile){
+        CompileShader(nanoRenderer, &graphicsPipeline->m_fragShader, true);
+        /* ASSERT(fragShader->m_isCompiled, "graphics pipeline's fragment shader was not compiled\n"); */
+        /* return NOT_INITIALIZED; */
     }
 
     // Shaders ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,7 +41,7 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
     VkPipelineShaderStageCreateInfo vertexShaderStage = {};
     vertexShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertexShaderStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
-    vertexShaderStage.module = vertShader->m_shaderModule;
+    vertexShaderStage.module = graphicsPipeline->m_vertShader.m_shaderModule;
     vertexShaderStage.pName = "main";
     // VkSpecializationInfo specializationInfo = {};
     vertexShaderStage.pSpecializationInfo = NULL; //Can specify different values for constant used in this shader. allows better optimization at shader creation stage
@@ -55,7 +49,7 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
     VkPipelineShaderStageCreateInfo fragmentShaderStage = {};
     fragmentShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragmentShaderStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    fragmentShaderStage.module = fragShader->m_shaderModule;
+    fragmentShaderStage.module = graphicsPipeline->m_fragShader.m_shaderModule;
     fragmentShaderStage.pName = "main";
     // VkSpecializationInfo specializationInfo = {};
     fragmentShaderStage.pSpecializationInfo = NULL; //Can specify different values for constant used in this shader. allows better optimization at shader creation stage
@@ -126,7 +120,7 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
     rasterizer.depthClampEnable = VK_FALSE;
     // If rasterizerDiscardEnable is set to VK_TRUE, then geometry never passes through the rasterizer stage. This basically disables any output to the framebuffer.
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // using anything other than fill requires enabling a gpu feature (this can allow us to set line width and point size)
+    rasterizer.polygonMode = graphicsPipeline->m_isWireFrame ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL; // using anything other than fill requires enabling a gpu feature (this can allow us to set line width and point size)
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
     rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE; // sometimes used for shadow mapping
@@ -225,6 +219,6 @@ ERR CompileNGPipeline(NanoGraphicsPipeline* graphicsPipeline, bool forceReCompil
 void CleanUpGraphicsPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPipeline* graphicsPipeline){
     vkDestroyPipeline(graphicsPipeline->_device, graphicsPipeline->m_pipeline, NULL);
     vkDestroyPipelineLayout(graphicsPipeline->_device, graphicsPipeline->m_pipelineLayout, NULL);
-    CleanUpShader(nanoGraphics, graphicsPipeline->m_vertShader);
-    CleanUpShader(nanoGraphics, graphicsPipeline->m_fragShader);
+    CleanUpShader(nanoGraphics, &graphicsPipeline->m_vertShader);
+    CleanUpShader(nanoGraphics, &graphicsPipeline->m_fragShader);
 }

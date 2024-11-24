@@ -48,8 +48,8 @@ bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper funct
 }
 
 
-void AddGraphicsPipelineToNanoContext(NanoRenderer* nanoRenderer, const NanoGraphicsPipeline* graphicsPipeline){
-    if(!graphicsPipeline){
+void AddGraphicsPipelineToNanoContext(NanoRenderer* nanoRenderer, const NanoGraphicsPipeline graphicsPipeline){
+    if(!graphicsPipeline.m_isInitialized){
         return;
     }
 
@@ -58,7 +58,7 @@ void AddGraphicsPipelineToNanoContext(NanoRenderer* nanoRenderer, const NanoGrap
         indx++;
     }
 
-    nanoRenderer->m_pNanoContext->graphicsPipelines[indx] = *graphicsPipeline;
+    nanoRenderer->m_pNanoContext->graphicsPipelines[indx] = graphicsPipeline;
     nanoRenderer->m_pNanoContext->currentGraphicsPipeline = indx;
     nanoRenderer->m_pNanoContext->graphicPipelinesCount++;
 }
@@ -174,7 +174,7 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
     }
 
     // clean renderpass
-    vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->renderpass, NULL);
+    vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->defaultRenderpass, NULL);
 
     vkDestroySwapchainKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain, NULL);
 
@@ -664,7 +664,7 @@ ERR createSCImageViews(const VkDevice device, SwapchainContext* swapchainContext
     return err;
 }
 
-ERR createFramebuffers(const VkDevice device, const VkRenderPass renderpass, SwapchainContext* swapchainContext){
+ERR createFramebuffer(const VkDevice device, const VkRenderPass renderpass, SwapchainContext* swapchainContext){
     ERR err = OK;
     swapchainContext->framebuffers = (VkFramebuffer*)calloc(swapchainContext->info.imageCount, sizeof(VkFramebuffer));
 
@@ -767,7 +767,7 @@ ERR recreateSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice devi
     err = createSCImageViews(device,
                              swapChainContext);
 
-    err = createFramebuffers(device,
+    err = createFramebuffer(device,
                             renderpass,
                             swapChainContext);
 
@@ -779,14 +779,13 @@ ERR createGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gra
     ERR err = OK;
     VkDevice device = nanoRenderer->m_pNanoContext->device;
     VkExtent2D extent = nanoRenderer->m_pNanoContext->swapchainContext.info.currentExtent;
-    VkRenderPass renderpass = nanoRenderer->m_pNanoContext->renderpass;
+    VkRenderPass renderpass = nanoRenderer->m_pNanoContext->defaultRenderpass;
 
     InitGraphicsPipeline(graphicsPipeline, device, extent);
-    AddVertShaderToNGPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.vert");
-    AddFragShaderToNGPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.frag");
+    AddVertShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.vert");
+    AddFragShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.frag");
     graphicsPipeline->_renderpass = renderpass;
-    CompileNGPipeline(graphicsPipeline, true);
-
+    CompileGraphicsPipeline(nanoRenderer, graphicsPipeline, true);
 
     return err;
 }
@@ -1062,16 +1061,16 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
 
     createRenderPass(nanoRenderer->m_pNanoContext->device,
                      nanoRenderer->m_pNanoContext->swapchainContext.info,
-                     &nanoRenderer->m_pNanoContext->renderpass);
+                     &nanoRenderer->m_pNanoContext->defaultRenderpass);
 
-    NanoGraphicsPipeline* graphicsPipeline = (NanoGraphicsPipeline*)calloc(1, sizeof(NanoGraphicsPipeline));
+    NanoGraphicsPipeline graphicsPipeline;
     createGraphicsPipeline(nanoRenderer,
-                           graphicsPipeline);
+                           &graphicsPipeline);
 
     AddGraphicsPipelineToNanoContext(nanoRenderer, graphicsPipeline);
 
-    createFramebuffers(nanoRenderer->m_pNanoContext->device,
-                      nanoRenderer->m_pNanoContext->renderpass,
+    createFramebuffer(nanoRenderer->m_pNanoContext->device,
+                      nanoRenderer->m_pNanoContext->defaultRenderpass,
                       &nanoRenderer->m_pNanoContext->swapchainContext);
 
     createCommandPool(nanoRenderer->m_pNanoContext->device,

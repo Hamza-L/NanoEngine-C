@@ -9,6 +9,7 @@
 #define DATA_PER_VERTEX 2
 
 typedef struct Vertex Vertex;
+typedef struct UniformBufferObject UniformBufferObject;
 typedef struct NanoVkBufferMemory NanoVkBufferMemory;
 typedef struct Mesh Mesh;
 
@@ -16,6 +17,12 @@ typedef struct Mesh Mesh;
 struct Vertex{
     vec2 pos;
     vec3 color;
+};
+
+struct UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
 };
 
 struct NanoVkBufferMemory{
