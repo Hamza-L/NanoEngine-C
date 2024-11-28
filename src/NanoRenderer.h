@@ -51,6 +51,8 @@ struct SwapchainContext{
     uint32_t currentFrame;
     VkCommandBuffer commandBuffer[MAX_FRAMES_IN_FLIGHT];
     SwapchainSyncObjects syncObjects[MAX_FRAMES_IN_FLIGHT];
+
+    bool framebufferResized;
 };
 
 struct NanoVKContext {
@@ -80,7 +82,7 @@ struct NanoRenderer {
 };
 
 ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window);
-ERR DrawFrame(NanoRenderer* nanoRenderer);
+ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
 ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
 
 #endif // NANORENDERER_H_

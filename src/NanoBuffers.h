@@ -2,11 +2,12 @@
 #define NANOBUFFERS_H_
 
 #include "cglm/types.h"
-#include "vulkan/vulkan.h"
-#include "NanoRenderer.h"
+#include <vulkan/vulkan.h>
 #include <stdint.h>
 
 #define DATA_PER_VERTEX 2
+
+typedef struct NanoRenderer NanoRenderer;
 
 typedef struct Vertex Vertex;
 typedef struct UniformBufferObject UniformBufferObject;
@@ -28,6 +29,7 @@ struct UniformBufferObject {
 struct NanoVkBufferMemory{
     VkBuffer buffer;
     VkDeviceMemory bufferMemory;
+    void* bufferMemoryMapped;
 };
 
 struct Mesh{
@@ -46,6 +48,7 @@ void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindi
 NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, uint32_t dataSize);
 NanoVkBufferMemory CreateVertexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize);
 NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize);
+void CreateUniformBuffersWithMappedMem(NanoRenderer* nanoRenderer, NanoVkBufferMemory UniformMemoryToInitialize[], uint32_t numBuffers);
 void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem);
 
 #endif // NANOBUFFERS_H_

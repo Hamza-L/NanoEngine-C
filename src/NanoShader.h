@@ -1,13 +1,13 @@
 #ifndef NANOSHADER_H_
 #define NANOSHADER_H_
 
+#include "NanoBuffers.h"
 #include "NanoConfig.h"
 #include "Str.h"
 
 #include "vulkan/vulkan_core.h"
 
 typedef struct NanoShader NanoShader;
-typedef struct NanoRenderer NanoRenderer;
 
 typedef struct {
         String m_fileFullPath;
@@ -21,10 +21,12 @@ struct NanoShader{
 
         VkDescriptorSetLayout descriptorSetLayout;
         VkPipelineLayout pipelineLayout;
+
         VkShaderModule m_shaderModule;
+
+        NanoVkBufferMemory UniformBufferMemory[MAX_FRAMES_IN_FLIGHT];
 };
 
-struct NanoRenderer;
 
 void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile);
 int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool forceCompile);

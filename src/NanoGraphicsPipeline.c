@@ -1,13 +1,13 @@
 #include "NanoGraphicsPipeline.h"
 #include "NanoShader.h"
 #include "NanoBuffers.h"
+#include "NanoRenderer.h"
 #include "vulkan/vulkan_core.h"
 #include <stdlib.h>
 #include <stdio.h>
 
-//TODO ; Match the init design of the NanoGraphics class
-void InitGraphicsPipeline(NanoGraphicsPipeline* graphicsPipeline, VkDevice device, const VkExtent2D extent){
-    graphicsPipeline->_device = device;
+void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const VkExtent2D extent){
+    graphicsPipeline->_device = nanoRenderer->m_pNanoContext->device;
     graphicsPipeline->m_extent = extent;
     graphicsPipeline->m_isInitialized = true;
 }
@@ -177,8 +177,8 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // Optional
-    pipelineLayoutInfo.pSetLayouts = NULL; // Optional
+    pipelineLayoutInfo.setLayoutCount = 1; // Optional
+    pipelineLayoutInfo.pSetLayouts = &graphicsPipeline->m_vertShader.descriptorSetLayout; // Optional
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = NULL; // Optional
 

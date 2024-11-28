@@ -12,10 +12,24 @@
 
 #include "NanoConfig.h"
 
+String* testMemFunction(int numElements){
+    String* srcMem;
+    srcMem = (String*)calloc(numElements, sizeof(String));
+    InitString(&srcMem[0], "Hello");
+    InitString(&srcMem[1], "World");
+    InitString(&srcMem[2], "I'm");
+    InitString(&srcMem[3], "Hamza");
+    return srcMem;
+}
+
+void testFixedMemFunction(String srcMem[], int numElements){
+    InitString(&srcMem[0], "Hello");
+    InitString(&srcMem[1], "World");
+    InitString(&srcMem[2], "I'm");
+    InitString(&srcMem[3], "Hamza");
+}
+
 int main(int argc, char *argv[]) {
-    /* NanoShader nanoShader; */
-    /* InitShader(&nanoShader, "./src/shader/shader.vert"); */
-    /* CompileShader(nullptr, &nanoShader, true); */
     if(argc > 1){
         fprintf(stderr, "argument passed in\n");
         if(strcmp(argv[1], "-FSC") == 0){
@@ -29,16 +43,5 @@ int main(int argc, char *argv[]) {
     RunEngine(&nanoEngine);
     CleanUpEngine(&nanoEngine);
 
-
-    /* String testString; */
-    /* HeapString testHeapString; */
-    /* InitString(&testString, "Hello"); */
-    /* InitHeapString(&testHeapString, "Hello"); */
-
-    /* AppendToString(&testString, " World!\n"); */
-    /* AppendToHeapString(&testHeapString, " World!\n"); */
-
-    /* printf("String: %s", testString.m_data); */
-    /* printf("HeapString: %s", testHeapString.m_pData); */
     return EXIT_SUCCESS;
 }

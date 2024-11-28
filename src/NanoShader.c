@@ -1,4 +1,5 @@
 #include "NanoShader.h"
+#include "NanoConfig.h"
 #include "NanoRenderer.h"
 #include "NanoUtility.h"
 #include "NanoBuffers.h"
@@ -18,7 +19,13 @@
 
 
 void CleanUpShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCleanUp){
+    vkDestroyDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->descriptorSetLayout, nullptr);
     vkDestroyShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->m_shaderModule, NULL);
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->UniformBufferMemory[i].buffer, nullptr);
+        vkFreeMemory(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->UniformBufferMemory[i].bufferMemory, nullptr);
+    }
+    vkDestroyDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->descriptorSetLayout, nullptr);
 }
 
 static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoShader* shaderToCreateDescriptorSetLayoutFor){
@@ -222,6 +229,7 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
       fprintf(stderr, "reading raw shader code from: %s\n", outputFile.m_data);
       shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);
       shaderToCompile->m_shaderModule = CreateShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCompile);
+      CreateUniformBuffersWithMappedMem(nanoRenderer, shaderToCompile->UniformBufferMemory, MAX_FRAMES_IN_FLIGHT);
     } else {
       shaderToCompile->m_isCompiled = false;
     }

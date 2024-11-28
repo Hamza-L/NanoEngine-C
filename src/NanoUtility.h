@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <NanoError.h>
-#include "NanoConfig.h"
 
 #define PRINTFLUSH(content, ...) printf(content, __VA_ARGS__); fflush(stdout)
 #define VK_CHECK_THROW(func, msg) if(func != VK_SUCCESS){fprintf(stderr, "%s", msg); abort();}

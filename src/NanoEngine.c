@@ -18,18 +18,18 @@ ERR InitEngine(NanoEngine* nanoEngine){
     return err;
 }
 
-ERR MainLoop(NanoRenderer* nanoRenderer){
+ERR MainLoop(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     ERR err = OK;
-    DrawFrame(nanoRenderer);
+    DrawFrame(nanoRenderer, nanoWindow);
     return err;
 }
 
 ERR RunEngine(NanoEngine* nanoEngine){
     ERR err = OK;
-    while(!ShouldWindowClose(nanoEngine->m_Window)){
+    while(!ShouldWindowClose(&nanoEngine->m_Window)){
 
-        PollEvents(nanoEngine->m_Window);
-        MainLoop(&nanoEngine->m_Renderer);
+        PollEvents(&nanoEngine->m_Window);
+        MainLoop(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
 
     }
     return err;

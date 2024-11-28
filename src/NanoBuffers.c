@@ -1,6 +1,5 @@
 #include "NanoBuffers.h"
 #include "NanoRenderer.h"
-#include "NanoShader.h"
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -41,7 +40,7 @@ void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindi
 
 // usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT for vertices
 NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, uint32_t dataSize){
-    NanoVkBufferMemory vertexMem;
+    NanoVkBufferMemory vertexMem = {};
 
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -148,6 +147,14 @@ NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFl
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
     return vertexMem;
+}
+
+void CreateUniformBuffersWithMappedMem(NanoRenderer* nanoRenderer, NanoVkBufferMemory UniformMemoryToInitialize[], uint32_t numBuffers){
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+    for (int i = 0; i < numBuffers; i++) {
+        UniformMemoryToInitialize[i] = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, bufferSize);
+        vkMapMemory(nanoRenderer->m_pNanoContext->device, UniformMemoryToInitialize[i].bufferMemory, 0, bufferSize, 0, &UniformMemoryToInitialize[i].bufferMemoryMapped);
+    }
 }
 
 void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem){

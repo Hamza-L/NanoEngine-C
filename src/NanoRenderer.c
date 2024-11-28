@@ -3,7 +3,6 @@
 #include "NanoError.h"
 #include "NanoUtility.h"
 #include "NanoWindow.h"
-#include "NanoShader.h"
 #include "NanoGraphicsPipeline.h"
 #include "NanoBuffers.h"
 
@@ -12,9 +11,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 Mesh object;
 
@@ -137,7 +133,9 @@ static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT*
 
 void cleanupSwapChainContext(const VkDevice device, SwapchainContext* swapchainContext) {
     for (int i = 0 ; i < swapchainContext->info.imageCount; i++) {
+        // clean swapchain framebuffers
         vkDestroyFramebuffer(device, swapchainContext->framebuffers[i], NULL);
+        // clean swapchain imageviews
         vkDestroyImageView(device, swapchainContext->imageViews[i], NULL);
     }
     vkDestroySwapchainKHR(device, swapchainContext->swapchain, NULL);
@@ -159,14 +157,7 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
     // clean commandPool and incidently the commandbuffers acquired from them
     vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, NULL);
 
-    // clean swapchain framebuffers
-    for (int i = 0 ; i < nanoRenderer->m_pNanoContext->swapchainContext.info.imageCount; i++) {
-        vkDestroyFramebuffer(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.framebuffers[i], NULL);
-    }
-    // clean swapchain imageviews
-    for (int i = 0 ; i < nanoRenderer->m_pNanoContext->swapchainContext.info.imageCount; i++) {
-        vkDestroyImageView(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.imageViews[i], NULL);
-    }
+    cleanupSwapChainContext(nanoRenderer->m_pNanoContext->device, &nanoRenderer->m_pNanoContext->swapchainContext);
 
     // clean graphic pipelines
     for (int i = 0 ; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++) {
@@ -175,8 +166,6 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
 
     // clean renderpass
     vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->defaultRenderpass, NULL);
-
-    vkDestroySwapchainKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain, NULL);
 
     vkDestroySurfaceKHR(nanoRenderer->m_pNanoContext->instance, nanoRenderer->m_pNanoContext->surface, NULL);
 
@@ -512,7 +501,7 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
         default:
             strcpy(deviceType, "UNKNOWN");
         }
-        fprintf(stderr, "Physical device selected: %s [%s]", deviceProperties.deviceName, deviceType);
+        fprintf(stderr, "Physical device selected: %s [%s]\n", deviceProperties.deviceName, deviceType);
     }
 
     return OK; // this is never reached if we use try/catch.
@@ -753,11 +742,27 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
     return err;
 }
 
-
-ERR recreateSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device, GLFWwindow *window, const VkSurfaceKHR surface, SwapchainContext* swapChainContext, const VkRenderPass renderpass){
+ERR recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
     ERR err = OK;
+    VkDevice device = nanoRenderer->m_pNanoContext->device;
+    VkPhysicalDevice physicalDevice = nanoRenderer->m_pNanoContext->physicalDevice;
+    SwapchainContext* swapChainContext = &nanoRenderer->m_pNanoContext->swapchainContext;
+    VkSurfaceKHR surface = nanoRenderer->m_pNanoContext->surface;
+    VkRenderPass renderpass = nanoRenderer->m_pNanoContext->defaultRenderpass;
+
+    // handle minimization. pause rendering if that is the case
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(window, &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window, &width, &height);
+        glfwWaitEvents();
+    }
+
     vkDeviceWaitIdle(device);
 
+    cleanupSwapChainContext(device, swapChainContext);
+
+    // we query the new extent when re-creating the swapchain
     err = createSwapchain(physicalDevice,
                           device,
                           window,
@@ -771,17 +776,21 @@ ERR recreateSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice devi
                             renderpass,
                             swapChainContext);
 
+    // update the extent of all graphics pipeines to reflect the framebuffer change due to window resize
+    for(int i = 0; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++){
+        nanoRenderer->m_pNanoContext->graphicsPipelines[i].m_extent = swapChainContext->info.currentExtent;
+    }
+
     return err;
 }
 
 
 ERR createGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline) {
     ERR err = OK;
-    VkDevice device = nanoRenderer->m_pNanoContext->device;
     VkExtent2D extent = nanoRenderer->m_pNanoContext->swapchainContext.info.currentExtent;
     VkRenderPass renderpass = nanoRenderer->m_pNanoContext->defaultRenderpass;
 
-    InitGraphicsPipeline(graphicsPipeline, device, extent);
+    InitGraphicsPipeline(nanoRenderer, graphicsPipeline, extent);
     AddVertShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.vert");
     AddFragShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.frag");
     graphicsPipeline->_renderpass = renderpass;
@@ -970,16 +979,26 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
     return err;
 }
 
-ERR DrawFrame(NanoRenderer* nanoRenderer){
+ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     ERR err = OK;
 
     int currentFrame = nanoRenderer->m_pNanoContext->swapchainContext.currentFrame;
     vkWaitForFences(nanoRenderer->m_pNanoContext->device, 1, &nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(nanoRenderer->m_pNanoContext->device, 1, &nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence);
 
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain,
-                          UINT64_MAX, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    VkResult result = vkAcquireNextImageKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain,
+                                            UINT64_MAX, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapchain(nanoRenderer, nanoWindow->_window);
+        return OK;
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        fprintf(stderr, "failed to acquire swap chain image!\n");
+        abort();
+    }
+
+    // only reset fence if we know we will be performing work ( ie swapchain is optimal and we can write to it )
+    vkResetFences(nanoRenderer->m_pNanoContext->device, 1, &nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence);
 
     vkResetCommandBuffer(nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], 0);
 
@@ -1015,7 +1034,16 @@ ERR DrawFrame(NanoRenderer* nanoRenderer){
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr; // Optional
 
-    vkQueuePresentKHR(nanoRenderer->m_pNanoContext->presentQueue, &presentInfo);
+    result = vkQueuePresentKHR(nanoRenderer->m_pNanoContext->presentQueue, &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || nanoWindow->framebufferResized) {
+        nanoWindow->framebufferResized = false;
+        recreateSwapchain(nanoRenderer, nanoWindow->_window);
+        return OK;
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        fprintf(stderr, "failed to present swap chain image!\n");
+        abort();
+    }
 
     nanoRenderer->m_pNanoContext->swapchainContext.currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
@@ -1063,7 +1091,7 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
                      nanoRenderer->m_pNanoContext->swapchainContext.info,
                      &nanoRenderer->m_pNanoContext->defaultRenderpass);
 
-    NanoGraphicsPipeline graphicsPipeline;
+    NanoGraphicsPipeline graphicsPipeline = {};
     createGraphicsPipeline(nanoRenderer,
                            &graphicsPipeline);
 
