@@ -1,10 +1,13 @@
 #include "NanoConfig.h"
 #include "Str.h"
+#include <string.h>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const char* ENGINE_NAME = "NanoEngine";
 const char* APP_NAME = "NanoApplication";
+
+static char s_arg0[512] = {};
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -38,4 +41,18 @@ const char* desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS] = {
 
 void SetForceShaderRecompile(bool isForceCompile){
     FORCE_RECOMPILE = isForceCompile;
+}
+
+void SetVar(char *arg0){
+    memcpy(s_arg0, arg0, 512);
+}
+
+char* GetArg0(){
+    return s_arg0;
+}
+
+void GetExecutablePath(String* exePath){
+    InitString(exePath, s_arg0);
+    int indxLastFSlash = FindLastRawString(s_arg0, "/");
+    SubString(exePath, 0, indxLastFSlash + 1);
 }

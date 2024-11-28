@@ -890,7 +890,7 @@ ERR createCommandBuffers(VkDevice device, const VkCommandPool commandPool, VkCom
     return err;
 }
 
-ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuffer* swapchainFrameBufferToWriteTo, VkCommandBuffer* commandBuffer) {
+ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuffer* swapchainFrameBufferToWriteTo, VkCommandBuffer* commandBuffer, uint32_t currentFrame) {
     ERR err = OK;
 
     VkCommandBufferBeginInfo beginInfo = {};
@@ -941,6 +941,7 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         vkCmdBindVertexBuffers(*commandBuffer, 0, 1, vertexBuffers, offsets);
         vkCmdBindIndexBuffer(*commandBuffer, object.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
 
+        vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->m_vertShader.UniformBufferDescSets[currentFrame], 0, nullptr);
 
         //vkCmdDraw(*commandBuffer, object.vertexDataSize, 1, 0, 0);
         vkCmdDrawIndexed(*commandBuffer, (uint32_t)object.indexDataSize/sizeof(uint32_t), 1, 0, 0, 0);
@@ -1002,10 +1003,15 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 
     vkResetCommandBuffer(nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], 0);
 
+    for(int i = 0; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++){
+        UpdateGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[i], currentFrame);
+    }
+
     int currentGraphicsPipelineIndex = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
     recordCommandBuffer(&nanoRenderer->m_pNanoContext->graphicsPipelines[currentGraphicsPipelineIndex],
                         &nanoRenderer->m_pNanoContext->swapchainContext.framebuffers[imageIndex], //swapchain framebuffer for the command buffer to operate on
-                        &nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame]); //command buffer to write to.
+                        &nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], //command buffer to write to.
+                        currentFrame);
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;

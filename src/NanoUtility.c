@@ -1,5 +1,6 @@
 #include "NanoUtility.h"
 #include <stdlib.h>
+#include <unistd.h>
 
 size_t SizeOf(const char** array){
     size_t size = 0;
@@ -33,8 +34,11 @@ char* ReadBinaryFile(const char* filename, uint32_t* sizeOfBuffer) {
     FILE* file = NULL;
     char *buffer = NULL;
 
+    char cwd[512];
+    getcwd(cwd, 512);
+
     if ((file = fopen(filename, "rb")) == NULL ) {
-        fprintf(stderr, "failed to open file!\n");
+        fprintf(stderr, "failed to open file at: %s because cwd is: %s\n", filename, cwd);
         return buffer;
     }
 
@@ -54,7 +58,7 @@ char* ReadBinaryFile(const char* filename, uint32_t* sizeOfBuffer) {
 
     int numOfElementsToRead = 1;
     if(fread(buffer, *sizeOfBuffer, numOfElementsToRead, file) != numOfElementsToRead){
-        fprintf(stderr, "failed to read file!\n");
+        fprintf(stderr, "failed to read file at %s\n", filename);
         goto close_file;
     }
 
@@ -62,6 +66,7 @@ close_file:
     if(fclose(file) == EOF){
         fprintf(stderr, "failed to close the file!\n");
     }
+
 
     return buffer;
 }

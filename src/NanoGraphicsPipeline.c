@@ -20,6 +20,16 @@ void AddFragShaderToGraphicsPipeline(NanoRenderer* nanoGraphics, NanoGraphicsPip
     InitShader(&graphicsPipeline->m_fragShader, fragShaderFile);
 }
 
+void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, uint32_t currentFrame){
+
+    //update vertex shader descriptor set
+    UpdateShader(&graphicsPipeline->m_vertShader, currentFrame);
+
+    //update fragment shader descriptor set
+    //UpdateShader(&graphicsPipeline->m_fragShader, currentFrame);
+
+}
+
 ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile){
     ERR err = OK;
 
@@ -34,6 +44,8 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
         /* ASSERT(fragShader->m_isCompiled, "graphics pipeline's fragment shader was not compiled\n"); */
         /* return NOT_INITIALIZED; */
     }
+
+    InitVertexShaderUniformBuffers( nanoRenderer, &graphicsPipeline->m_vertShader);
 
     // Shaders ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -12,6 +12,8 @@
 #define MAX_SHORT_STRING_LENGTH 64
 #define MAX_SUPPORTED_GPU_COUNT 8
 
+typedef struct String String;
+
 extern const int WINDOW_WIDTH;
 extern const int WINDOW_HEIGHT;
 extern const char* ENGINE_NAME;
@@ -22,6 +24,10 @@ extern bool FORCE_RECOMPILE;
 extern const char* desiredValidationLayers[MAX_ARRAY_OF_EXTENSIONS];
 extern const char* desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS];
 extern const char* desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS];
+
+char* GetArg0();
+void GetExecutablePath(String* exePath);
+void SetVar(char* arg0);
 
 void SetForceShaderRecompile(bool isForceCompile);
 

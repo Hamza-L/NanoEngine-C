@@ -19,17 +19,20 @@ struct NanoShader{
         uint32_t m_rawShaderCodeSize;
         bool m_isCompiled;
 
-        VkDescriptorSetLayout descriptorSetLayout;
-        VkPipelineLayout pipelineLayout;
-
         VkShaderModule m_shaderModule;
 
         NanoVkBufferMemory UniformBufferMemory[MAX_FRAMES_IN_FLIGHT];
+        VkDescriptorSet UniformBufferDescSets[MAX_FRAMES_IN_FLIGHT];
+        VkDescriptorSetLayout descriptorSetLayout;
+
+        VkDescriptorPool descriptorPool;
 };
 
 
 void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile);
+void UpdateShader(NanoShader* shaderToInitialize, uint32_t currentFrame);
 int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool forceCompile);
+void InitVertexShaderUniformBuffers(NanoRenderer* nanoRenderer, NanoShader* shaderToInit);
 void CleanUpShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCleanUp);
 
 #endif // NANOSHADER_H_
