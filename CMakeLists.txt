@@ -102,15 +102,18 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/mac/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/FREETYPE/mac/include"
         "/Users/h_lahmimsi/VulkanSDK/1.3.290.0/macOS/include")
 
     target_link_directories(${PROJECT_NAME} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/lib-universal"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/mac/lib/${CMAKE_BUILD_TYPE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/FREETYPE/mac/lib/${CMAKE_BUILD_TYPE}"
         "/Users/h_lahmimsi/VulkanSDK/1.3.290.0/macOS/lib")
 
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
         "libcglm.dylib"
+        "libfreetype.dylib"
         "libglfw.3.dylib"
         "libvulkan.dylib")
 elseif(LINUX)
