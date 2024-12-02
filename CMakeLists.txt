@@ -26,14 +26,17 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 set(Headers
     "src/NanoEngine.h"
     "src/NanoBuffers.h"
+    "src/NanoImage.h"
     "src/NanoWindow.h"
     "src/NanoRenderer.h"
     "src/NanoGraphicsPipeline.h"
     "src/NanoError.h"
     "src/NanoUtility.h"
+    "src/NanoVkUtility.h"
     "src/NanoConfig.h"
     "src/NanoShader.h"
     "src/Str.h"
+    "src/stb_image.h"
 )
 
 source_group("Headers" FILES ${Headers})
@@ -41,11 +44,13 @@ source_group("Headers" FILES ${Headers})
 set(Sources
     "src/NanoEngine.c"
     "src/NanoBuffers.c"
+    "src/NanoImage.c"
     "src/NanoWindow.c"
     "src/NanoRenderer.c"
     "src/NanoGraphicsPipeline.c"
     "src/NanoError.c"
     "src/NanoUtility.c"
+    "src/NanoVkUtility.c"
     "src/NanoConfig.c"
     "src/NanoShader.c"
     "src/Str.c"

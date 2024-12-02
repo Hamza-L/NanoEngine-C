@@ -1,10 +1,12 @@
 #include "NanoRenderer.h"
 #include "NanoConfig.h"
 #include "NanoError.h"
+#include "NanoShader.h"
 #include "NanoUtility.h"
 #include "NanoWindow.h"
 #include "NanoGraphicsPipeline.h"
 #include "NanoBuffers.h"
+#include "NanoImage.h"
 
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
@@ -13,8 +15,13 @@
 #include <stdlib.h>
 
 Mesh object;
+NanoImage texture;
 
-void CreateVertexData(NanoRenderer *nanoRenderer, Mesh* meshObject){
+void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
+    InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg");
+}
+
+void CreateVertexData(NanoRenderer* nanoRenderer, Mesh* meshObject){
     int numVertices = 4;
     int numIndices = 6;
     meshObject->pVertexData = (Vertex*)malloc(sizeof(Vertex) * numVertices);
@@ -22,10 +29,10 @@ void CreateVertexData(NanoRenderer *nanoRenderer, Mesh* meshObject){
     meshObject->pIndexData = (uint32_t*)malloc(sizeof(uint32_t) * numIndices);
     meshObject->indexDataSize = sizeof(uint32_t) * numIndices;
 
-    Vertex vertices[4] = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                          {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-                          {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-                          {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+    Vertex vertices[4] = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+                          {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                          {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                          {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}};
     uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
     memcpy(meshObject->pVertexData, vertices, meshObject->vertexDataSize);
     memcpy(meshObject->pIndexData, indices, meshObject->indexDataSize);
@@ -34,7 +41,7 @@ void CreateVertexData(NanoRenderer *nanoRenderer, Mesh* meshObject){
     meshObject->indexMemory = CreateIndexBuffer(nanoRenderer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->pIndexData, meshObject->indexDataSize);
 }
 
-void CleanUpVertexData(NanoRenderer *nanoRenderer){
+void CleanUpVertexData(NanoRenderer* nanoRenderer){
     CleanUpBuffer(nanoRenderer, &object.vertexMemory);
     CleanUpBuffer(nanoRenderer, &object.indexMemory);
 }
@@ -151,6 +158,8 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
         vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, NULL);
         vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
     }
+
+    CleanUpImage(nanoRenderer, &texture);
 
     CleanUpVertexData(nanoRenderer);
 
@@ -419,6 +428,10 @@ int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surf
         fprintf(stderr, "No Tesselation shader support found\n");
     }
 
+    if (!deviceFeatures.samplerAnisotropy) {
+        fprintf(stderr, "No Anisotropy support found\n");
+    }
+
     // Application can't function without the required device extensions
     bool extensionsSupported = OK == checkDeviceExtensionSupport(device);
     if (!extensionsSupported) {
@@ -445,7 +458,7 @@ int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surf
 }
 
 static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface, QueueFamilyIndices* queueIndices,
-                              VkPhysicalDevice* physicalDevice) {
+                              VkPhysicalDevice* physicalDevice, VkPhysicalDeviceProperties* physicalDeviceProperties) {
     ERR err = OK;
     *physicalDevice = VK_NULL_HANDLE;
 
@@ -478,11 +491,10 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
         fprintf(stderr, "failed to find a suitable GPU!\n");
         abort();
     } else {
-        VkPhysicalDeviceProperties deviceProperties;
-        vkGetPhysicalDeviceProperties(*physicalDevice, &deviceProperties);
+        vkGetPhysicalDeviceProperties(*physicalDevice, physicalDeviceProperties);
 
         char deviceType[256] = {0};
-        switch (deviceProperties.deviceType) {
+        switch (physicalDeviceProperties->deviceType) {
         case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
             strcpy(deviceType, "DESCRETE GPU");
             break;
@@ -501,7 +513,7 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
         default:
             strcpy(deviceType, "UNKNOWN");
         }
-        fprintf(stderr, "Physical device selected: %s [%s]\n", deviceProperties.deviceName, deviceType);
+        fprintf(stderr, "Physical device selected: %s [%s]\n", physicalDeviceProperties->deviceName, deviceType);
     }
 
     return OK; // this is never reached if we use try/catch.
@@ -549,7 +561,8 @@ ERR createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKH
     createInfo.pQueueCreateInfos = queueCreateInfos;
     createInfo.queueCreateInfoCount = numQueueFamilies;
 
-    VkPhysicalDeviceFeatures deviceFeatures = {}; // defaults all the features to false for now
+    VkPhysicalDeviceFeatures deviceFeatures = {}; // defaults most of the features to false for now
+    deviceFeatures.samplerAnisotropy = VK_TRUE;
     createInfo.pEnabledFeatures = &deviceFeatures;
 
     createInfo.enabledExtensionCount = (uint32_t)SizeOf(desiredDeviceExtensions);
@@ -626,28 +639,11 @@ VkExtent2D chooseSwapExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR c
     }
 }
 
-ERR createSCImageViews(const VkDevice device, SwapchainContext* swapchainContext) {
+ERR createSCImageViews(NanoRenderer* nanoRenderer, SwapchainContext* swapchainContext) {
     ERR err = OK;
     swapchainContext->imageViews = (VkImageView*)calloc(swapchainContext->info.imageCount, sizeof(VkImageView));
-    for (size_t i = 0; i < swapchainContext->info.imageCount ; i++) {
-        VkImageViewCreateInfo createInfo = {};
-        createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-        createInfo.image = swapchainContext->images[i];
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = swapchainContext->info.selectedFormat.format;
-        createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        createInfo.subresourceRange.baseMipLevel = 0;
-        createInfo.subresourceRange.levelCount = 1;
-        createInfo.subresourceRange.baseArrayLayer = 0;
-        createInfo.subresourceRange.layerCount = 1;
-        if (vkCreateImageView(device, &createInfo, nullptr, &swapchainContext->imageViews[i]) != VK_SUCCESS) {
-            fprintf(stderr, "failed to create image views!");
-            abort();
-        }
+    for (size_t i = 0; i < swapchainContext->info.imageCount ; i++){
+        swapchainContext->imageViews[i] = CreateImageView(nanoRenderer, swapchainContext->images[i], swapchainContext->info.selectedFormat.format);
     }
 
     return err;
@@ -769,7 +765,7 @@ ERR recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
                           surface,
                           swapChainContext);
 
-    err = createSCImageViews(device,
+    err = createSCImageViews(nanoRenderer,
                              swapChainContext);
 
     err = createFramebuffer(device,
@@ -791,8 +787,13 @@ ERR createGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gra
     VkRenderPass renderpass = nanoRenderer->m_pNanoContext->defaultRenderpass;
 
     InitGraphicsPipeline(nanoRenderer, graphicsPipeline, extent);
-    AddVertShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.vert");
-    AddFragShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, "./src/shader/shader.frag");
+
+    NanoShaderConfig vertConfig = {.m_fileFullPath = "./src/shader/shader.vert", .hasSampler = false, .hasUniformBuffer = true};
+    AddVertShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, vertConfig);
+
+    NanoShaderConfig fragConfig = {.m_fileFullPath = "./src/shader/shader.frag", .hasSampler = true, .hasUniformBuffer = false};
+    AddFragShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, fragConfig);
+
     graphicsPipeline->_renderpass = renderpass;
     CompileGraphicsPipeline(nanoRenderer, graphicsPipeline, true);
 
@@ -941,7 +942,7 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         vkCmdBindVertexBuffers(*commandBuffer, 0, 1, vertexBuffers, offsets);
         vkCmdBindIndexBuffer(*commandBuffer, object.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->m_vertShader.UniformBufferDescSets[currentFrame], 0, nullptr);
+        vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 0, nullptr);
 
         //vkCmdDraw(*commandBuffer, object.vertexDataSize, 1, 0, 0);
         vkCmdDrawIndexed(*commandBuffer, (uint32_t)object.indexDataSize/sizeof(uint32_t), 1, 0, 0, 0);
@@ -1004,7 +1005,7 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     vkResetCommandBuffer(nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], 0);
 
     for(int i = 0; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++){
-        UpdateGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[i], currentFrame);
+        UpdateGraphicsPipelineAtFrame(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[i], currentFrame);
     }
 
     int currentGraphicsPipelineIndex = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
@@ -1045,7 +1046,7 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || nanoWindow->framebufferResized) {
         nanoWindow->framebufferResized = false;
         recreateSwapchain(nanoRenderer, nanoWindow->_window);
-        return OK;
+        /* return OK; */
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         fprintf(stderr, "failed to present swap chain image!\n");
         abort();
@@ -1075,7 +1076,8 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
     pickPhysicalDevice(nanoRenderer->m_pNanoContext->instance,
                        nanoRenderer->m_pNanoContext->surface,
                        &nanoRenderer->m_pNanoContext->queueIndices,
-                       &nanoRenderer->m_pNanoContext->physicalDevice); // physical device is not created but picked based on scores dictated by the number of supported features
+                       &nanoRenderer->m_pNanoContext->physicalDevice, // physical device is not created but picked based on scores dictated by the number of supported features
+                       &nanoRenderer->m_pNanoContext->deviceProperties);
 
     createLogicalDeviceAndGetQueues(nanoRenderer->m_pNanoContext->physicalDevice,
                                     nanoRenderer->m_pNanoContext->surface,
@@ -1090,7 +1092,7 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
                     nanoRenderer->m_pNanoContext->surface,
                     &nanoRenderer->m_pNanoContext->swapchainContext);
 
-    createSCImageViews(nanoRenderer->m_pNanoContext->device,
+    createSCImageViews(nanoRenderer,
                        &nanoRenderer->m_pNanoContext->swapchainContext);
 
     createRenderPass(nanoRenderer->m_pNanoContext->device,
@@ -1121,6 +1123,9 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
                                MAX_FRAMES_IN_FLIGHT);
 
     CreateVertexData(nanoRenderer, &object);
+
+    CreateImageData(nanoRenderer, &texture);
+    AddImageToGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[0], &texture);
 
     return err;
 }

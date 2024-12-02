@@ -3,16 +3,10 @@
 #include "NanoRenderer.h"
 #include "NanoUtility.h"
 #include "NanoBuffers.h"
-#include "NanoError.h"
 #include "Str.h"
-#include "vulkan/vulkan_core.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <cglm/cglm.h>
-/* #include <cglm/affine.h> */
-#include <time.h>
 
 #ifdef _WIN64
 #include <windows.h>
@@ -20,103 +14,14 @@
 #include <unistd.h>
 #endif
 
-double startTime = 0;
-bool timeStarted = false;
-
 void CleanUpShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCleanUp){
     vkDestroyShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->m_shaderModule, NULL);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->UniformBufferMemory[i].buffer, nullptr);
-        vkFreeMemory(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->UniformBufferMemory[i].bufferMemory, nullptr);
-    }
-    vkDestroyDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->descriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(nanoRenderer->m_pNanoContext->device, shaderToCleanUp->descriptorPool, nullptr);
-}
-
-static void CreateDescriptorPool(NanoRenderer* nanoRenderer, NanoShader* shaderToCreateDescriptorPoolFor){
-    VkDescriptorPoolSize poolSize = {};
-    poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize.descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT);
-
-    VkDescriptorPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = 1;
-    poolInfo.pPoolSizes = &poolSize;
-    poolInfo.maxSets = (uint32_t)MAX_FRAMES_IN_FLIGHT;
-
-    if (vkCreateDescriptorPool(nanoRenderer->m_pNanoContext->device, &poolInfo, nullptr, &shaderToCreateDescriptorPoolFor->descriptorPool) != VK_SUCCESS) {
-      fprintf(stderr, "failed to create descriptor pool!\n");
-    }
-
-}
-
-static void CreateDescriptorSets(NanoRenderer* nanoRenderer, NanoShader* shaderToCreateDescriptorSetsFor){
-    VkDescriptorSetLayout layouts[MAX_FRAMES_IN_FLIGHT];
-    for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-      layouts[i] = shaderToCreateDescriptorSetsFor->descriptorSetLayout;
-    }
-
-    VkDescriptorSetAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = shaderToCreateDescriptorSetsFor->descriptorPool;
-    allocInfo.descriptorSetCount = (uint32_t)MAX_FRAMES_IN_FLIGHT;
-    allocInfo.pSetLayouts = layouts;
-
-    if (vkAllocateDescriptorSets(nanoRenderer->m_pNanoContext->device, &allocInfo, shaderToCreateDescriptorSetsFor->UniformBufferDescSets) != VK_SUCCESS) {
-        fprintf(stderr, "failed to allocate descriptor sets!\n");
-    }
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = shaderToCreateDescriptorSetsFor->UniformBufferMemory[i].buffer;
-        bufferInfo.offset = 0;
-        bufferInfo.range = sizeof(UniformBufferObject);
-
-        VkWriteDescriptorSet descriptorWrite = {};
-        descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrite.dstSet = shaderToCreateDescriptorSetsFor->UniformBufferDescSets[i];
-        descriptorWrite.dstBinding = 0;
-        descriptorWrite.dstArrayElement = 0;
-        descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        descriptorWrite.descriptorCount = 1;
-        descriptorWrite.pBufferInfo = &bufferInfo;
-        descriptorWrite.pImageInfo = nullptr; // Optional
-        descriptorWrite.pTexelBufferView = nullptr; // Optional
-
-        vkUpdateDescriptorSets(nanoRenderer->m_pNanoContext->device, 1, &descriptorWrite, 0, nullptr);
-    }
-}
-
-static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoShader* shaderToCreateDescriptorSetLayoutFor){
-    VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-    uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.descriptorCount = 1; //could pass an array of uniform buffer objects
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    uboLayoutBinding.pImmutableSamplers = nullptr; // Optional. used for texture sampling
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 1;
-    layoutInfo.pBindings = &uboLayoutBinding;
-
-    if (vkCreateDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, &layoutInfo, nullptr, &shaderToCreateDescriptorSetLayoutFor->descriptorSetLayout) != VK_SUCCESS) {
-      fprintf(stderr, "failed to create descriptor set layout!");
-      ASSERT(false, "failed to create descriptor set layout!");
-    }
-}
-
-void InitVertexShaderUniformBuffers(NanoRenderer* nanoRenderer, NanoShader* shaderToInit){
-      CreateUniformBuffersWithMappedMem(nanoRenderer, shaderToInit->UniformBufferMemory, MAX_FRAMES_IN_FLIGHT);
-      CreateDescriptorSetLayout(nanoRenderer, shaderToInit);
-      CreateDescriptorPool(nanoRenderer, shaderToInit);
-      CreateDescriptorSets(nanoRenderer, shaderToInit);
 }
 
 static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
   VkShaderModule shaderModule = {};
   if(!shader->m_isCompiled){
-      fprintf(stderr, "Attempting to create a shader module from uncompiled shader");
+      fprintf(stderr, "Attempting to create a shader module from uncompiled shader\n");
       return shaderModule; // failed the re-attempt at compiling
   }
 
@@ -126,7 +31,7 @@ static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
   createInfo.pCode = (const uint32_t*)shader->m_rawShaderCode;
 
   if (vkCreateShaderModule(device, &createInfo, NULL, &shaderModule) != VK_SUCCESS) {
-    fprintf(stderr, "failed to create shader module!");
+    fprintf(stderr, "failed to create shader module!\n");
   }
 
   return shaderModule;
@@ -223,31 +128,12 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
 }
 #endif
 
-
-void InitShader(NanoShader* shaderToInitialize, const char* shaderCodeFile){
-    InitString(&shaderToInitialize->m_fileFullPath, shaderCodeFile);
+void InitShader(NanoRenderer* nanoRenderer, NanoShader* shaderToInitialize, NanoShaderConfig config){
+    shaderToInitialize->config = config;
     shaderToInitialize->m_rawShaderCodeSize = 0;
     shaderToInitialize->m_isCompiled = false;
     shaderToInitialize->m_shaderModule = VK_NULL_HANDLE;
-}
 
-void UpdateShader(NanoShader* shaderToInitialize, uint32_t currentFrame){
-    if(!timeStarted){
-        startTime = (double)clock()/CLOCKS_PER_SEC;
-        timeStarted = true;
-    }
-    double currentTime = (double)clock()/CLOCKS_PER_SEC - startTime;
-
-    fprintf(stderr, "currentTime: %f\n", currentTime);
-
-    UniformBufferObject ubo = {};
-
-    vec3 axis = {0.0f, 1.0f, 0.0f};
-    glm_mat4_identity(ubo.model);
-    glm_rotate(ubo.model, 45.0f, axis);
-
-    memcpy(shaderToInitialize->UniformBufferMemory[currentFrame].bufferMemoryMapped, &ubo, sizeof(ubo));
-    /* shaderToInitialize; */
 }
 
 int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool forceCompile){
@@ -259,20 +145,20 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
     int exitCode = 1;
     String outputFile = CreateString("./src/shader/");
 
-    if(FindRawString(shaderToCompile->m_fileFullPath.m_data, ".vert") >= 0){
+    if(FindRawString(shaderToCompile->config.m_fileFullPath, ".vert") >= 0){
         AppendToString(&outputFile, "vert");
-    } else if (FindRawString(shaderToCompile->m_fileFullPath.m_data, ".frag") >= 0){
+    } else if (FindRawString(shaderToCompile->config.m_fileFullPath, ".frag") >= 0){
         AppendToString(&outputFile, "frag");
-    } else if (FindRawString(shaderToCompile->m_fileFullPath.m_data, ".comp") >= 0){
+    } else if (FindRawString(shaderToCompile->config.m_fileFullPath, ".comp") >= 0){
         AppendToString(&outputFile, "comp");
     }
     AppendToString(&outputFile, "_");
 
-    int startIndx = FindLastRawString(shaderToCompile->m_fileFullPath.m_data, "/") + 1; //we don't want to include the "/"
-    int endIndx = FindLastRawString(shaderToCompile->m_fileFullPath.m_data, ".");
+    int startIndx = FindLastRawString(shaderToCompile->config.m_fileFullPath, "/") + 1; //we don't want to include the "/"
+    int endIndx = FindLastRawString(shaderToCompile->config.m_fileFullPath, ".");
 
     String filename;
-    InitString(&filename, shaderToCompile->m_fileFullPath.m_data);
+    InitString(&filename, shaderToCompile->config.m_fileFullPath);
     SubString(&filename, startIndx, endIndx-startIndx);
 
     AppendToString(&outputFile, filename.m_data);
@@ -291,11 +177,11 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
 
     if(compileNeeded){
       String cmdArgument = CreateString(" ");
-      AppendToString(&cmdArgument, shaderToCompile->m_fileFullPath.m_data);
+      AppendToString(&cmdArgument, shaderToCompile->config.m_fileFullPath);
+      AppendToString(&cmdArgument, " -g ");
       AppendToString(&cmdArgument, " -o ");
       AppendToString(&cmdArgument, outputFile.m_data);
 
-      char const *argv[] = { shaderToCompile->m_fileFullPath.m_data, "-o", outputFile.m_data};
 #ifdef __APPLE__
       const char* executable = "./external/VULKAN/mac/glslc";
 #elif _WIN32
@@ -304,9 +190,9 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
       const char* executable = "./external/VULKAN/linux/glslc";
 #endif
       exitCode = RunGLSLCompiler(executable,
-                                 shaderToCompile->m_fileFullPath.m_data,
+                                 shaderToCompile->config.m_fileFullPath,
                                  outputFile.m_data,
-                                 &shaderToCompile->m_fileFullPath.m_data[startIndx]);
+                                 &shaderToCompile->config.m_fileFullPath[startIndx]);
     }
 
     if(!exitCode){

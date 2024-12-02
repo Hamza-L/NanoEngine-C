@@ -59,6 +59,7 @@ struct NanoVKContext {
     VkInstance instance;
     VkPhysicalDevice physicalDevice;
     VkDevice device;
+    VkPhysicalDeviceProperties deviceProperties;
 
     QueueFamilyIndices queueIndices ;
     VkQueue graphicsQueue;

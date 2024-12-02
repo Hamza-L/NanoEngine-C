@@ -1,6 +1,7 @@
 #ifndef NANORENDERERPIPELINE_H_
 #define NANORENDERERPIPELINE_H_
 
+#include "NanoBuffers.h"
 #include "NanoShader.h"
 #include "NanoError.h"
 #include "vulkan/vulkan_core.h"
@@ -8,25 +9,42 @@
 typedef struct NanoGraphicsPipeline NanoGraphicsPipeline;
 
 struct NanoGraphicsPipeline{
-        VkDevice _device;
         VkRenderPass _renderpass;
+
         VkExtent2D m_extent;
+
         NanoShader m_vertShader;
         NanoShader m_fragShader;
         NanoShader* m_otherShaders; //optional
-        VkPipelineLayout m_pipelineLayout;
+
+        VkSampler m_sampler;
+
         VkPipeline m_pipeline;
+        VkPipelineLayout m_pipelineLayout;
+        VkDescriptorSetLayout m_descriptorSetLayout;
+        VkDescriptorPool m_descriptorPool;
+        VkDescriptorSet DescSets[MAX_FRAMES_IN_FLIGHT];
+
         bool m_isInitialized;
         bool m_isCompiled;
+
+        // Textures
+        NanoImage* textures;
+        uint32_t numTextures;
+
+        // Uniform Buffers
+        NanoVkBufferMemory UniformBufferMemory[MAX_FRAMES_IN_FLIGHT];
 
         // optionals
         bool m_isWireFrame;
 };
 
 void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const VkExtent2D extent);
-void AddVertShaderToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const char* vertShaderFile);
-void AddFragShaderToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const char* fragShaderFile);
-void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, uint32_t currentFrame);
+void AddVertShaderToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoShaderConfig config);
+void AddFragShaderToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoShaderConfig config);
+void AddImageToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoImage* nanoImage);
+void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, uint32_t currentFrame);
+void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline);
 ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile);
 void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline);
 

@@ -1,24 +1,12 @@
 #include "NanoBuffers.h"
 #include "NanoRenderer.h"
+#include "NanoVkUtility.h"
 #include "vulkan/vulkan_core.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
-uint32_t findMemoryType(NanoRenderer* nanoRenderer, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(nanoRenderer->m_pNanoContext->physicalDevice, &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    fprintf(stderr, "failed to find suitable memory type!\n");
-    abort();
-}
 
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription) {
     pVertexInputBindingDescription->binding = 0;
@@ -26,16 +14,21 @@ void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBi
     pVertexInputBindingDescription->inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 }
 
-void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindingDescription[DATA_PER_VERTEX]) {
+void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindingDescription[DATA_MEMBER_PER_VERTEX]) {
     vertexInputBindingDescription[0].binding = 0;
     vertexInputBindingDescription[0].location = 0;
-    vertexInputBindingDescription[0].format = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputBindingDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexInputBindingDescription[0].offset = offsetof(Vertex, pos);
 
     vertexInputBindingDescription[1].binding = 0;
     vertexInputBindingDescription[1].location = 1;
     vertexInputBindingDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexInputBindingDescription[1].offset = offsetof(Vertex, color);
+
+    vertexInputBindingDescription[2].binding = 0;
+    vertexInputBindingDescription[2].location = 2;
+    vertexInputBindingDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputBindingDescription[2].offset = offsetof(Vertex, uv);
 }
 
 // usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT for vertices
@@ -71,22 +64,49 @@ NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBit
     return vertexMem;
 }
 
-void CopyBuffer(NanoRenderer* nanoRenderer, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-    VkCommandBufferAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandPool = nanoRenderer->m_pNanoContext->commandPool;
-    allocInfo.commandBufferCount = 1;
+NanoVkImageMemory CreateImageBuffer(NanoRenderer* nanoRenderer, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlagBits memProperties){
+    NanoVkImageMemory imageMem = {};
 
-    VkCommandBuffer commandBuffer;
-    vkAllocateCommandBuffers(nanoRenderer->m_pNanoContext->device, &allocInfo, &commandBuffer);
+    VkImageCreateInfo imageInfo = {};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = width;
+    imageInfo.extent.height = height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT; // will be the object of a copy. will also be used for sampling in-shader
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // only used by the transfer enabled queue (ie Graphics queue)
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.flags = 0; // Optional
 
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    if (vkCreateImage(nanoRenderer->m_pNanoContext->device, &imageInfo, nullptr, &imageMem.textureImage) != VK_SUCCESS) {
+        fprintf(stderr, "failed to create image!\n");
+    }
 
-    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(nanoRenderer->m_pNanoContext->device, imageMem.textureImage, &memRequirements);
 
+    VkMemoryAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(nanoRenderer, memRequirements.memoryTypeBits, memProperties);
+
+    if (vkAllocateMemory(nanoRenderer->m_pNanoContext->device, &allocInfo, nullptr, &imageMem.textureImageMemory) != VK_SUCCESS) {
+        fprintf(stderr, "failed to allocate image memory!\n");
+    }
+
+    vkBindImageMemory(nanoRenderer->m_pNanoContext->device, imageMem.textureImage, imageMem.textureImageMemory, 0);
+
+    return imageMem;
+}
+
+//TODO: Append the commands to the mainloop's recorded command buffers as an optimized buffer to buffer copy since this command only runs when the device Queue idles
+void CopyBuffer(NanoRenderer* nanoRenderer, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size){
+    VkCommandBuffer commandBuffer = BeginSingleTimeCommands(nanoRenderer);
     {
         VkBufferCopy copyRegion = {};
         copyRegion.srcOffset = 0; // Optional
@@ -95,18 +115,39 @@ void CopyBuffer(NanoRenderer* nanoRenderer, VkBuffer srcBuffer, VkBuffer dstBuff
 
         vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
     }
+    EndAndSubmitSingleTimeCommands(nanoRenderer, commandBuffer);
+}
 
-    vkEndCommandBuffer(commandBuffer);
+//TODO: Append the commands to the mainloop's recorded command buffers as an optimized buffer to image copy since this command only runs when the device Queue idles
+void CopyBufferToImage(NanoRenderer* nanoRenderer, VkBuffer srcBuffer, VkImage dstImage, uint32_t width, uint32_t height){
+    VkCommandBuffer commandBuffer = BeginSingleTimeCommands(nanoRenderer);
+    {
+        VkBufferImageCopy region = {};
+        region.bufferOffset = 0;
+        region.bufferRowLength = 0; //tightly packed = 0. no padding
+        region.bufferImageHeight = 0;
 
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffer;
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.mipLevel = 0;
+        region.imageSubresource.baseArrayLayer = 0;
+        region.imageSubresource.layerCount = 1;
 
-    vkQueueSubmit(nanoRenderer->m_pNanoContext->graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(nanoRenderer->m_pNanoContext->graphicsQueue);
+        region.imageOffset.x = 0;
+        region.imageOffset.y = 0;
+        region.imageOffset.z = 0;
+        region.imageExtent.width = width;
+        region.imageExtent.height = height;
+        region.imageExtent.depth = 1;
 
-    vkFreeCommandBuffers(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, 1, &commandBuffer);
+        vkCmdCopyBufferToImage(
+            commandBuffer,
+            srcBuffer,
+            dstImage,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,// layout the image is currently using. we assume it has already transitioned to the optimal layout for buffer copy
+            1,
+            &region);
+    }
+    EndAndSubmitSingleTimeCommands(nanoRenderer, commandBuffer);
 }
 
 NanoVkBufferMemory CreateVertexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
@@ -130,8 +171,8 @@ NanoVkBufferMemory CreateVertexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageF
 }
 
 NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
-    NanoVkBufferMemory vertexMem;
-    vertexMem = CreateBuffer(nanoRenderer, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
+    NanoVkBufferMemory indexMem;
+    indexMem = CreateBuffer(nanoRenderer, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
 
     NanoVkBufferMemory stagingBufferMem;
     stagingBufferMem = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, dataSize);
@@ -141,20 +182,12 @@ NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFl
     memcpy(data, pData, (size_t)dataSize);
     vkUnmapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory);
 
-    CopyBuffer(nanoRenderer, stagingBufferMem.buffer, vertexMem.buffer, dataSize);
+    CopyBuffer(nanoRenderer, stagingBufferMem.buffer, indexMem.buffer, dataSize);
 
     vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
-    return vertexMem;
-}
-
-void CreateUniformBuffersWithMappedMem(NanoRenderer* nanoRenderer, NanoVkBufferMemory UniformMemoryToInitialize[], uint32_t numBuffers){
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-    for (int i = 0; i < numBuffers; i++) {
-        UniformMemoryToInitialize[i] = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, bufferSize);
-        vkMapMemory(nanoRenderer->m_pNanoContext->device, UniformMemoryToInitialize[i].bufferMemory, 0, bufferSize, 0, &UniformMemoryToInitialize[i].bufferMemoryMapped);
-    }
+    return indexMem;
 }
 
 void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem){
