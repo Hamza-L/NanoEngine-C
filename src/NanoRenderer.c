@@ -8,6 +8,7 @@
 #include "NanoBuffers.h"
 #include "NanoImage.h"
 
+#include "cglm/affine.h"
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
 #include <string.h>
@@ -18,7 +19,12 @@ Mesh object;
 NanoImage texture;
 
 void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
-    InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg");
+    /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
+    /* InitImage(nanoRenderer, image, 300, 300, IMAGE_FORMAT_RGBA); */
+    InitText(nanoRenderer, image, "Hello World!");
+    uint32_t currentGP = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
+    vec3 scaling = {1,(float)image->height/image->width,1};
+    glm_scale(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model, scaling);
 }
 
 void CreateVertexData(NanoRenderer* nanoRenderer, Mesh* meshObject){

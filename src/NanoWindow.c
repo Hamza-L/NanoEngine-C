@@ -1,4 +1,5 @@
 #include "NanoWindow.h"
+#include "NanoInput.h"
 #include "GLFW/glfw3.h"
 #include "NanoConfig.h"
 
@@ -46,6 +47,9 @@ NanoWindow* InitWindow(NanoWindow* nanoWindow, const int32_t width, const int32_
     }
     glfwSetWindowUserPointer(nanoWindow->_window, nanoWindow);
     glfwSetFramebufferSizeCallback(nanoWindow->_window, framebufferResizeCallback);
+    glfwSetKeyCallback(nanoWindow->_window,key_callback);
+    glfwSetMouseButtonCallback(nanoWindow->_window, mouse_callback);
+    glfwSetScrollCallback(nanoWindow->_window, scroll_callback);
     return nanoWindow;
 }
 

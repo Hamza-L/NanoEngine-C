@@ -23,6 +23,7 @@ typedef struct {
     unsigned char padding[3];
 } NanoImage;
 
+void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text);
 void InitImage(NanoRenderer* nanoRenderer, NanoImage* nanoImage, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels);
 void InitImageFromFile(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* fileName);
 void CleanUpImage(NanoRenderer* nanoRenderer, NanoImage* nanoImage);

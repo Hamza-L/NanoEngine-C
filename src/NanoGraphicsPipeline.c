@@ -20,9 +20,9 @@ void CreateTextureSampler(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
     samplerInfo.magFilter = VK_FILTER_LINEAR; //we would use VK_FILTER_NEAREST if we want a more pixelated look
     samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
     samplerInfo.anisotropyEnable = VK_TRUE;
     samplerInfo.maxAnisotropy = nanoRenderer->m_pNanoContext->deviceProperties.limits.maxSamplerAnisotropy;
     /* samplerInfo.anisotropyEnable = VK_FALSE; */ //if we do not want anisotropy
@@ -169,6 +169,10 @@ void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
     graphicsPipeline->m_extent = extent;
     graphicsPipeline->m_isInitialized = true;
 
+    glm_mat4_identity(graphicsPipeline->uniformBuffer.model);
+    glm_mat4_identity(graphicsPipeline->uniformBuffer.proj);
+    glm_mat4_identity(graphicsPipeline->uniformBuffer.view);
+
     // does not use a staging buffer since it's updated at every frame
     CreateUniformBuffersWithMappedMem(nanoRenderer, graphicsPipeline->UniformBufferMemory, MAX_FRAMES_IN_FLIGHT);
 
@@ -189,20 +193,17 @@ void AddFragShaderToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPip
 }
 
 void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, uint32_t currentFrame){
-    UniformBufferObject ubo = {};
-    glm_mat4_identity(ubo.model);
-    glm_mat4_identity(ubo.proj);
-    glm_mat4_identity(ubo.view);
+    UniformBufferObject* ubo = &graphicsPipeline->uniformBuffer;
 
     // View matrix
     vec3 eye = {0.0f, 0.0f, 2.0f};
     vec3 center = {0.0f, 0.0f, 0.0f};
     vec3 up = {0.0f, 1.0f, 0.0f};
-    glm_lookat(eye, center, up, ubo.view);
+    glm_lookat(eye, center, up, ubo->view);
 
     // Projection matrix
-    glm_perspective(glm_rad(45.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 10.0f, ubo.proj);
-    ubo.proj[1][1] *= -1;
+    glm_perspective(glm_rad(45.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 10.0f, ubo->proj);
+    ubo->proj[1][1] *= -1;
     /* vec3 axis = {0.0f, 1.0f, 0.0f}; */
     /* glm_mat4_identity(ubo.model); */
     /* glm_rotate(ubo.model, 45.0f, axis); */
@@ -211,10 +212,10 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
         startTime = (double)clock()/CLOCKS_PER_SEC;
         timeStarted = true;
     }
-    double currentTime = (double)clock()/CLOCKS_PER_SEC - startTime;
+    /* double currentTime = (double)clock()/CLOCKS_PER_SEC - startTime; */
 
     /* fprintf(stderr, "currentTime: %f\n", currentTime); */
-    memcpy(graphicsPipeline->UniformBufferMemory[currentFrame].bufferMemoryMapped, &ubo, sizeof(ubo));
+    memcpy(graphicsPipeline->UniformBufferMemory[currentFrame].bufferMemoryMapped, ubo, sizeof(UniformBufferObject));
 
 }
 

@@ -33,6 +33,7 @@ struct NanoGraphicsPipeline{
         uint32_t numTextures;
 
         // Uniform Buffers
+        UniformBufferObject uniformBuffer;
         NanoVkBufferMemory UniformBufferMemory[MAX_FRAMES_IN_FLIGHT];
 
         // optionals
