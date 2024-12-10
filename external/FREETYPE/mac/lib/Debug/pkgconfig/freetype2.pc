@@ -1,14 +1,14 @@
-prefix=/Users/h_lahmimsi/Downloads/freetype-2.13.3/build-gnu
-exec_prefix=/Users/h_lahmimsi/Downloads/freetype-2.13.3/build-gnu
-libdir=/Users/h_lahmimsi/Downloads/freetype-2.13.3/build-gnu/lib
-includedir=/Users/h_lahmimsi/Downloads/freetype-2.13.3/build-gnu/include
+prefix=/usr/local
+exec_prefix=/usr/local
+libdir=/usr/local/lib
+includedir=/usr/local/include
 
 Name: FreeType 2
 URL: https://freetype.org
 Description: A free, high-quality, and portable font engine.
 Version: 26.2.20
 Requires: 
-Requires.private: zlib, bzip2, libpng, harfbuzz >= 2.0.0, libbrotlidec
-Libs: -L/Users/h_lahmimsi/Downloads/freetype-2.13.3/build-gnu/lib -lfreetype
+Requires.private: 
+Libs: -L/usr/local/lib -lfreetype 
 Libs.private: 
 Cflags: -I${includedir}/freetype2

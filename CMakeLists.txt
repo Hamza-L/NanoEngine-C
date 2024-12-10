@@ -5,10 +5,12 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 set(CMAKE_BUILD_TYPE "Debug")
+
 if (WIN32)
     set(CMAKE_VS_PLATFORM_NAME "x64")
 elseif (APPLE)
-    set (CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE INTERNAL "")
+    set (MACOSX_DEPLOYMENT_TARGET "10.15" CACHE INTERNAL "")
+
     if (UniversalBinary)
         set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE INTERNAL "")
         #set(CMAKE_OSX_ARCHITECTURES arm64 x86_64)
@@ -100,24 +102,27 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 elseif(APPLE)
     message("Starting the Macos Build")
 
-target_include_directories(${PROJECT_NAME} PUBLIC
+    target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/src"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/mac/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/FREETYPE/mac/include"
-        "/Users/h_lahmimsi/VulkanSDK/1.3.290.0/macOS/include")
+        "~/VulkanSDK/1.3.290.0/macOS/include")
 
     target_link_directories(${PROJECT_NAME} PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/lib-universal"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/lib-arm64"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/mac/lib/${CMAKE_BUILD_TYPE}"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/FREETYPE/mac/lib/${CMAKE_BUILD_TYPE}"
-        "/Users/h_lahmimsi/VulkanSDK/1.3.290.0/macOS/lib")
+        "~/VulkanSDK/1.3.290.0/macOS/lib")
 
     set(ADDITIONAL_LIBRARY_DEPENDENCIES
-        "libcglm.dylib"
-        "libfreetype.dylib"
-        "libglfw.3.dylib"
-        "libvulkan.dylib")
+        "libcglm.a"
+        "libfreetype.a"
+        "libglfw3.a"
+        "libvulkan.dylib"
+        "-framework Cocoa" # From statically build glfw. need to manually specify the dependency
+        "-framework IOKit" # From statically build glfw. need to manually specify the dependency
+    )
 elseif(LINUX)
     message("Starting the Linux Build")
 

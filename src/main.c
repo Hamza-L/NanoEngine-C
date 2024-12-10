@@ -1,10 +1,8 @@
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "NanoEngine.h"
-#include "NanoShader.h"
-#include "Str.h"
+#include "NanoUtility.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -99,6 +97,8 @@ int main(int argc, char *argv[]) {
             SetForceShaderRecompile(true);
         }
     }
+    uint32_t sizeOfBuffer = 0;
+    ReadBinaryFile(argv[0], &sizeOfBuffer);
 
     fprintf(stderr, "ARG0: %s\n", GetArg0());
 

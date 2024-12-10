@@ -76,7 +76,7 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         abort();
     }
     error = FT_New_Face( library,
-                         "/Users/h_lahmimsi/Library/Fonts/Cascadia.ttf",
+                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf",
                          0,
                          &face );
 
