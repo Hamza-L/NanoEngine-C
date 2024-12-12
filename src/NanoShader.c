@@ -198,11 +198,7 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
     if(!exitCode){
       shaderToCompile->m_isCompiled = true;
       /* fprintf(stderr, "reading raw shader code from: %s\n", outputFile.m_data); */
-
-      char vert_buffer[] = {
-#embed "shader/vert_shader.spv"
-      };
-      shaderToCompile->m_rawShaderCode = vert_buffer;//ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);
+      shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);
       shaderToCompile->m_shaderModule = CreateShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCompile);
     } else {
       shaderToCompile->m_isCompiled = false;

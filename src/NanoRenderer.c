@@ -7,6 +7,7 @@
 #include "NanoGraphicsPipeline.h"
 #include "NanoBuffers.h"
 #include "NanoImage.h"
+#include "NanoInput.h"
 
 #include "cglm/affine.h"
 #include "vulkan/vulkan_core.h"
@@ -21,10 +22,16 @@ NanoImage texture;
 void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
     /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
     /* InitImage(nanoRenderer, image, 300, 300, IMAGE_FORMAT_RGBA); */
-    InitText(nanoRenderer, image, "Hello World!");
+    NanoKey nextKey = PopMostRecentInputKey();
+    if(nextKey.key_id != -1){
+        const char letter[] = {(char)nextKey.key_id, '\0'};
+        AppendToString(&testToDisplay, letter);
+        InitText(nanoRenderer, image, testToDisplay.m_data);
+    }
+
     uint32_t currentGP = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
-    vec3 scaling = {1,(float)image->height/image->width,1};
-    glm_scale(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model, scaling);
+    /* vec3 scaling = {1,(float)image->height/image->width,1}; */
+    /* glm_scale(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model, scaling); */
 }
 
 void CreateVertexData(NanoRenderer* nanoRenderer, Mesh* meshObject){
@@ -987,6 +994,12 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
     return err;
 }
 
+ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
+    ERR err = OK;
+    CreateImageData(renderer, &texture);
+    return err;
+}
+
 ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     ERR err = OK;
 
@@ -1130,7 +1143,10 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
 
     CreateVertexData(nanoRenderer, &object);
 
-    CreateImageData(nanoRenderer, &texture);
+
+    //testToDisplay = {};
+    testToDisplay = CreateString(" ");
+    InitText(nanoRenderer, &texture, testToDisplay.m_data);
     AddImageToGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[0], &texture);
 
     return err;

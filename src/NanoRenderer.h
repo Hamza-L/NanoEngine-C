@@ -83,6 +83,7 @@ struct NanoRenderer {
 };
 
 ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window);
+ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
 ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
 ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
 

@@ -20,6 +20,7 @@ ERR InitEngine(NanoEngine* nanoEngine){
 
 ERR MainLoop(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     ERR err = OK;
+    PreDrawFrame(nanoRenderer, nanoWindow);
     DrawFrame(nanoRenderer, nanoWindow);
     return err;
 }

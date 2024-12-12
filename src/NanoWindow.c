@@ -50,6 +50,8 @@ NanoWindow* InitWindow(NanoWindow* nanoWindow, const int32_t width, const int32_
     glfwSetKeyCallback(nanoWindow->_window,key_callback);
     glfwSetMouseButtonCallback(nanoWindow->_window, mouse_callback);
     glfwSetScrollCallback(nanoWindow->_window, scroll_callback);
+
+    InitNanoInput();
     return nanoWindow;
 }
 
