@@ -14,6 +14,45 @@
 FT_Library  library;
 FT_Face     face;      /* handle to face object */
 
+int GetTextWidth(const char* text, int pixelFontSize){
+    int textWidth = 0;
+
+    FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
+    int           pen_x, pen_y, n;
+    int num_chars = strlen(text);
+    uint32_t charWidth = pixelFontSize;
+    int error = FT_Set_Pixel_Sizes(
+        face,
+        0, // 0 if same as pixel height
+        charWidth);
+
+    pen_x = 0;
+    for ( n = 0; n < num_chars; n++ )
+    {
+        FT_UInt  glyph_index;
+
+        /* retrieve glyph index from character code */
+        glyph_index = FT_Get_Char_Index( face, text[n] );
+
+        /* load glyph image into the slot (erase previous one) */
+        error = FT_Load_Glyph( face, glyph_index, FT_LOAD_NO_BITMAP );
+        if ( error )
+            continue;  /* ignore errors */
+
+        int xOffset = pen_x + slot->bitmap_left;
+        /* /\* now, draw to our target surface *\/ */
+        /* my_draw_bitmap( &slot->bitmap, */
+        /*                 pen_x + slot->bitmap_left, */
+        /*                 pen_y - slot->bitmap_top ); */
+
+        /* increment pen position */
+        pen_x += slot->advance.x >> 6; // divide by 64 */
+        /* pen_y += slot->advance.y >> 6; /\* not useful for now *\/ */
+    }
+
+    return pen_x;
+}
+
 //TODO: Append the commands to the mainloop's recorded command buffers as an optimized pipeline transfer since this command only runs when the device Queue idles
 void TransitionImageLayout(NanoRenderer* nanoRenderer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
     VkCommandBuffer commandBuffer = BeginSingleTimeCommands(nanoRenderer);
@@ -76,7 +115,7 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         abort();
     }
     error = FT_New_Face( library,
-                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf",
+                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
                          0,
                          &face );
 
@@ -100,13 +139,21 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         abort();
     }
 
+
+
     FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
     int           pen_x, pen_y, n;
     const int num_chars = strlen(text);
     int numChannels = 4;
-    int width = charWidth * num_chars;
+    int width = GetTextWidth(text, charWidth);
     int height = charWidth + 45;
     const VkDeviceSize imageSize = width * height * numChannels;
+
+    if(nanoImage->isInitialized && (width > nanoImage->width || height > nanoImage->height || imageSize > nanoImage->imageDataSize)){
+        fprintf(stderr, "Input text content would exceed the size of the image\n");
+        return;
+    }
+
     unsigned char* imageData = (unsigned char*)malloc(imageSize);
 
     for (int y = 0; y < height; y++) {
@@ -165,14 +212,16 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
     }
 
 
+    if(!nanoImage->isInitialized){
+        nanoImage->width = width;
+        nanoImage->height = height;
+        nanoImage->numChannels = IMAGE_FORMAT_RGBA;
+        nanoImage->imageDataSize = imageSize;
+    }
 
-    nanoImage->width = width;
-    nanoImage->height = height;
-    nanoImage->numChannels = IMAGE_FORMAT_RGBA;
-    nanoImage->imageDataSize = imageSize;
-
-    if (!imageData) {
-        fprintf(stderr, "failed to open and load image\n");
+    if(imageSize <= 0) {
+        ASSERT(false, "no pixel has been written to the created image data \n");
+        return;
     }
 
     NanoVkBufferMemory stagingBufferMem; // we can use a VkBuffer for a VkImage copy
@@ -188,12 +237,14 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
 
     free(imageData);
 
-    nanoImage->nanoVkBuffer = CreateImageBuffer(nanoRenderer,
-                                                width, height,
-                                                VK_FORMAT_R8G8B8A8_SRGB,
-                                                VK_IMAGE_TILING_LINEAR,
-                                                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    if(!nanoImage->isInitialized){
+        nanoImage->nanoVkBuffer = CreateImageBuffer(nanoRenderer,
+                                                    width, height,
+                                                    VK_FORMAT_R8G8B8A8_SRGB,
+                                                    VK_IMAGE_TILING_LINEAR,
+                                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    }
 
     TransitionImageLayout(nanoRenderer,
                           nanoImage->nanoVkBuffer.textureImage,
@@ -215,7 +266,9 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
     vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
-    nanoImage->imageView = CreateImageView(nanoRenderer, nanoImage->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+    if(!nanoImage->isInitialized){
+        nanoImage->imageView = CreateImageView(nanoRenderer, nanoImage->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+    }
     nanoImage->isInitialized = true;
 }
 
