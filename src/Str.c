@@ -71,11 +71,7 @@ HeapString AllocHeapString(const char* string){
 }
 
 String* AppendToString(String* srcString, const char* stringToAppend){
-    if(srcString->m_size == 0){
-    } else {
-        srcString->m_size = AppendToRawString(srcString->m_data, stringToAppend);
-    }
-
+    srcString->m_size = AppendToRawString(srcString->m_data, stringToAppend);
     return srcString;
 }
 
