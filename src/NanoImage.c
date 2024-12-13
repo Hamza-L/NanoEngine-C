@@ -115,7 +115,7 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         abort();
     }
     error = FT_New_Face( library,
-                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
+                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
                          0,
                          &face );
 
@@ -154,18 +154,16 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         return;
     }
 
-    unsigned char* imageData = (unsigned char*)malloc(imageSize);
+    unsigned char* imageData = (unsigned char*)calloc(imageSize, sizeof(char));
 
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
-            imageData[(y * width * numChannels) + (x * numChannels)] = (y/(float)height) * 255; // r
-            imageData[(y * width * numChannels) + (x * numChannels) + 1] = 0; // g
-            imageData[(y * width * numChannels) + (x * numChannels) + 2] = 0; // b
-            imageData[(y * width * numChannels) + (x * numChannels) + 3] = 255; // a
-        }
-    }
-
-
+    /* for (int y = 0; y < height; y++) { */
+    /*     for (int x = 0; x < width; x++) { */
+    /*         imageData[(y * width * numChannels) + (x * numChannels)] = (y/(float)height) * 255; // r */
+    /*         imageData[(y * width * numChannels) + (x * numChannels) + 1] = 0; // g */
+    /*         imageData[(y * width * numChannels) + (x * numChannels) + 2] = 0; // b */
+    /*         imageData[(y * width * numChannels) + (x * numChannels) + 3] = 255; // a */
+    /*     } */
+    /* } */
 
     pen_x = 0;
 
@@ -196,8 +194,8 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
                     continue;
                 }
                 imageData[(y * width * numChannels) + (x * numChannels)] = 255; // r
-                imageData[(y * width * numChannels) + (x * numChannels) + 1] = 197; // g
-                imageData[(y * width * numChannels) + (x * numChannels) + 2] = 211; // b
+                imageData[(y * width * numChannels) + (x * numChannels) + 1] = 255; // g
+                imageData[(y * width * numChannels) + (x * numChannels) + 2] = 255; // b
                 imageData[(y * width * numChannels) + (x * numChannels) + 3] = slot->bitmap.buffer[((y - yOffset) * bmapW) + (x - xOffset)]; // a
             }
         }
@@ -280,8 +278,8 @@ void InitImage(NanoRenderer* nanoRenderer, NanoImage* nanoImage, uint32_t width,
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             imageData[(y * width * numChannels) + (x * numChannels)] = (y/(float)height) * 255; // r
-            imageData[(y * width * numChannels) + (x * numChannels) + 1] = 0; // g
-            imageData[(y * width * numChannels) + (x * numChannels) + 2] = 0; // b
+            imageData[(y * width * numChannels) + (x * numChannels) + 1] = ((x+y)/(float)(height + width)) * 255; // g
+            imageData[(y * width * numChannels) + (x * numChannels) + 2] = (1 - (x+y)/(float)(height + width)) * 255; // b
             imageData[(y * width * numChannels) + (x * numChannels) + 3] = 255; // a
         }
     }

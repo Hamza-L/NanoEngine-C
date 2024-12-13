@@ -24,18 +24,18 @@ String testToDisplay;
 void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
     /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
     /* InitImage(nanoRenderer, image, 300, 300, IMAGE_FORMAT_RGBA); */
-    NanoKey nextKey = PopMostRecentInputKey();
-    if(nextKey.key_id != -1 && (nextKey.key_id >= GLFW_KEY_SPACE && nextKey.key_id <= GLFW_KEY_WORLD_2)){
-        const char letter[] = {nextKey.key_mod == KEY_MOD_SHIFT ? (char)nextKey.key_id : (char)nextKey.key_id + ('a' - 'A'), '\0'};
-        AppendToString(&testToDisplay, letter);
-        InitText(nanoRenderer, image, testToDisplay.m_data);
-    }
+    /* NanoKey nextKey = PopMostRecentInputKey(); */
+    /* if(nextKey.key_id != -1 && (nextKey.key_id >= GLFW_KEY_SPACE && nextKey.key_id <= GLFW_KEY_WORLD_2)){ */
+    /*     const char letter[] = {nextKey.key_mod == KEY_MOD_SHIFT || nextKey.key_id == GLFW_KEY_SPACE ? (char)nextKey.key_id : (char)nextKey.key_id + ('a' - 'A'), '\0'}; */
+    /*     AppendToString(&testToDisplay, letter); */
+    /*     InitText(nanoRenderer, image, testToDisplay.m_data); */
+    /* } */
 
-    uint32_t currentGP = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
-    vec3 scaling = {1,(float)image->height/image->width,1};
+    /* uint32_t currentGP = nanoRenderer->m_pNanoContext->currentGraphicsPipeline; */
+    /* vec3 scaling = {1,(float)image->height/image->width,1}; */
 
-    glm_mat4_identity(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model);
-    glm_scale(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model, scaling);
+    /* glm_mat4_identity(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model); */
+    /* glm_scale(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model, scaling); */
 }
 
 void CreateVertexData(NanoRenderer* nanoRenderer, Mesh* meshObject){
@@ -1150,7 +1150,8 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
 
     //testToDisplay = {};
     testToDisplay = CreateString("");
-    InitText(nanoRenderer, &texture, "                    ");
+    /* InitText(nanoRenderer, &texture, "                    "); */
+    InitImage(nanoRenderer, &texture, 256, 256, IMAGE_FORMAT_RGBA);
     AddImageToGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[0], &texture);
 
     return err;
