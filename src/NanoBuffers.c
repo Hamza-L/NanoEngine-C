@@ -1,4 +1,6 @@
 #include "NanoBuffers.h"
+#include "MemManager.h"
+#include "NanoError.h"
 #include "NanoRenderer.h"
 #include "NanoVkUtility.h"
 #include "vulkan/vulkan_core.h"
@@ -193,14 +195,42 @@ NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFl
 void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem){
     vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, bufferMem->buffer, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, bufferMem->bufferMemory, nullptr);
+    bufferMem->buffer = VK_NULL_HANDLE;
+    bufferMem->bufferMemory = VK_NULL_HANDLE;
+    bufferMem->bufferMemoryMapped = nullptr;
 }
 
-void SendMeshObjectToGPUMemory(NanoRenderer* nanoRenderer, MeshObject* meshObject){
-    meshObject->vertexMemory = CreateVertexBuffer(nanoRenderer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshObject->meshMemory.vertexMemStart, meshObject->meshMemory.vertexMemSize);
-    meshObject->indexMemory = CreateIndexBuffer(nanoRenderer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->meshMemory.indexMemStart, meshObject->meshMemory.indexMemSize);
+/* void SendMeshObjectToGPUMemory(NanoRenderer* nanoRenderer, MeshObject* meshObject){ */
+/*     meshObject->vertexMemory = CreateVertexBuffer(nanoRenderer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshObject->meshMemory.vertexMemStart, meshObject->meshMemory.vertexMemSize); */
+/*     meshObject->indexMemory = CreateIndexBuffer(nanoRenderer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->meshMemory.indexMemStart, meshObject->meshMemory.indexMemSize); */
+/* } */
+
+void SendAllocatedMeshMemoryToGPUMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory){
+    if(!meshMemory->meshHostMemory.isInitialized){
+        fprintf(stderr, "Failed to send allocated memory to gpu. Host Memory is not initialized/n");
+        DEBUG_BREAK;
+        return;
+    }
+
+    meshMemory->meshVKMemory.vertexMemory = CreateVertexBuffer(nanoRenderer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshMemory->meshHostMemory.vertexMemory, meshMemory->meshHostMemory.numVertices * sizeof(Vertex));
+    meshMemory->meshVKMemory.indexMemory = CreateIndexBuffer(nanoRenderer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshMemory->meshHostMemory.indexMemory, meshMemory->meshHostMemory.numIndices * sizeof(uint32_t));
+    meshMemory->isInitialized = true;
 }
 
-void CleanUpMeshObject(NanoRenderer* nanoRenderer, MeshObject* meshObject){
-    CleanUpBuffer(nanoRenderer, &meshObject->vertexMemory);
-    CleanUpBuffer(nanoRenderer, &meshObject->indexMemory);
+/* void CleanUpMeshObject(NanoRenderer* nanoRenderer, MeshObject* meshObject){ */
+/*     CleanUpBuffer(nanoRenderer, &meshObject->vertexMemory); */
+/*     CleanUpBuffer(nanoRenderer, &meshObject->indexMemory); */
+/* } */
+
+void CleanUpMeshVkMemory(NanoRenderer* nanoRenderer, MeshVKMemory* meshMemory){
+    // have to wait until device is done executing it's buffered commands in case the buffers are in use
+    vkDeviceWaitIdle(nanoRenderer->m_pNanoContext->device);
+    CleanUpBuffer(nanoRenderer, &meshMemory->vertexMemory);
+    CleanUpBuffer(nanoRenderer, &meshMemory->indexMemory);
+}
+
+void CleanUpMeshMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory){
+    CleanUpMeshHostMemory(&meshMemory->meshHostMemory);
+    CleanUpMeshVkMemory(nanoRenderer, &meshMemory->meshVKMemory);
+    meshMemory->isInitialized = false;
 }

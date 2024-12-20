@@ -13,8 +13,8 @@ ERR CleanUpEngine(NanoEngine* nanoEngine){
 ERR InitEngine(NanoEngine* nanoEngine){
     ERR err = OK;
     InitWindow(&nanoEngine->m_Window, WINDOW_WIDTH, WINDOW_HEIGHT, true);
-    InitMeshAllocator(&nanoEngine->m_meshMemAllocator, MAX_MEMORY_MESH_OBJECT * MAX_VERTEX_PER_OBJECT);
-    InitRenderer(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
+    InitMeshHostMemory(&nanoEngine->m_meshMemory.meshHostMemory, MAX_MEMORY_MESH_OBJECT * MAX_VERTEX_PER_OBJECT);
+    InitRenderer(&nanoEngine->m_Renderer, &nanoEngine->m_meshMemory, &nanoEngine->m_Window);
     return err;
 }
 

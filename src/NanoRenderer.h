@@ -82,7 +82,7 @@ struct NanoRenderer {
     NanoVKContext* m_pNanoContext;
 };
 
-ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window);
+ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, NanoWindow* window);
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
 ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
 ERR CleanUpRenderer(NanoRenderer* nanoRenderer);

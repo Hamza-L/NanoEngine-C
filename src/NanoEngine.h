@@ -10,7 +10,7 @@ typedef struct NanoEngine NanoEngine;
 struct NanoEngine{
     NanoRenderer m_Renderer;
     NanoWindow m_Window;
-    MeshMemoryAllocator m_meshMemAllocator;
+    MeshMemory m_meshMemory;
 };
 
 ERR InitEngine(NanoEngine* nanoEngine);

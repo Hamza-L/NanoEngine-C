@@ -33,9 +33,10 @@ typedef struct{
     uint32_t numMemMeshObjects;
 
     bool isInitialized;
-} MeshMemoryAllocator;
+} MeshHostMemory;
 
-void InitMeshAllocator(MeshMemoryAllocator* memMeshAllocator, uint32_t InitialMemSize);
-void AllocateMeshObjectMemory(MeshMemoryAllocator* memMeshAllocator, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, struct MeshObject* meshObject);
+void InitMeshHostMemory(MeshHostMemory* memMeshAllocator, uint32_t InitialMemSize);
+void AllocateMeshObjectMemory(MeshHostMemory* memMeshAllocator, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, struct MeshObject* meshObject);
+void CleanUpMeshHostMemory(MeshHostMemory* meshHostMemory);
 
 #endif // MEMMANAGER_H_

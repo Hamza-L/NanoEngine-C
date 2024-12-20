@@ -38,11 +38,19 @@ struct MeshObject{
 
     // transform
     mat4 model;
+};
 
-    // Vulkan Memory
+typedef struct{
     NanoVkBufferMemory vertexMemory;
     NanoVkBufferMemory indexMemory;
-};
+} MeshVKMemory;
+
+typedef struct{
+    MeshVKMemory meshVKMemory;
+    MeshHostMemory meshHostMemory;
+
+    bool isInitialized;
+} MeshMemory;
 
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription);
 void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindingDescription[DATA_MEMBER_PER_VERTEX]);
@@ -60,6 +68,9 @@ void CopyBufferToImage(NanoRenderer* nanoRenderer, VkBuffer buffer, VkImage imag
 
 void CreateMeshObject(Vertex* vertex, uint32_t numVertices, uint32_t* indexData, uint32_t numIndices, MeshObject* meshObject);
 void SendMeshObjectToGPUMemory(NanoRenderer* nanoRenderer, MeshObject* meshObject);
+void SendAllocatedMeshMemoryToGPUMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory);
 void CleanUpMeshObject(NanoRenderer* nanoRenderer, MeshObject* meshObject);
+void CleanUpMeshVkMemory(NanoRenderer* nanoRenderer, MeshVKMemory* meshMemory);
+void CleanUpMeshMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory);
 
 #endif // NANOBUFFERS_H_

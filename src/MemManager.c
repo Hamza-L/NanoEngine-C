@@ -1,4 +1,5 @@
 #include "MemManager.h"
+#include "NanoConfig.h"
 #include "NanoError.h"
 #include "NanoBuffers.h"
 #include "cglm/mat4.h"
@@ -6,7 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 
-void InitMeshAllocator(MeshMemoryAllocator* memMeshAllocator, uint32_t InitialMemSize){
+void InitMeshHostMemory(MeshHostMemory* memMeshAllocator, uint32_t InitialMemSize){
     memMeshAllocator->vertexMemory = (Vertex*)calloc(sizeof(Vertex), InitialMemSize);
     memMeshAllocator->numVertices = 0;
     memMeshAllocator->indexMemory = (uint32_t*)calloc(sizeof(uint32_t), InitialMemSize);
@@ -15,7 +16,7 @@ void InitMeshAllocator(MeshMemoryAllocator* memMeshAllocator, uint32_t InitialMe
     memMeshAllocator->isInitialized = true;
 }
 
-void AllocateMeshObjectMemory(MeshMemoryAllocator* memMeshAllocator, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, struct MeshObject* meshObject){
+void AllocateMeshObjectMemory(MeshHostMemory* memMeshAllocator, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, struct MeshObject* meshObject){
     if(!memMeshAllocator->isInitialized){
         fprintf(stderr, "memoryAllocator not initialized. Cannot allocated MeshObjectMemory/n");
         DEBUG_BREAK;
@@ -38,4 +39,14 @@ void AllocateMeshObjectMemory(MeshMemoryAllocator* memMeshAllocator, Vertex* ver
 
     meshObject->meshMemory = *memMeshObj;
     glm_mat4_identity(meshObject->model);
+}
+
+void CleanUpMeshHostMemory(MeshHostMemory* meshHostMemory){
+    free(meshHostMemory->vertexMemory);
+    free(meshHostMemory->indexMemory);
+    meshHostMemory->isInitialized = false;
+    memset(meshHostMemory->memMeshObjects, 0, sizeof(MeshMemoryObject) * MAX_MEMORY_MESH_OBJECT);
+    meshHostMemory->numMemMeshObjects = 0;
+    meshHostMemory->numIndices = 0;
+    meshHostMemory->numVertices = 0;
 }

@@ -10,7 +10,6 @@
 #include "NanoImage.h"
 #include "NanoInput.h"
 
-#include "cglm/affine.h"
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
 #include <string.h>
@@ -19,6 +18,8 @@
 
 NanoImage texture;
 String testToDisplay;
+
+static MeshMemory* s_meshMemoryPtr;
 
 void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
     /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
@@ -150,6 +151,8 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
         vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, NULL);
         vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
     }
+
+    CleanUpMeshVkMemory(nanoRenderer, &s_meshMemoryPtr->meshVKMemory);
 
     CleanUpImage(nanoRenderer, &texture);
 
@@ -927,15 +930,17 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         scissor.extent = graphicsPipeline->m_extent;
         vkCmdSetScissor(*commandBuffer, 0, 1, &scissor);
 
-        VkBuffer vertexBuffers[] = {object.vertexMemory.buffer};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(*commandBuffer, 0, 1, vertexBuffers, offsets);
-        vkCmdBindIndexBuffer(*commandBuffer, object.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
+        if(s_meshMemoryPtr->isInitialized){
+            VkBuffer vertexBuffers[] = {s_meshMemoryPtr->meshVKMemory.vertexMemory.buffer};
+            VkDeviceSize offsets[] = {0};
+            vkCmdBindVertexBuffers(*commandBuffer, 0, 1, vertexBuffers, offsets);
+            vkCmdBindIndexBuffer(*commandBuffer, s_meshMemoryPtr->meshVKMemory.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 0, nullptr);
+            vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 0, nullptr);
 
-        //vkCmdDraw(*commandBuffer, object.vertexDataSize, 1, 0, 0);
-        vkCmdDrawIndexed(*commandBuffer, (uint32_t)object.indexDataSize/sizeof(uint32_t), 1, 0, 0, 0);
+            //vkCmdDraw(*commandBuffer, object.vertexDataSize, 1, 0, 0);
+            vkCmdDrawIndexed(*commandBuffer, s_meshMemoryPtr->meshHostMemory.numIndices, 1, 0, 0, 0);
+        }
 
         vkCmdEndRenderPass(*commandBuffer);
 
@@ -1053,8 +1058,11 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     return err;
 }
 
-ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
+ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, NanoWindow* window){
     ERR err = OK;
+
+    s_meshMemoryPtr = meshMemory;
+
     nanoRenderer->m_pNanoContext = (NanoVKContext*)calloc(1, sizeof(NanoVKContext));
     // Here the err validation is not that useful
     // a iferr_return can be added at the end of each statement to check it's state and exit (or at least warn) if an error did occur
