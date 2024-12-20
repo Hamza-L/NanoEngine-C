@@ -1,26 +1,18 @@
 #ifndef NANOBUFFERS_H_
 #define NANOBUFFERS_H_
 
-#include "cglm/types.h"
+#include "MemManager.h"
 #include <vulkan/vulkan.h>
 #include <stdint.h>
 
 #define DATA_MEMBER_PER_VERTEX 3
 
-typedef struct NanoRenderer NanoRenderer;
+typedef struct NanoRenderer NanoRenderer;//forward decl
 
-typedef struct Vertex Vertex;
 typedef struct UniformBufferObject UniformBufferObject;
 typedef struct NanoVkBufferMemory NanoVkBufferMemory;
 typedef struct NanoVkImageMemory NanoVkImageMemory;
 typedef struct MeshObject MeshObject;
-
-// DATA_MEMBER_PER_VERTEX = number of members in vertex struct
-struct Vertex{
-    vec3 pos;
-    vec4 color;
-    vec2 uv;
-};
 
 struct UniformBufferObject {
     mat4 model;
@@ -41,10 +33,8 @@ struct NanoVkImageMemory{
 };
 
 struct MeshObject{
-    Vertex* pVertexData;
-    uint32_t* pIndexData;
-    uint32_t vertexDataSize;
-    uint32_t indexDataSize;
+    // host memory
+    MeshMemoryObject meshMemory;
 
     // transform
     mat4 model;
@@ -53,7 +43,6 @@ struct MeshObject{
     NanoVkBufferMemory vertexMemory;
     NanoVkBufferMemory indexMemory;
 };
-
 
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription);
 void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindingDescription[DATA_MEMBER_PER_VERTEX]);

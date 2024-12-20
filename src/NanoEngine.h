@@ -3,12 +3,14 @@
 
 #include "NanoRenderer.h"
 #include "NanoWindow.h"
+#include "MemManager.h"
 
 typedef struct NanoEngine NanoEngine;
 
 struct NanoEngine{
     NanoRenderer m_Renderer;
     NanoWindow m_Window;
+    MeshMemoryAllocator m_meshMemAllocator;
 };
 
 ERR InitEngine(NanoEngine* nanoEngine);

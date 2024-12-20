@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "MemManager.h"
 #include "NanoBuffers.h"
 #include "NanoEngine.h"
 #include "NanoUtility.h"
@@ -11,7 +12,7 @@
 
 #include "NanoConfig.h"
 
-void CreateVertexData(NanoRenderer* nanoRenderer, MeshObject* meshObject){
+void CreateVertexData(NanoEngine* nanoEngine, MeshObject* meshObject){
     int numVertices = 4;
     int numIndices = 6;
     Vertex vertices[4] = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
@@ -20,9 +21,10 @@ void CreateVertexData(NanoRenderer* nanoRenderer, MeshObject* meshObject){
                           {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}};
     uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 
-    CreateMeshObject(vertices, numVertices,
-                     indices, numIndices,
-                     meshObject);
+    AllocateMeshObjectMemory(&nanoEngine->m_meshMemAllocator, vertices, numVertices, indices, numIndices, meshObject);
+    /* CreateMeshObject(vertices, numVertices, */
+    /*                  indices, numIndices, */
+    /*                  meshObject); */
 }
 
 int main(int argc, char *argv[]) {
@@ -41,7 +43,7 @@ int main(int argc, char *argv[]) {
     InitEngine(&nanoEngine);
 
     MeshObject object;
-    CreateVertexData(&nanoEngine.m_Renderer, &object);
+    CreateVertexData(&nanoEngine, &object);
     SendMeshObjectToGPUMemory(&nanoEngine.m_Renderer, &object);
 
     RunEngine(&nanoEngine);

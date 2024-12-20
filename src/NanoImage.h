@@ -19,7 +19,7 @@ typedef struct {
     NanoVkImageMemory nanoVkBuffer;
     VkImageView imageView;
 
-    bool isInitialized;
+    _Bool isInitialized;
     unsigned char padding[3];
 } NanoImage;
 

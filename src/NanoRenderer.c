@@ -1118,9 +1118,6 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
                                nanoRenderer->m_pNanoContext->swapchainContext.syncObjects,
                                MAX_FRAMES_IN_FLIGHT);
 
-    CreateVertexData(nanoRenderer, &object);
-    SendMeshObjectToGPUMemory(nanoRenderer, &object);
-
     //testToDisplay = {};
     testToDisplay = CreateString("");
     InitImage(nanoRenderer, &texture, 2, 2, IMAGE_FORMAT_RGBA);
