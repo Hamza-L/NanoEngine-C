@@ -14,8 +14,19 @@
 
 // MEMORY SETTINGS
 #define MAX_MEMORY_MESH_OBJECT 256
-// max vertex per mesh object is 1024*16
+
+// max vertex per mesh object is 1024*16.
 #define MAX_VERTEX_PER_OBJECT 16384
+
+// Max supported size is 3840 x 2160 (4K textures)
+#define MAX_NUM_ALLOCATED_IMAGES 1028
+
+// Max supported size is 3840 x 2160 (4K textures)
+#define MAX_IMAGE_MEMSIZE 8294400
+
+// Max supported memory size of the image memory (for all images in the host app).
+// is equivalent to 128 4K images;
+#define MAX_TOTAL_ALLOCATED_IMAGES_MEMSIZE 1061683200
 
 typedef struct String String;
 

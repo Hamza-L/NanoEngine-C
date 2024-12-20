@@ -48,13 +48,13 @@ int main(int argc, char *argv[]) {
     float size[2] = {0.5f, 0.5f};
     float color1[4] = {1.0f, 0.0f, 0.0f, 1.0f};
     CreateSquare( offset, size, color1, vertices, indices);
-    AllocateMeshObjectMemory(&nanoEngine.m_meshMemory.meshHostMemory, vertices, 4, indices, 6, &object1);
+    AllocateMeshMemoryObject(&nanoEngine.m_meshMemory.meshHostMemory, vertices, 4, indices, 6, &object1);
 
     MeshObject object2;
     offset[0] = 0.5f; offset[1] = 0.5f;
     float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f};
     CreateSquare( offset, size, color2, vertices, indices);
-    AllocateMeshObjectMemory(&nanoEngine.m_meshMemory.meshHostMemory, vertices, 4, indices, 6, &object2);
+    AllocateMeshMemoryObject(&nanoEngine.m_meshMemory.meshHostMemory, vertices, 4, indices, 6, &object2);
 
     SendAllocatedMeshMemoryToGPUMemory(&nanoEngine.m_Renderer, &nanoEngine.m_meshMemory);
     /* SendMeshObjectToGPUMemory(&nanoEngine.m_Renderer, &object); */

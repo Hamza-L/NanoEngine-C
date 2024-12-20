@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 struct MeshObject;
+struct NanoImage;
 
 // DATA_MEMBER_PER_VERTEX = number of members in vertex struct
 typedef struct{
@@ -35,8 +36,28 @@ typedef struct{
     bool isInitialized;
 } MeshHostMemory;
 
-void InitMeshHostMemory(MeshHostMemory* memMeshAllocator, uint32_t InitialMemSize);
-void AllocateMeshObjectMemory(MeshHostMemory* memMeshAllocator, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, struct MeshObject* meshObject);
+typedef struct{
+    char* imageData;
+    uint32_t imageMemSize;
+} ImageMemoryObject;
+
+typedef struct{
+    char* ImageMemory;
+    uint32_t imageMemSize;
+
+    ImageMemoryObject imageMemObjects[MAX_NUM_ALLOCATED_IMAGES];
+    uint32_t numImageMemObjects;
+
+    bool isInitialized;
+} ImageHostMemory;
+
+void InitMeshHostMemory(MeshHostMemory* meshHostMemory, uint32_t InitialMemSize);
+void AllocateMeshMemoryObject(MeshHostMemory* memMeshAllocator, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, struct MeshObject* meshObject);
 void CleanUpMeshHostMemory(MeshHostMemory* meshHostMemory);
+
+void InitImageHostMemory(ImageHostMemory* imageHostMemory, uint32_t InitialMemSize);
+ImageMemoryObject* GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory, uint32_t imageDataMemSize);
+void AllocateImageMemoryObject(ImageHostMemory* imageHostMemory, char* imageData, uint32_t imageDataMemSize, struct NanoImage* imageObject);
+void CleanUpImageHostMemory(ImageHostMemory* imageHostMemory);
 
 #endif // MEMMANAGER_H_

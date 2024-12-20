@@ -1,4 +1,5 @@
 #include "NanoImage.h"
+#include "MemManager.h"
 #include "NanoRenderer.h"
 #include "NanoBuffers.h"
 #include "NanoVkUtility.h"
@@ -263,17 +264,20 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
     nanoImage->isInitialized = true;
 }
 
-void InitImage(NanoRenderer* nanoRenderer, NanoImage* nanoImage, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels){
+void InitImage(ImageHostMemory* imageHostMemory, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* nanoImage){
     // create an image from scratch
     const VkDeviceSize imageSize = width * height * numChannels;
-    unsigned char* imageData = (unsigned char*)malloc(imageSize);
+    nanoImage->imageMemory = GetAllocateImageMemoryObject(imageHostMemory, imageSize);
+
+    int checkerBoardSquareSize = 64;
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            imageData[(y * width * numChannels) + (x * numChannels)] = (y/(float)height) * 255; // r
-            imageData[(y * width * numChannels) + (x * numChannels) + 1] = ((x+y)/(float)(height + width)) * 255; // g
-            imageData[(y * width * numChannels) + (x * numChannels) + 2] = (1 - (x+y)/(float)(height + width)) * 255; // b
-            imageData[(y * width * numChannels) + (x * numChannels) + 3] = 255; // a
+            int isColored = ((x % (checkerBoardSquareSize*2)) > checkerBoardSquareSize) ^ ((y % (checkerBoardSquareSize*2)) > checkerBoardSquareSize);
+            nanoImage->imageMemory->imageData[(y * width * numChannels) + (x * numChannels)] = isColored * 255; // r
+            nanoImage->imageMemory->imageData[(y * width * numChannels) + (x * numChannels) + 1] = isColored * 128; // g
+            nanoImage->imageMemory->imageData[(y * width * numChannels) + (x * numChannels) + 2] = 0; // b
+            nanoImage->imageMemory->imageData[(y * width * numChannels) + (x * numChannels) + 3] = (char)255; // a
         }
     }
 
@@ -281,44 +285,42 @@ void InitImage(NanoRenderer* nanoRenderer, NanoImage* nanoImage, uint32_t width,
     nanoImage->height = height;
     nanoImage->numChannels = IMAGE_FORMAT_RGBA;
     nanoImage->imageDataSize = imageSize;
+}
 
-    if (!imageData) {
-        fprintf(stderr, "failed to open and load image\n");
-    }
-
+void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image){
     NanoVkBufferMemory stagingBufferMem; // we can use a VkBuffer for a VkImage copy
     stagingBufferMem = CreateBuffer(nanoRenderer,
                                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                    imageSize);
+                                    image->imageMemory->imageMemSize);
 
     void* data;
-    vkMapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, imageData, (size_t)imageSize);
+    vkMapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, 0, image->imageMemory->imageMemSize, 0, &data);
+    memcpy(data, image->imageMemory->imageData, (size_t)image->imageMemory->imageMemSize);
     vkUnmapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory);
 
-    free(imageData);
+    free(image->imageMemory->imageData);
 
-    nanoImage->nanoVkBuffer = CreateImageBuffer(nanoRenderer,
-                                                width, height,
+    image->nanoVkBuffer = CreateImageBuffer(nanoRenderer,
+                                                image->width, image->height,
                                                 VK_FORMAT_R8G8B8A8_SRGB,
                                                 VK_IMAGE_TILING_LINEAR,
                                                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                                                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     TransitionImageLayout(nanoRenderer,
-                          nanoImage->nanoVkBuffer.textureImage,
+                          image->nanoVkBuffer.textureImage,
                           VK_FORMAT_R8G8B8A8_SRGB,
                           VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     CopyBufferToImage(nanoRenderer,
                       stagingBufferMem.buffer,
-                      nanoImage->nanoVkBuffer.textureImage,
-                      width, height);
+                      image->nanoVkBuffer.textureImage,
+                      image->width, image->height);
 
     TransitionImageLayout(nanoRenderer,
-                          nanoImage->nanoVkBuffer.textureImage,
+                          image->nanoVkBuffer.textureImage,
                           VK_FORMAT_R8G8B8A8_SRGB,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -326,8 +328,8 @@ void InitImage(NanoRenderer* nanoRenderer, NanoImage* nanoImage, uint32_t width,
     vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
-    nanoImage->imageView = CreateImageView(nanoRenderer, nanoImage->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
-    nanoImage->isInitialized = true;
+    image->imageView = CreateImageView(nanoRenderer, image->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+    image->isInitialized = true;
 }
 
 VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat format){

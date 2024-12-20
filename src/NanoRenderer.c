@@ -11,6 +11,7 @@
 #include "NanoInput.h"
 
 #include "vulkan/vulkan_core.h"
+#include <_abort.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -20,6 +21,7 @@ NanoImage texture;
 String testToDisplay;
 
 static MeshMemory* s_meshMemoryPtr;
+static ImageMemory* s_imageMemoryPtr;
 
 void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
     /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
@@ -1063,10 +1065,17 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     return err;
 }
 
-ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, NanoWindow* window){
+ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window){
     ERR err = OK;
 
+    if(!meshMemory->meshHostMemory.isInitialized){
+       fprintf(stderr, "Mesh Host Memory is not yet initialized. Renderer needs an initialized Mesh Host Memory\n");
+       DEBUG_BREAK;
+       abort();
+    }
+
     s_meshMemoryPtr = meshMemory;
+    s_imageMemoryPtr = imageMemory;
 
     nanoRenderer->m_pNanoContext = (NanoVKContext*)calloc(1, sizeof(NanoVKContext));
     // Here the err validation is not that useful
@@ -1133,7 +1142,8 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, NanoWindow*
 
     //testToDisplay = {};
     testToDisplay = CreateString("");
-    InitImage(nanoRenderer, &texture, 2, 2, IMAGE_FORMAT_RGBA);
+    InitImage(&s_imageMemoryPtr->imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, &texture);
+    SubmitImageToGPUMemory(nanoRenderer, &texture);
     /* InitText(nanoRenderer, &texture, "                    "); */
     AddImageToGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[0], &texture);
 

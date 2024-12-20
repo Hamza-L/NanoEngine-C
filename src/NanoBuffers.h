@@ -52,6 +52,17 @@ typedef struct{
     bool isInitialized;
 } MeshMemory;
 
+typedef struct{
+    NanoVkImageMemory imageMemory;
+} ImageVKMemory;
+
+typedef struct{
+    ImageVKMemory imageVKMemory;
+    ImageHostMemory imageHostMemory;
+
+    bool isInitialized;
+} ImageMemory;
+
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription);
 void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindingDescription[DATA_MEMBER_PER_VERTEX]);
 

@@ -14,7 +14,11 @@ ERR InitEngine(NanoEngine* nanoEngine){
     ERR err = OK;
     InitWindow(&nanoEngine->m_Window, WINDOW_WIDTH, WINDOW_HEIGHT, true);
     InitMeshHostMemory(&nanoEngine->m_meshMemory.meshHostMemory, MAX_MEMORY_MESH_OBJECT * MAX_VERTEX_PER_OBJECT);
-    InitRenderer(&nanoEngine->m_Renderer, &nanoEngine->m_meshMemory, &nanoEngine->m_Window);
+    InitImageHostMemory(&nanoEngine->m_ImageMemory.imageHostMemory, MAX_TOTAL_ALLOCATED_IMAGES_MEMSIZE);
+    InitRenderer(&nanoEngine->m_Renderer,
+                 &nanoEngine->m_meshMemory,
+                 &nanoEngine->m_ImageMemory,
+                 &nanoEngine->m_Window);
     return err;
 }
 
