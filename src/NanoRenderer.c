@@ -931,15 +931,20 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         vkCmdSetScissor(*commandBuffer, 0, 1, &scissor);
 
         if(s_meshMemoryPtr->isInitialized){
+
             VkBuffer vertexBuffers[] = {s_meshMemoryPtr->meshVKMemory.vertexMemory.buffer};
             VkDeviceSize offsets[] = {0};
             vkCmdBindVertexBuffers(*commandBuffer, 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(*commandBuffer, s_meshMemoryPtr->meshVKMemory.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
 
             vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 0, nullptr);
+            for(int i = 0; i < s_meshMemoryPtr->meshHostMemory.numMemMeshObjects ; i++){
+                uint32_t vertOffset = i == 0 ? 0 : (s_meshMemoryPtr->meshHostMemory.memMeshObjects[i - 1].vertexMemSize / sizeof(Vertex));
+                uint32_t indOffset = i == 0 ? 0 : (s_meshMemoryPtr->meshHostMemory.memMeshObjects[i - 1].indexMemSize / sizeof(uint32_t));
+                vkCmdDrawIndexed(*commandBuffer, 6, 1, indOffset, vertOffset, 0);
+            }
 
             //vkCmdDraw(*commandBuffer, object.vertexDataSize, 1, 0, 0);
-            vkCmdDrawIndexed(*commandBuffer, s_meshMemoryPtr->meshHostMemory.numIndices, 1, 0, 0, 0);
         }
 
         vkCmdEndRenderPass(*commandBuffer);

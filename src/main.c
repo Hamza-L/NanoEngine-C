@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,19 +13,17 @@
 
 #include "NanoConfig.h"
 
-void CreateVertexData(MeshHostMemory* meshHostMemory, MeshObject* meshObject){
-    int numVertices = 4;
-    int numIndices = 6;
-    Vertex vertices[4] = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-                          {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-                          {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
-                          {{-0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}};
-    uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
+void CreateSquare(float offset[2], float size[2], float color[4], Vertex vertices[4], uint32_t indices[6]){
 
-    AllocateMeshObjectMemory(meshHostMemory, vertices, numVertices, indices, numIndices, meshObject);
-    /* CreateMeshObject(vertices, numVertices, */
-    /*                  indices, numIndices, */
-    /*                  meshObject); */
+    Vertex vert[4] = {{{ offset[0]          , offset[1] - size[1], 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+                      {{ offset[0] + size[0], offset[1] - size[1], 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+                      {{ offset[0] + size[0], offset[1]          , 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+                      {{ offset[0]          , offset[1]          , 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
+
+    uint32_t ind[6] = { 0, 1, 2, 2, 3, 0 };
+
+    memcpy(vertices, vert, sizeof(Vertex)*4);
+    memcpy(indices, ind, sizeof(uint32_t)*6);
 }
 
 int main(int argc, char *argv[]) {
@@ -42,8 +41,21 @@ int main(int argc, char *argv[]) {
     NanoEngine nanoEngine = {};
     InitEngine(&nanoEngine);
 
-    MeshObject object;
-    CreateVertexData(&nanoEngine.m_meshMemory.meshHostMemory, &object);
+    MeshObject object1;
+    Vertex vertices[4] = {0};
+    uint32_t indices[6] = {0};
+    float offset[2] = {-0.5f, 0.5f};
+    float size[2] = {0.5f, 0.5f};
+    float color1[4] = {1.0f, 0.0f, 0.0f, 1.0f};
+    CreateSquare( offset, size, color1, vertices, indices);
+    AllocateMeshObjectMemory(&nanoEngine.m_meshMemory.meshHostMemory, vertices, 4, indices, 6, &object1);
+
+    MeshObject object2;
+    offset[0] = 0.5f; offset[1] = 0.5f;
+    float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f};
+    CreateSquare( offset, size, color2, vertices, indices);
+    AllocateMeshObjectMemory(&nanoEngine.m_meshMemory.meshHostMemory, vertices, 4, indices, 6, &object2);
+
     SendAllocatedMeshMemoryToGPUMemory(&nanoEngine.m_Renderer, &nanoEngine.m_meshMemory);
     /* SendMeshObjectToGPUMemory(&nanoEngine.m_Renderer, &object); */
 
