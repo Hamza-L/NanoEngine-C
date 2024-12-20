@@ -13,12 +13,12 @@ typedef struct Vertex Vertex;
 typedef struct UniformBufferObject UniformBufferObject;
 typedef struct NanoVkBufferMemory NanoVkBufferMemory;
 typedef struct NanoVkImageMemory NanoVkImageMemory;
-typedef struct Mesh Mesh;
+typedef struct MeshObject MeshObject;
 
 // DATA_MEMBER_PER_VERTEX = number of members in vertex struct
 struct Vertex{
     vec3 pos;
-    vec3 color;
+    vec4 color;
     vec2 uv;
 };
 
@@ -40,11 +40,16 @@ struct NanoVkImageMemory{
     void* imageMemoryMapped;
 };
 
-struct Mesh{
+struct MeshObject{
     Vertex* pVertexData;
     uint32_t* pIndexData;
     uint32_t vertexDataSize;
     uint32_t indexDataSize;
+
+    // transform
+    mat4 model;
+
+    // Vulkan Memory
     NanoVkBufferMemory vertexMemory;
     NanoVkBufferMemory indexMemory;
 };
@@ -63,5 +68,9 @@ void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem);
 // copy utility
 void CopyBuffer(NanoRenderer* nanoRenderer, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 void CopyBufferToImage(NanoRenderer* nanoRenderer, VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
+
+void CreateMeshObject(Vertex* vertex, uint32_t numVertices, uint32_t* indexData, uint32_t numIndices, MeshObject* meshObject);
+void SendMeshObjectToGPUMemory(NanoRenderer* nanoRenderer, MeshObject* meshObject);
+void CleanUpMeshObject(NanoRenderer* nanoRenderer, MeshObject* meshObject);
 
 #endif // NANOBUFFERS_H_

@@ -22,7 +22,7 @@ void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindi
 
     vertexInputBindingDescription[1].binding = 0;
     vertexInputBindingDescription[1].location = 1;
-    vertexInputBindingDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputBindingDescription[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
     vertexInputBindingDescription[1].offset = offsetof(Vertex, color);
 
     vertexInputBindingDescription[2].binding = 0;
@@ -195,3 +195,22 @@ void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem){
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, bufferMem->bufferMemory, nullptr);
 }
 
+void CreateMeshObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, MeshObject* meshObject){
+    meshObject->pVertexData = (Vertex*)malloc(sizeof(Vertex) * numVertices);
+    meshObject->vertexDataSize = sizeof(Vertex) * numVertices;
+    meshObject->pIndexData = (uint32_t*)malloc(sizeof(uint32_t) * numIndices);
+    meshObject->indexDataSize = sizeof(uint32_t) * numIndices;
+
+    memcpy(meshObject->pVertexData, vertices, meshObject->vertexDataSize);
+    memcpy(meshObject->pIndexData, indices, meshObject->indexDataSize);
+}
+
+void SendMeshObjectToGPUMemory(NanoRenderer* nanoRenderer, MeshObject* meshObject){
+    meshObject->vertexMemory = CreateVertexBuffer(nanoRenderer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshObject->pVertexData, meshObject->vertexDataSize);
+    meshObject->indexMemory = CreateIndexBuffer(nanoRenderer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->pIndexData, meshObject->indexDataSize);
+}
+
+void CleanUpMeshObject(NanoRenderer* nanoRenderer, MeshObject* meshObject){
+    CleanUpBuffer(nanoRenderer, &meshObject->vertexMemory);
+    CleanUpBuffer(nanoRenderer, &meshObject->indexMemory);
+}

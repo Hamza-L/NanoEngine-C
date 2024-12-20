@@ -40,14 +40,7 @@ int GetTextWidth(const char* text, int pixelFontSize){
             continue;  /* ignore errors */
 
         int xOffset = pen_x + slot->bitmap_left;
-        /* /\* now, draw to our target surface *\/ */
-        /* my_draw_bitmap( &slot->bitmap, */
-        /*                 pen_x + slot->bitmap_left, */
-        /*                 pen_y - slot->bitmap_top ); */
-
-        /* increment pen position */
         pen_x += slot->advance.x >> 6; // divide by 64 */
-        /* pen_y += slot->advance.y >> 6; /\* not useful for now *\/ */
     }
 
     return pen_x;

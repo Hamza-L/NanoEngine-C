@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Mesh object;
 NanoImage texture;
 String testToDisplay;
 
@@ -36,31 +35,6 @@ void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
 
     /* glm_mat4_identity(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model); */
     /* glm_scale(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model, scaling); */
-}
-
-void CreateVertexData(NanoRenderer* nanoRenderer, Mesh* meshObject){
-    int numVertices = 4;
-    int numIndices = 6;
-    meshObject->pVertexData = (Vertex*)malloc(sizeof(Vertex) * numVertices);
-    meshObject->vertexDataSize = sizeof(Vertex) * numVertices;
-    meshObject->pIndexData = (uint32_t*)malloc(sizeof(uint32_t) * numIndices);
-    meshObject->indexDataSize = sizeof(uint32_t) * numIndices;
-
-    Vertex vertices[4] = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
-                          {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
-                          {{ 0.5f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
-                          {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}};
-    uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
-    memcpy(meshObject->pVertexData, vertices, meshObject->vertexDataSize);
-    memcpy(meshObject->pIndexData, indices, meshObject->indexDataSize);
-
-    meshObject->vertexMemory = CreateVertexBuffer(nanoRenderer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 0, meshObject->pVertexData, meshObject->vertexDataSize);
-    meshObject->indexMemory = CreateIndexBuffer(nanoRenderer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 0, meshObject->pIndexData, meshObject->indexDataSize);
-}
-
-void CleanUpVertexData(NanoRenderer* nanoRenderer){
-    CleanUpBuffer(nanoRenderer, &object.vertexMemory);
-    CleanUpBuffer(nanoRenderer, &object.indexMemory);
 }
 
 bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper function to validate queue indices
@@ -139,6 +113,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     fprintf(stderr, "\n");
 
     if (messageLevel == NANO_FATAL){
+        DEBUG_BREAK;
         abort();
     }
 
@@ -177,8 +152,6 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
     }
 
     CleanUpImage(nanoRenderer, &texture);
-
-    CleanUpVertexData(nanoRenderer);
 
     // clean commandPool and incidently the commandbuffers acquired from them
     vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, NULL);
@@ -1000,7 +973,7 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
 
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
     ERR err = OK;
-    CreateImageData(renderer, &texture);
+    //CreateImageData(renderer, &texture);
     return err;
 }
 
@@ -1146,12 +1119,12 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, NanoWindow* window){
                                MAX_FRAMES_IN_FLIGHT);
 
     CreateVertexData(nanoRenderer, &object);
-
+    SendMeshObjectToGPUMemory(nanoRenderer, &object);
 
     //testToDisplay = {};
     testToDisplay = CreateString("");
+    InitImage(nanoRenderer, &texture, 2, 2, IMAGE_FORMAT_RGBA);
     /* InitText(nanoRenderer, &texture, "                    "); */
-    InitImage(nanoRenderer, &texture, 256, 256, IMAGE_FORMAT_RGBA);
     AddImageToGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[0], &texture);
 
     return err;

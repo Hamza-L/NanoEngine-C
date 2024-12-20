@@ -1,7 +1,5 @@
 #include "NanoEngine.h"
-#include "NanoConfig.h"
 #include "NanoRenderer.h"
-#include "NanoShader.h"
 #include "NanoWindow.h"
 
 ERR CleanUpEngine(NanoEngine* nanoEngine){

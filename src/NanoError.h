@@ -12,6 +12,14 @@ void __Assert(const char* expr_str, bool expr, const char* file, int line, const
 #   define ASSERT(Expr, Msg) ;
 #endif
 
+// Debugbreak
+#if defined(_MSC_VER)
+#define DEBUG_BREAK __debugbreak()
+#else
+#include <signal.h>
+#define DEBUG_BREAK raise(SIGTRAP)
+#endif
+
 enum ERRLevel {
     NANO_FATAL,
     NANO_WARNING,

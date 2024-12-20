@@ -12,6 +12,11 @@
 #define MAX_SHORT_STRING_LENGTH 64
 #define MAX_SUPPORTED_GPU_COUNT 8
 
+// MEMORY SETTINGS
+#define MAX_MEMORY_MESH_OBJECT 256
+// max vertex per mesh object is 1024*16
+#define MAX_VERTEX_PER_OBJECT 16384
+
 typedef struct String String;
 
 extern const int WINDOW_WIDTH;
