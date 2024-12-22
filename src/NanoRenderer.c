@@ -1063,6 +1063,8 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 
     nanoRenderer->m_pNanoContext->swapchainContext.currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
+    nanoRenderer->m_pNanoContext->isInitialized = true;
+
     return err;
 }
 
@@ -1154,14 +1156,14 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
 void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject){
     AllocateMeshMemoryObject(&s_meshMemoryPtr->meshHostMemory, vertices, numVertices, indices, numIndices, &renderableObject->meshObject);
     renderableObject->ID = s_meshMemoryPtr->meshHostMemory.numMemMeshObjects - 1; //current meshObject index
-    renderableObject->albedoTextureID = nullptr;
-    renderableObject->normalTextureID = nullptr;
-    renderableObject->additionalTextureID1 = nullptr;
-    renderableObject->additionalTextureID2 = nullptr;
+    renderableObject->albedoTexture = nullptr;
+    renderableObject->normalTexture = nullptr;
+    renderableObject->additionalTexture1 = nullptr;
+    renderableObject->additionalTexture2 = nullptr;
     glm_mat4_identity(renderableObject->model);
 }
 
 void AddTextureToRenderableObject(NanoImage* image, RenderableObject* renderableObject){
-    renderableObject->albedoTextureID = image;
+    renderableObject->albedoTexture = image;
     SubmitImageToGPUMemory(s_nanoRenderer, image);
 }

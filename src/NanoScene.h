@@ -1,18 +1,25 @@
 #ifndef NANOSCENE_H_
 #define NANOSCENE_H_
 
-#include "MemManager.h"
-#include "NanoGraphicsPipeline.h"
+#include <stdint.h>
+
+struct NanoRenderer;
+struct NanoEngine;
+struct NanoImage;
+
+struct RenderableObject;
 
 typedef struct{
     struct RenderableObject* renderableObjects[256];
     uint32_t numRenderableObjects;
 
-    NanoImage* textures[256];
+    struct NanoImage* textures[256];
     uint32_t numTextures;
 } RenderableScene;
 
 
-void InitRenderableScene();
+void InitRenderableScene(struct NanoEngine* nanoEngine, RenderableScene* renderableScene);
+void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene);
+void CompileRenderableScene(RenderableScene* renderableScene);
 
 #endif // NANOSCENE_H_

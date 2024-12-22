@@ -12,6 +12,7 @@ typedef struct SwapchainDetails SwapchainDetails;
 typedef struct SwapchainSyncObjects SwapchainSyncObjects;
 typedef struct SwapchainContext SwapchainContext;
 typedef struct NanoVKContext NanoVKContext;
+typedef struct RenderableObject RenderableObject;
 
 struct QueueFamilyIndices{
     int32_t graphicsFamily;
@@ -76,24 +77,26 @@ struct NanoVKContext {
     VkCommandPool commandPool;
 
     SwapchainContext swapchainContext;
+
+    bool isInitialized;
 };
 
 struct NanoRenderer {
     NanoVKContext* m_pNanoContext;
 };
 
-typedef struct {
+struct RenderableObject {
     MeshMemoryObject meshObject;
     int32_t ID;
 
     mat4 model;
 
     // Texture
-    NanoImage* albedoTextureID;
-    NanoImage* normalTextureID;
-    NanoImage* additionalTextureID1;
-    NanoImage* additionalTextureID2;
-} RenderableObject;
+    NanoImage* albedoTexture;
+    NanoImage* normalTexture;
+    NanoImage* additionalTexture1;
+    NanoImage* additionalTexture2;
+};
 
 ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window);
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
