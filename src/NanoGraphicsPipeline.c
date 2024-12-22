@@ -1,8 +1,10 @@
 #include "NanoGraphicsPipeline.h"
+#include "NanoImage.h"
 #include "NanoShader.h"
 #include "NanoBuffers.h"
 #include "NanoRenderer.h"
 #include "cglm/cam.h"
+#include "vulkan/vulkan_core.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -50,7 +52,7 @@ void CreateUniformBuffersWithMappedMem(NanoRenderer* nanoRenderer, NanoVkBufferM
     }
 }
 
-static void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
+void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         VkWriteDescriptorSet descriptorWrites[2] = {};
         uint32_t numDescriptorUpdates = 1;
@@ -72,23 +74,33 @@ static void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipelin
         descriptorWrites[0].pTexelBufferView = nullptr; // Optional
 
         // combined image sampler descriptor set update
-        if(graphicsPipeline->numTextures > 0){
-            VkDescriptorImageInfo imageInfo = {};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = graphicsPipeline->textures->imageView; //For now we use the same image for all in flight frames. We also use only the first image
-            imageInfo.sampler = graphicsPipeline->m_sampler;
-
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = graphicsPipeline->DescSets[i];
-            descriptorWrites[1].dstBinding = 1;
-            descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
-            descriptorWrites[1].pTexelBufferView = nullptr; // Optional
-
-            numDescriptorUpdates++;
+        enum{totalImageDescriptorCount = 16};
+        VkDescriptorImageInfo imageInfos[totalImageDescriptorCount] = {};
+        int validTextureCount = 0;
+        for(int j = 0; j < totalImageDescriptorCount; j++){
+            if(graphicsPipeline->textures[j]){
+                graphicsPipeline->textures[j]->imageDescriptorID = validTextureCount;
+                imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfos[j].imageView = graphicsPipeline->textures[j]->imageView; //For now we use the same image for all in flight frames. We also use only the first image
+                imageInfos[j].sampler = graphicsPipeline->m_sampler;
+                validTextureCount++;
+            } else {
+                imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfos[j].imageView = graphicsPipeline->defaultTexture.imageView; //For now we use the same image for all in flight frames. We also use only the first image
+                imageInfos[j].sampler = graphicsPipeline->m_sampler;
+            }
         }
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = graphicsPipeline->DescSets[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[1].descriptorCount = totalImageDescriptorCount;
+        descriptorWrites[1].pImageInfo = imageInfos;
+        descriptorWrites[1].pTexelBufferView = nullptr; // Optional
+
+        numDescriptorUpdates += 1; //add 1 if we have at least one image update
+
         vkUpdateDescriptorSets(nanoRenderer->m_pNanoContext->device, numDescriptorUpdates, descriptorWrites, 0, nullptr);
     }
 }
@@ -120,7 +132,7 @@ static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoGraphicsPi
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
     samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 1;
+    samplerLayoutBinding.descriptorCount = 16;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -141,9 +153,9 @@ static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoGraphicsPi
 static void CreateDescriptorPool(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
     VkDescriptorPoolSize poolSize[2] = {};
     poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSize[0].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT + 1);
+    poolSize[0].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT);
     poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize[1].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT + 1);
+    poolSize[1].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT * 16);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -158,16 +170,19 @@ static void CreateDescriptorPool(NanoRenderer* nanoRenderer, NanoGraphicsPipelin
 }
 
 void AddImageToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoImage* nanoImage){
-    graphicsPipeline->textures = nanoImage;
+    graphicsPipeline->textures[graphicsPipeline->numTextures] = nanoImage;
     graphicsPipeline->numTextures++;
-
-    UpdateDescriptorSets(nanoRenderer, graphicsPipeline);
 }
 
+static void AddDefaultTexture(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
+    InitImage(256, 256, IMAGE_FORMAT_RGBA, &graphicsPipeline->defaultTexture);
+    SubmitImageToGPUMemory(nanoRenderer, &graphicsPipeline->defaultTexture);
+}
 
 void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const VkExtent2D extent){
     graphicsPipeline->m_extent = extent;
     graphicsPipeline->m_isInitialized = true;
+    graphicsPipeline->numTextures = 0;
 
     glm_mat4_identity(graphicsPipeline->uniformBuffer.model);
     glm_mat4_identity(graphicsPipeline->uniformBuffer.proj);
@@ -177,6 +192,7 @@ void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
     CreateUniformBuffersWithMappedMem(nanoRenderer, graphicsPipeline->UniformBufferMemory, MAX_FRAMES_IN_FLIGHT);
 
     CreateTextureSampler(nanoRenderer, graphicsPipeline);
+    AddDefaultTexture(nanoRenderer, graphicsPipeline);
 
     CreateDescriptorSetLayout(nanoRenderer, graphicsPipeline);
     CreateDescriptorPool(nanoRenderer, graphicsPipeline);
@@ -435,6 +451,11 @@ void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* g
         vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, graphicsPipeline->UniformBufferMemory[i].buffer, nullptr);
         vkFreeMemory(nanoRenderer->m_pNanoContext->device, graphicsPipeline->UniformBufferMemory[i].bufferMemory, nullptr);
     }
+
+    for(int i = 0; i < graphicsPipeline->numTextures; i++){
+        CleanUpImageVkMemory(nanoRenderer, graphicsPipeline->textures[i]);
+    }
+    CleanUpImageVkMemory(nanoRenderer, &graphicsPipeline->defaultTexture);
 
     vkDestroyDescriptorPool(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_descriptorSetLayout, nullptr);

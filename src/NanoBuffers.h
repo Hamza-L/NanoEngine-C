@@ -32,14 +32,6 @@ struct NanoVkImageMemory{
     void* imageMemoryMapped;
 };
 
-struct MeshObject{
-    // host memory
-    MeshMemoryObject meshMemory;
-
-    // transform
-    mat4 model;
-};
-
 typedef struct{
     NanoVkBufferMemory vertexMemory;
     NanoVkBufferMemory indexMemory;

@@ -8,9 +8,9 @@ layout(location = 1) in vec2 fragTexUV;
 layout(location = 0) out vec4 outColor;
 
 //GLOBALS
-layout(binding = 1) uniform sampler2D texSampler;
+layout(binding = 1) uniform sampler2D texSampler[16];
 
 void main() {
-    outColor = texture(texSampler, fragTexUV);
+    outColor = texture(texSampler[2], fragTexUV);
     //outColor = fragColor;
 }

@@ -1,5 +1,6 @@
 #include "NanoRenderer.h"
 #include "GLFW/glfw3.h"
+#include "MemManager.h"
 #include "NanoConfig.h"
 #include "NanoError.h"
 #include "NanoShader.h"
@@ -10,6 +11,7 @@
 #include "NanoImage.h"
 #include "NanoInput.h"
 
+#include "cglm/mat4.h"
 #include "vulkan/vulkan_core.h"
 #include <_abort.h>
 #include <stdint.h>
@@ -17,11 +19,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-NanoImage texture;
 String testToDisplay;
 
 static MeshMemory* s_meshMemoryPtr;
 static ImageMemory* s_imageMemoryPtr;
+static NanoRenderer* s_nanoRenderer;
 
 void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
     /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
@@ -156,17 +158,16 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
 
     CleanUpMeshVkMemory(nanoRenderer, &s_meshMemoryPtr->meshVKMemory);
 
-    CleanUpImage(nanoRenderer, &texture);
-
     // clean commandPool and incidently the commandbuffers acquired from them
-    vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, NULL);
-
-    cleanupSwapChainContext(nanoRenderer->m_pNanoContext->device, &nanoRenderer->m_pNanoContext->swapchainContext);
-
     // clean graphic pipelines
     for (int i = 0 ; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++) {
         CleanUpGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[i]);
     }
+
+    vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, NULL);
+
+    cleanupSwapChainContext(nanoRenderer->m_pNanoContext->device, &nanoRenderer->m_pNanoContext->swapchainContext);
+
 
     // clean renderpass
     vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->defaultRenderpass, NULL);
@@ -1076,6 +1077,7 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
 
     s_meshMemoryPtr = meshMemory;
     s_imageMemoryPtr = imageMemory;
+    s_nanoRenderer = nanoRenderer;
 
     nanoRenderer->m_pNanoContext = (NanoVKContext*)calloc(1, sizeof(NanoVKContext));
     // Here the err validation is not that useful
@@ -1117,12 +1119,6 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
                      nanoRenderer->m_pNanoContext->swapchainContext.info,
                      &nanoRenderer->m_pNanoContext->defaultRenderpass);
 
-    NanoGraphicsPipeline graphicsPipeline = {};
-    createGraphicsPipeline(nanoRenderer,
-                           &graphicsPipeline);
-
-    AddGraphicsPipelineToNanoContext(nanoRenderer, graphicsPipeline);
-
     createFramebuffer(nanoRenderer->m_pNanoContext->device,
                       nanoRenderer->m_pNanoContext->defaultRenderpass,
                       &nanoRenderer->m_pNanoContext->swapchainContext);
@@ -1140,13 +1136,32 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
                                nanoRenderer->m_pNanoContext->swapchainContext.syncObjects,
                                MAX_FRAMES_IN_FLIGHT);
 
+    NanoGraphicsPipeline graphicsPipeline = {};
+    createGraphicsPipeline(nanoRenderer,
+                           &graphicsPipeline);
+
+    AddGraphicsPipelineToNanoContext(nanoRenderer, graphicsPipeline);
+
     //testToDisplay = {};
     testToDisplay = CreateString("");
-    InitImage(&s_imageMemoryPtr->imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, &texture);
-    SubmitImageToGPUMemory(nanoRenderer, &texture);
+    /* InitImage(&s_imageMemoryPtr->imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, &texture); */
     /* InitText(nanoRenderer, &texture, "                    "); */
-    AddImageToGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[0], &texture);
 
     return err;
 }
 
+
+void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject){
+    AllocateMeshMemoryObject(&s_meshMemoryPtr->meshHostMemory, vertices, numVertices, indices, numIndices, &renderableObject->meshObject);
+    renderableObject->ID = s_meshMemoryPtr->meshHostMemory.numMemMeshObjects - 1; //current meshObject index
+    renderableObject->albedoTextureID = nullptr;
+    renderableObject->normalTextureID = nullptr;
+    renderableObject->additionalTextureID1 = nullptr;
+    renderableObject->additionalTextureID2 = nullptr;
+    glm_mat4_identity(renderableObject->model);
+}
+
+void AddTextureToRenderableObject(NanoImage* image, RenderableObject* renderableObject){
+    renderableObject->albedoTextureID = image;
+    SubmitImageToGPUMemory(s_nanoRenderer, image);
+}

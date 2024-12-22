@@ -82,9 +82,25 @@ struct NanoRenderer {
     NanoVKContext* m_pNanoContext;
 };
 
+typedef struct {
+    MeshMemoryObject meshObject;
+    int32_t ID;
+
+    mat4 model;
+
+    // Texture
+    NanoImage* albedoTextureID;
+    NanoImage* normalTextureID;
+    NanoImage* additionalTextureID1;
+    NanoImage* additionalTextureID2;
+} RenderableObject;
+
 ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window);
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
 ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
 ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
+
+void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject);
+void AddTextureToRenderableObject(NanoImage* image, RenderableObject* renderableObject);
 
 #endif // NANORENDERER_H_

@@ -18,7 +18,8 @@ struct NanoImage {
     uint32_t height;
     uint32_t imageDataSize;
 
-    ImageMemoryObject* imageMemory;
+    ImageMemoryObject imageMemory;
+    int32_t imageDescriptorID;
 
     NanoVkImageMemory nanoVkBuffer;
     VkImageView imageView;
@@ -28,9 +29,11 @@ struct NanoImage {
 };
 
 void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text);
-void InitImage(ImageHostMemory* imageHostMemory, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* nanoImage);
-void InitImageFromFile(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* fileName);
-void CleanUpImage(NanoRenderer* nanoRenderer, NanoImage* nanoImage);
+void InitHostPersistentImage(ImageHostMemory* imageHostMemory, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* nanoImage);
+void InitHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, NanoImage* image, const char* fileName);
+void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* image);
+void InitImageFromFile(const char* fileName, NanoImage* image);
+void CleanUpImageVkMemory(NanoRenderer* nanoRenderer, NanoImage* nanoImage);
 
 void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image);
 

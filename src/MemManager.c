@@ -1,9 +1,7 @@
 #include "MemManager.h"
 #include "NanoConfig.h"
 #include "NanoError.h"
-#include "NanoBuffers.h"
 #include "NanoImage.h"
-#include "cglm/mat4.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,29 +22,26 @@ void InitImageHostMemory(ImageHostMemory* imageHostMemory, uint32_t InitialMemSi
     imageHostMemory->isInitialized = true;
 }
 
-void AllocateMeshMemoryObject(MeshHostMemory* meshHostMemory, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, MeshObject* meshObject){
+void AllocateMeshMemoryObject(MeshHostMemory* meshHostMemory, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, MeshMemoryObject* meshObject){
     if(!meshHostMemory->isInitialized){
         fprintf(stderr, "memoryAllocator not initialized. Cannot allocated MeshObjectMemory/n");
         DEBUG_BREAK;
     }
 
-    MeshMemoryObject* memMeshObj = &meshHostMemory->memMeshObjects[meshHostMemory->numMemMeshObjects];
+    meshObject = &meshHostMemory->memMeshObjects[meshHostMemory->numMemMeshObjects];
 
-    memMeshObj->vertexMemStart = &meshHostMemory->vertexMemory[meshHostMemory->numVertices];
-    memMeshObj->indexMemStart = &meshHostMemory->indexMemory[meshHostMemory->numIndices];
-    memMeshObj->vertexMemSize = sizeof(Vertex)*numVertices;
-    memMeshObj->indexMemSize = sizeof(uint32_t)*numIndices;
+    meshObject->vertexMemStart = &meshHostMemory->vertexMemory[meshHostMemory->numVertices];
+    meshObject->indexMemStart = &meshHostMemory->indexMemory[meshHostMemory->numIndices];
+    meshObject->vertexMemSize = sizeof(Vertex)*numVertices;
+    meshObject->indexMemSize = sizeof(uint32_t)*numIndices;
 
     meshHostMemory->numMemMeshObjects++;
 
-    memcpy(memMeshObj->vertexMemStart, vertices, sizeof(Vertex)*numVertices);
-    memcpy(memMeshObj->indexMemStart, indices, sizeof(uint32_t)*numIndices);
+    memcpy(meshObject->vertexMemStart, vertices, sizeof(Vertex)*numVertices);
+    memcpy(meshObject->indexMemStart, indices, sizeof(uint32_t)*numIndices);
 
     meshHostMemory->numVertices += numVertices;
     meshHostMemory->numIndices += numIndices;
-
-    meshObject->meshMemory = *memMeshObj;
-    glm_mat4_identity(meshObject->model);
 }
 
 ImageMemoryObject* GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory, uint32_t imageDataMemSize){
@@ -66,9 +61,9 @@ ImageMemoryObject* GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory
     return memMeshObj;
 }
 
-void AllocateImageMemoryObject(ImageHostMemory* imageHostMemory, char* imageData, uint32_t imageDataMemSize, NanoImage* imageObject){
+void CopyImageDataToAllocatedMemoryObject(ImageHostMemory* imageHostMemory, char* imageData, uint32_t imageDataMemSize, NanoImage* imageObject){
     if(!imageHostMemory->isInitialized){
-        fprintf(stderr, "memoryAllocator not initialized. Cannot allocated ImageObjectMemory/n");
+        fprintf(stderr, "memoryAllocator not initialized. Cannot allocate ImageObjectMemory/n");
         DEBUG_BREAK;
     }
 
@@ -82,7 +77,7 @@ void AllocateImageMemoryObject(ImageHostMemory* imageHostMemory, char* imageData
 
     memcpy(memMeshObj->imageData, imageData, imageDataMemSize);
 
-    imageObject->imageMemory = memMeshObj;
+    imageObject->imageMemory = *memMeshObj;
 }
 
 void CleanUpMeshHostMemory(MeshHostMemory* meshHostMemory){
