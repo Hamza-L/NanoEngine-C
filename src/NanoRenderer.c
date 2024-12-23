@@ -1,16 +1,8 @@
 #include "NanoRenderer.h"
-#include "GLFW/glfw3.h"
-#include "MemManager.h"
-#include "NanoConfig.h"
-#include "NanoError.h"
-#include "NanoShader.h"
 #include "NanoUtility.h"
-#include "NanoWindow.h"
-#include "NanoGraphicsPipeline.h"
-#include "NanoBuffers.h"
-#include "NanoImage.h"
-#include "NanoInput.h"
 #include "NanoScene.h"
+#include "NanoInput.h"
+#include "Str.h"
 
 #include "cglm/mat4.h"
 #include "vulkan/vulkan_core.h"
@@ -27,24 +19,6 @@ static ImageMemory* s_imageMemoryPtr;
 static NanoRenderer* s_nanoRenderer;
 
 static RenderableScene* s_sceneToRender;
-
-
-void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
-    /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
-    /* InitImage(nanoRenderer, image, 300, 300, IMAGE_FORMAT_RGBA); */
-    /* NanoKey nextKey = PopMostRecentInputKey(); */
-    /* if(nextKey.key_id != -1 && (nextKey.key_id >= GLFW_KEY_SPACE && nextKey.key_id <= GLFW_KEY_WORLD_2)){ */
-    /*     const char letter[] = {nextKey.key_mod == KEY_MOD_SHIFT || nextKey.key_id == GLFW_KEY_SPACE ? (char)nextKey.key_id : (char)nextKey.key_id + ('a' - 'A'), '\0'}; */
-    /*     AppendToString(&testToDisplay, letter); */
-    /*     InitText(nanoRenderer, image, testToDisplay.m_data); */
-    /* } */
-
-    /* uint32_t currentGP = nanoRenderer->m_pNanoContext->currentGraphicsPipeline; */
-    /* vec3 scaling = {1,(float)image->height/image->width,1}; */
-
-    /* glm_mat4_identity(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model); */
-    /* glm_scale(nanoRenderer->m_pNanoContext->graphicsPipelines[currentGP].uniformBuffer.model, scaling); */
-}
 
 bool IsQueueFamilyIndicesValid(QueueFamilyIndices queueFamily) { // helper function to validate queue indices
     return queueFamily.graphicsFamily != -1 && queueFamily.presentFamily != -1;

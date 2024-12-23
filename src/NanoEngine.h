@@ -3,7 +3,6 @@
 
 #include "NanoRenderer.h"
 #include "NanoWindow.h"
-#include "MemManager.h"
 
 typedef struct NanoEngine NanoEngine;
 

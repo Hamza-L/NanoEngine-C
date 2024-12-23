@@ -2,18 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "MemManager.h"
-#include "NanoBuffers.h"
 #include "NanoEngine.h"
-#include "NanoGraphicsPipeline.h"
-#include "NanoRenderer.h"
-#include "NanoScene.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <string.h>
 
-#include "NanoConfig.h"
 //cube.obj
 /* v 1.000000 -1.000000 -1.000000 */
 /* v 1.000000 -1.000000 1.000000 */
@@ -74,7 +68,7 @@ int main(int argc, char *argv[]) {
     InitRenderableScene(&nanoEngine, &scene);
 
     // create object 1
-    float offset[2] = {-0.5f, 0.5f};
+    float offset[2] = {-0.75f, 0.5f};
     float size[2] = {0.5f, 0.5f};
     float color1[4] = {1.0f, 0.0f, 0.0f, 1.0f};
     RenderableObject object1 = CreateSquare( offset, size, color1);
@@ -83,7 +77,7 @@ int main(int argc, char *argv[]) {
     AddTextureToRenderableObject(&texture1, &object1);
 
     // create object 2
-    offset[0] = 0.5f; offset[1] = 0.5f;
+    offset[0] = 0.25f; offset[1] = 0.5f;
     float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f};
     RenderableObject object2 = CreateSquare( offset, size, color2);
 

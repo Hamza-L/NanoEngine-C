@@ -2,12 +2,10 @@
 #define NANOSHADER_H_
 
 #include "NanoBuffers.h"
-#include "NanoConfig.h"
-#include "NanoImage.h"
-#include "Str.h"
 
 #include "vulkan/vulkan_core.h"
 
+struct NanoShader;
 typedef struct NanoShader NanoShader;
 
 typedef struct {

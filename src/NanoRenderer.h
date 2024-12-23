@@ -2,7 +2,7 @@
 #define NANORENDERER_H_
 
 #include "NanoConfig.h"
-#include "NanoGraphicsPipeline.h"
+#include "NanoScene.h"
 #include "NanoWindow.h"
 #include <stdint.h>
 
@@ -14,7 +14,6 @@ typedef struct SwapchainContext SwapchainContext;
 typedef struct NanoVKContext NanoVKContext;
 typedef struct RenderableObject RenderableObject;
 
-struct RenderableScene;
 
 struct QueueFamilyIndices{
     int32_t graphicsFamily;

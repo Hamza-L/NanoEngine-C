@@ -1,7 +1,7 @@
 #ifndef NANORENDERERPIPELINE_H_
 #define NANORENDERERPIPELINE_H_
 
-#include "NanoBuffers.h"
+#include "NanoImage.h"
 #include "NanoShader.h"
 #include "NanoError.h"
 #include "vulkan/vulkan_core.h"

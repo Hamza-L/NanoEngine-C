@@ -5,6 +5,7 @@ static float scroll = 0;
 enum {max_key_buffer_size = 4};
 
 static NanoKey key_stack[max_key_buffer_size];
+static NanoKey mouse_stack[max_key_buffer_size];
 static short int currentIndx;
 
 void InitNanoInput(){
@@ -41,22 +42,28 @@ NanoKey PeekMostRecentInputKey(){
 
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods){
     if(action == GLFW_PRESS){
-        printf("key pressed: %d\n", key);
-        printf("key pressed: %d\n", mods);
+        /* printf("key pressed: %d\n", key); */
+        /* printf("key pressed: %d\n", mods); */
 
-        if(key_stack[currentIndx].key_id != key){
+        if(key_stack[currentIndx].key_id != key && key_stack[currentIndx].key_state == KEY_STATE_PRESSED){
             currentIndx = (currentIndx + 1) % max_key_buffer_size;
         }
 
         key_stack[currentIndx].key_mod = mods;
         key_stack[currentIndx].key_id = key;
         key_stack[currentIndx].key_state = KEY_STATE_PRESSED;
+    } else if(action == GLFW_RELEASE){
+        /* printf("key released: %d\n", key); */
+        /* printf("key released: %d\n", mods); */
+
+        if(key_stack[currentIndx].key_id != key && key_stack[currentIndx].key_state == KEY_STATE_RELEASED){
+            currentIndx = (currentIndx + 1) % max_key_buffer_size;
+        }
+
+        key_stack[currentIndx].key_mod = mods;
+        key_stack[currentIndx].key_id = key;
+        key_stack[currentIndx].key_state = KEY_STATE_RELEASED;
     }
-    /* if (key == GLFW_KEY_W && action == GLFW_PRESS){ */
-    /*     UP_PRESS = true; */
-    /* } else if(key == GLFW_KEY_W && action == GLFW_RELEASE){ */
-    /*     UP_PRESS = false; */
-    /* } */
 }
 
 void mouse_callback(GLFWwindow *window, int button, int action, int mods){
