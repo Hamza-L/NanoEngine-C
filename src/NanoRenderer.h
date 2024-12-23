@@ -14,6 +14,8 @@ typedef struct SwapchainContext SwapchainContext;
 typedef struct NanoVKContext NanoVKContext;
 typedef struct RenderableObject RenderableObject;
 
+struct RenderableScene;
+
 struct QueueFamilyIndices{
     int32_t graphicsFamily;
     int32_t presentFamily;
@@ -105,5 +107,7 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
 
 void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject);
 void AddTextureToRenderableObject(NanoImage* image, RenderableObject* renderableObject);
+
+void RenderScene(struct RenderableScene* scene);
 
 #endif // NANORENDERER_H_

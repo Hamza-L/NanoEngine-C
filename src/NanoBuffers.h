@@ -13,11 +13,19 @@ typedef struct UniformBufferObject UniformBufferObject;
 typedef struct NanoVkBufferMemory NanoVkBufferMemory;
 typedef struct NanoVkImageMemory NanoVkImageMemory;
 typedef struct MeshObject MeshObject;
+typedef struct MeshObjectPushConstant MeshObjectPushConstant;
 
 struct UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
+};
+
+struct MeshObjectPushConstant {
+	int albedoTextureID;
+	int normalTextureID;
+	int additionalTextureID;
+	int additionalTextureID2;
 };
 
 struct NanoVkBufferMemory{

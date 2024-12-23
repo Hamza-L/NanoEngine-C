@@ -402,13 +402,18 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Pipeline Layout ///////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // //setup push constants
+	VkPushConstantRange pushConstantInfo;
+	pushConstantInfo.offset = 0; //this push constant range starts at the beginning
+	pushConstantInfo.size = sizeof(MeshObjectPushConstant); //this push constant range takes up the size of a MeshPushConstants struct
+	pushConstantInfo.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT; //this push constant range is accessible only in the vertex shader
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1; // Optional
     pipelineLayoutInfo.pSetLayouts = &graphicsPipeline->m_descriptorSetLayout; // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = NULL; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantInfo; // Optional
 
     if (vkCreatePipelineLayout(nanoRenderer->m_pNanoContext->device, &pipelineLayoutInfo, NULL, &graphicsPipeline->m_pipelineLayout) != VK_SUCCESS) {
         fprintf(stderr, "failed to create pipeline layout!");
@@ -445,6 +450,8 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
 }
 
 void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
+
+    vkDeviceWaitIdle(nanoRenderer->m_pNanoContext->device);
     vkDestroySampler(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_sampler, nullptr);
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

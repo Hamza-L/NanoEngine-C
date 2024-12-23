@@ -28,13 +28,14 @@ void AllocateMeshMemoryObject(MeshHostMemory* meshHostMemory, Vertex* vertices, 
         DEBUG_BREAK;
     }
 
-    meshObject = &meshHostMemory->memMeshObjects[meshHostMemory->numMemMeshObjects];
+    //*meshObject = meshHostMemory->memMeshObjects[meshHostMemory->numMemMeshObjects];
 
     meshObject->vertexMemStart = &meshHostMemory->vertexMemory[meshHostMemory->numVertices];
     meshObject->indexMemStart = &meshHostMemory->indexMemory[meshHostMemory->numIndices];
     meshObject->vertexMemSize = sizeof(Vertex)*numVertices;
     meshObject->indexMemSize = sizeof(uint32_t)*numIndices;
 
+    meshHostMemory->memMeshObjects[meshHostMemory->numMemMeshObjects] = *meshObject;
     meshHostMemory->numMemMeshObjects++;
 
     memcpy(meshObject->vertexMemStart, vertices, sizeof(Vertex)*numVertices);

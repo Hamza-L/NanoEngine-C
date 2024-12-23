@@ -10,6 +10,7 @@
 #include "NanoBuffers.h"
 #include "NanoImage.h"
 #include "NanoInput.h"
+#include "NanoScene.h"
 
 #include "cglm/mat4.h"
 #include "vulkan/vulkan_core.h"
@@ -24,6 +25,9 @@ String testToDisplay;
 static MeshMemory* s_meshMemoryPtr;
 static ImageMemory* s_imageMemoryPtr;
 static NanoRenderer* s_nanoRenderer;
+
+static RenderableScene* s_sceneToRender;
+
 
 void CreateImageData(NanoRenderer* nanoRenderer, NanoImage* image){
     /* InitImageFromFile(nanoRenderer, image, "./textures/Vulkan Texture.jpg"); */
@@ -160,9 +164,6 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
 
     // clean commandPool and incidently the commandbuffers acquired from them
     // clean graphic pipelines
-    for (int i = 0 ; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++) {
-        CleanUpGraphicsPipeline(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[i]);
-    }
 
     vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, NULL);
 
@@ -770,7 +771,7 @@ ERR recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
 
     // update the extent of all graphics pipeines to reflect the framebuffer change due to window resize
     for(int i = 0; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++){
-        nanoRenderer->m_pNanoContext->graphicsPipelines[i].m_extent = swapChainContext->info.currentExtent;
+        s_sceneToRender->graphicsPipeline.m_extent = swapChainContext->info.currentExtent;
     }
 
     return err;
@@ -941,13 +942,23 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
             vkCmdBindIndexBuffer(*commandBuffer, s_meshMemoryPtr->meshVKMemory.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
 
             vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 0, nullptr);
-            for(int i = 0; i < s_meshMemoryPtr->meshHostMemory.numMemMeshObjects ; i++){
-                uint32_t vertOffset = i == 0 ? 0 : (s_meshMemoryPtr->meshHostMemory.memMeshObjects[i - 1].vertexMemSize / sizeof(Vertex));
-                uint32_t indOffset = i == 0 ? 0 : (s_meshMemoryPtr->meshHostMemory.memMeshObjects[i - 1].indexMemSize / sizeof(uint32_t));
-                vkCmdDrawIndexed(*commandBuffer, 6, 1, indOffset, vertOffset, 0);
-            }
+            for(int i = 0; i < s_sceneToRender->numRenderableObjects ; i++){
+                RenderableObject* obj = s_sceneToRender->renderableObjects[i];
 
-            //vkCmdDraw(*commandBuffer, object.vertexDataSize, 1, 0, 0);
+                MeshObjectPushConstant objectPushConstant;
+                objectPushConstant.albedoTextureID = obj->albedoTexture ? obj->albedoTexture->imageDescriptorID : -1;
+                objectPushConstant.normalTextureID = obj->normalTexture ? obj->normalTexture->imageDescriptorID : -1;
+                objectPushConstant.additionalTextureID = obj->additionalTexture1 ? obj->additionalTexture1->imageDescriptorID : -1;
+                objectPushConstant.additionalTextureID2 = obj->additionalTexture2 ? obj->additionalTexture2->imageDescriptorID : -1;
+
+                //upload the matrix to the GPU via push constants
+                vkCmdPushConstants(*commandBuffer, graphicsPipeline->m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MeshObjectPushConstant), &objectPushConstant);
+
+                int vertOffset = (int)(obj->meshObject.vertexMemStart - s_meshMemoryPtr->meshHostMemory.vertexMemory);
+                uint32_t indOffset = (obj->meshObject.indexMemStart - s_meshMemoryPtr->meshHostMemory.indexMemory);
+                uint32_t indSize = (obj->meshObject.indexMemSize / sizeof(uint32_t));
+                vkCmdDrawIndexed(*commandBuffer, indSize, 1, indOffset, vertOffset, 0);
+            }
         }
 
         vkCmdEndRenderPass(*commandBuffer);
@@ -1014,14 +1025,17 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     vkResetCommandBuffer(nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], 0);
 
     for(int i = 0; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++){
-        UpdateGraphicsPipelineAtFrame(nanoRenderer, &nanoRenderer->m_pNanoContext->graphicsPipelines[i], currentFrame);
     }
 
-    int currentGraphicsPipelineIndex = nanoRenderer->m_pNanoContext->currentGraphicsPipeline;
-    recordCommandBuffer(&nanoRenderer->m_pNanoContext->graphicsPipelines[currentGraphicsPipelineIndex],
-                        &nanoRenderer->m_pNanoContext->swapchainContext.framebuffers[imageIndex], //swapchain framebuffer for the command buffer to operate on
-                        &nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], //command buffer to write to.
-                        currentFrame);
+    if(s_sceneToRender){
+        UpdateGraphicsPipelineAtFrame(nanoRenderer, &s_sceneToRender->graphicsPipeline, currentFrame);
+        recordCommandBuffer(&s_sceneToRender->graphicsPipeline,
+                            &nanoRenderer->m_pNanoContext->swapchainContext.framebuffers[imageIndex], //swapchain framebuffer for the command buffer to operate on
+                            &nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], //command buffer to write to.
+                            currentFrame);
+    } else {
+        fprintf(stderr, "No scene to render");
+    }
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1080,6 +1094,7 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
     s_meshMemoryPtr = meshMemory;
     s_imageMemoryPtr = imageMemory;
     s_nanoRenderer = nanoRenderer;
+    s_sceneToRender = nullptr;
 
     nanoRenderer->m_pNanoContext = (NanoVKContext*)calloc(1, sizeof(NanoVKContext));
     // Here the err validation is not that useful
@@ -1138,11 +1153,6 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
                                nanoRenderer->m_pNanoContext->swapchainContext.syncObjects,
                                MAX_FRAMES_IN_FLIGHT);
 
-    NanoGraphicsPipeline graphicsPipeline = {};
-    createGraphicsPipeline(nanoRenderer,
-                           &graphicsPipeline);
-
-    AddGraphicsPipelineToNanoContext(nanoRenderer, graphicsPipeline);
 
     //testToDisplay = {};
     testToDisplay = CreateString("");
@@ -1166,4 +1176,8 @@ void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indi
 void AddTextureToRenderableObject(NanoImage* image, RenderableObject* renderableObject){
     renderableObject->albedoTexture = image;
     SubmitImageToGPUMemory(s_nanoRenderer, image);
+}
+
+void RenderScene(RenderableScene* scene){
+    s_sceneToRender = scene;
 }

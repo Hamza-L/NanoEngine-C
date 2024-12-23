@@ -7,6 +7,7 @@
 #include "NanoEngine.h"
 #include "NanoGraphicsPipeline.h"
 #include "NanoRenderer.h"
+#include "NanoScene.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -35,17 +36,20 @@
 /* f 4/13/5 3/9/5 8/11/5 */
 /* f 5/6/6 1/12/6 8/11/6 */
 
-void CreateSquare(float offset[2], float size[2], float color[4], Vertex vertices[4], uint32_t indices[6]){
+RenderableObject CreateSquare(float offset[2], float size[2], float color[4]){
 
-    Vertex vert[4] = {{{ offset[0]          , offset[1] - size[1], 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+    RenderableObject squareObject;
+
+    Vertex vertices[4] = {{{ offset[0]          , offset[1] - size[1], 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
                       {{ offset[0] + size[0], offset[1] - size[1], 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
                       {{ offset[0] + size[0], offset[1]          , 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
                       {{ offset[0]          , offset[1]          , 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
 
-    uint32_t ind[6] = { 0, 1, 2, 2, 3, 0 };
+    uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 };
 
-    memcpy(vertices, vert, sizeof(Vertex)*4);
-    memcpy(indices, ind, sizeof(uint32_t)*6);
+    InitRenderableObject(vertices, 4, indices, 6, &squareObject);
+
+    return squareObject;
 }
 
 int main(int argc, char *argv[]) {
@@ -65,37 +69,36 @@ int main(int argc, char *argv[]) {
 
     NanoGraphicsPipeline* graphicsPipeline = &nanoEngine.m_Renderer.m_pNanoContext->graphicsPipelines[nanoEngine.m_Renderer.m_pNanoContext->currentGraphicsPipeline];
 
-    RenderableObject object1;
-    Vertex vertices[4] = {0}; uint32_t indices[6] = {0};
+    // create scene
+    RenderableScene scene;
+    InitRenderableScene(&nanoEngine, &scene);
+
+    // create object 1
     float offset[2] = {-0.5f, 0.5f};
     float size[2] = {0.5f, 0.5f};
     float color1[4] = {1.0f, 0.0f, 0.0f, 1.0f};
-    CreateSquare( offset, size, color1, vertices, indices);
-    InitRenderableObject(vertices, 4, indices, 6, &object1);
+    RenderableObject object1 = CreateSquare( offset, size, color1);
 
-    NanoImage texture1;
-    InitHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, &texture1, "./textures/Vulkan Texture.jpg");
+    NanoImage texture1 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Vulkan Texture.jpg");
     AddTextureToRenderableObject(&texture1, &object1);
 
-    RenderableObject object2;
+    // create object 2
     offset[0] = 0.5f; offset[1] = 0.5f;
     float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f};
-    CreateSquare( offset, size, color2, vertices, indices);
-    InitRenderableObject(vertices, 4, indices, 6, &object2);
+    RenderableObject object2 = CreateSquare( offset, size, color2);
 
-    NanoImage texture2;
-    InitHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, &texture2, "./textures/Giraffe.jpg");
+    NanoImage texture2 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg");
     AddTextureToRenderableObject(&texture2, &object2);
 
-    AddImageToGraphicsPipeline(&nanoEngine.m_Renderer, graphicsPipeline, &texture1);
-    AddImageToGraphicsPipeline(&nanoEngine.m_Renderer, graphicsPipeline, &texture2);
-
-    UpdateDescriptorSets(&nanoEngine.m_Renderer, graphicsPipeline);
-    SendAllocatedMeshMemoryToGPUMemory(&nanoEngine.m_Renderer, &nanoEngine.m_meshMemory);
+    AddObjectToScene(&object1, &scene);
+    AddObjectToScene(&object2, &scene);
+    CompileRenderableScene(&scene);
+    RenderScene(&scene);
 
     RunEngine(&nanoEngine);
 
     /* CleanUpMeshObject(&nanoEngine.m_Renderer, &object); */
+    CleanUpScene(&scene);
     CleanUpMeshMemory(&nanoEngine.m_Renderer, &nanoEngine.m_meshMemory);
     CleanUpEngine(&nanoEngine);
 

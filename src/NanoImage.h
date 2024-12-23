@@ -31,6 +31,7 @@ struct NanoImage {
 void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text);
 void InitHostPersistentImage(ImageHostMemory* imageHostMemory, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* nanoImage);
 void InitHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, NanoImage* image, const char* fileName);
+NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, const char* fileName);
 void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* image);
 void InitImageFromFile(const char* fileName, NanoImage* image);
 void CleanUpImageVkMemory(NanoRenderer* nanoRenderer, NanoImage* nanoImage);

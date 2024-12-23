@@ -313,6 +313,29 @@ void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoIm
 }
 
 // file format default to RGBA for now
+NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, const char* fileName){
+    NanoImage image;
+    int width, height, numChannels;
+    stbi_uc* imageData = stbi_load(fileName, &width, &height, &numChannels, STBI_rgb_alpha);
+    VkDeviceSize imageSize = width * height * 4;
+
+    image.width = width;
+    image.height = height;
+    image.numChannels = IMAGE_FORMAT_RGBA;
+    image.imageDataSize = imageSize;
+    image.imageDescriptorID = - 1;
+
+    if (!imageData) {
+        fprintf(stderr, "failed to open and load image\n");
+    }
+
+    CopyImageDataToAllocatedMemoryObject(imageHostMemory, (char*)imageData, imageSize, &image);
+
+    stbi_image_free(imageData);
+    return image;
+}
+
+// file format default to RGBA for now
 void InitHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, NanoImage* image, const char* fileName){
     int width, height, numChannels;
     stbi_uc* imageData = stbi_load(fileName, &width, &height, &numChannels, STBI_rgb_alpha);
