@@ -26,7 +26,7 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 1) uniform sampler2D textureSampler[MAX_TEXTURES_PER_SCENE];
 
 void main() {
-    if(NUM_TEXTURES > 0)
+    if(objectPushConstant.albedoTextureID >= 0)
         outColor = texture(textureSampler[objectPushConstant.albedoTextureID], fragTexUV);
     else
         outColor = fragColor;
