@@ -751,26 +751,6 @@ ERR recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
     return err;
 }
 
-
-ERR createGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline) {
-    ERR err = OK;
-    VkExtent2D extent = nanoRenderer->m_pNanoContext->swapchainContext.info.currentExtent;
-    VkRenderPass renderpass = nanoRenderer->m_pNanoContext->defaultRenderpass;
-
-    InitGraphicsPipeline(nanoRenderer, graphicsPipeline, extent);
-
-    NanoShaderConfig vertConfig = {.m_fileFullPath = "./src/shader/shader.vert", .hasSampler = false, .hasUniformBuffer = true};
-    AddVertShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, vertConfig);
-
-    NanoShaderConfig fragConfig = {.m_fileFullPath = "./src/shader/shader.frag", .hasSampler = true, .hasUniformBuffer = false};
-    AddFragShaderToGraphicsPipeline(nanoRenderer, graphicsPipeline, fragConfig);
-
-    graphicsPipeline->_renderpass = renderpass;
-    CompileGraphicsPipeline(nanoRenderer, graphicsPipeline, true);
-
-    return err;
-}
-
 // renderpass with at least one color attachment
 ERR createRenderPass(VkDevice device, const SwapchainDetails swapchainDetails, VkRenderPass* renderpass){
     ERR err = OK;

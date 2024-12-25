@@ -74,19 +74,18 @@ void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
         descriptorWrites[0].pTexelBufferView = nullptr; // Optional
 
         // combined image sampler descriptor set update
-        enum{totalImageDescriptorCount = 16};
-        VkDescriptorImageInfo imageInfos[totalImageDescriptorCount] = {};
-        int validTextureCount = 0;
-        for(int j = 0; j < totalImageDescriptorCount; j++){
-            if(graphicsPipeline->textures[j]){
-                graphicsPipeline->textures[j]->imageDescriptorID = validTextureCount;
+        VkDescriptorImageInfo imageInfos[MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE] = {};
+        int textureCount = 0;
+        for(int j = 0; j < MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE; j++){
+            if(graphicsPipeline->textures[j] ){
+                graphicsPipeline->textures[j]->imageDescriptorID = textureCount;
                 imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfos[j].imageView = graphicsPipeline->textures[j]->imageView; //For now we use the same image for all in flight frames. We also use only the first image
+                imageInfos[j].imageView = graphicsPipeline->textures[j]->isInitialized ? graphicsPipeline->textures[j]->imageView : graphicsPipeline->defaultTexture.imageView; //For now we use the same image for all in flight frames. We also use only the first image
                 imageInfos[j].sampler = graphicsPipeline->m_sampler;
-                validTextureCount++;
+                textureCount++;
             } else {
                 imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfos[j].imageView = graphicsPipeline->defaultTexture.imageView; //For now we use the same image for all in flight frames. We also use only the first image
+                imageInfos[j].imageView = graphicsPipeline->emptyTexture.imageView; //For now we use the same image for all in flight frames. We also use only the first image
                 imageInfos[j].sampler = graphicsPipeline->m_sampler;
             }
         }
@@ -95,7 +94,7 @@ void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
         descriptorWrites[1].dstBinding = 1;
         descriptorWrites[1].dstArrayElement = 0;
         descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = totalImageDescriptorCount;
+        descriptorWrites[1].descriptorCount = MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE;
         descriptorWrites[1].pImageInfo = imageInfos;
         descriptorWrites[1].pTexelBufferView = nullptr; // Optional
 
@@ -132,7 +131,7 @@ static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoGraphicsPi
 
     VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
     samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 16;
+    samplerLayoutBinding.descriptorCount = MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE;
     samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     samplerLayoutBinding.pImmutableSamplers = nullptr;
     samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -155,7 +154,7 @@ static void CreateDescriptorPool(NanoRenderer* nanoRenderer, NanoGraphicsPipelin
     poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize[0].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT);
     poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize[1].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT * 16);
+    poolSize[1].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT * MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -179,6 +178,11 @@ static void AddDefaultTexture(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* 
     SubmitImageToGPUMemory(nanoRenderer, &graphicsPipeline->defaultTexture);
 }
 
+static void AddEmptyTexture(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
+    InitImage(1, 1, IMAGE_FORMAT_RGBA, &graphicsPipeline->emptyTexture);
+    SubmitImageToGPUMemory(nanoRenderer, &graphicsPipeline->emptyTexture);
+}
+
 void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, const VkExtent2D extent){
     graphicsPipeline->m_extent = extent;
     graphicsPipeline->m_isInitialized = true;
@@ -193,11 +197,7 @@ void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
 
     CreateTextureSampler(nanoRenderer, graphicsPipeline);
     AddDefaultTexture(nanoRenderer, graphicsPipeline);
-
-    CreateDescriptorSetLayout(nanoRenderer, graphicsPipeline);
-    CreateDescriptorPool(nanoRenderer, graphicsPipeline);
-    CreateDescriptorSets(nanoRenderer, graphicsPipeline);
-
+    AddEmptyTexture(nanoRenderer, graphicsPipeline);
 }
 
 void AddVertShaderToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoShaderConfig config){
@@ -236,7 +236,7 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
 }
 
 void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
-    UniformBufferObject ubo = {};
+    UniformBufferObject ubo = graphicsPipeline->uniformBuffer;
     glm_mat4_identity(ubo.model);
     /* vec3 axis = {0.0f, 1.0f, 0.0f}; */
     /* glm_mat4_identity(ubo.model); */
@@ -246,6 +246,12 @@ void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
         memcpy(graphicsPipeline->UniformBufferMemory[i].bufferMemoryMapped, &ubo, sizeof(ubo));
     }
 
+}
+
+void SetupDescriptors(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
+    CreateDescriptorSetLayout(nanoRenderer, graphicsPipeline);
+    CreateDescriptorPool(nanoRenderer, graphicsPipeline);
+    CreateDescriptorSets(nanoRenderer, graphicsPipeline);
 }
 
 ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile){
@@ -266,13 +272,37 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     // Shaders ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    typedef struct {
+        uint32_t fragData;
+        uint32_t vertData;
+    } specializationData;
+
+    specializationData data = {.vertData = 1, .fragData = graphicsPipeline->numTextures};
+
+    // Map entry for the lighting model to be used by the fragment shader //optional
+    VkSpecializationMapEntry specializationMapEntries[2];
+    specializationMapEntries[0].constantID = 0;
+    specializationMapEntries[0].size = sizeof(uint32_t);
+    specializationMapEntries[0].offset = 0;
+
+    // Map entry for the lighting model to be used by the fragment shader //optional
+    specializationMapEntries[1].constantID = 1;
+    specializationMapEntries[1].size = sizeof(uint32_t);
+    specializationMapEntries[1].offset = offsetof(specializationData, fragData);
+
+    VkSpecializationInfo specializationInfo = {};
+    specializationInfo.dataSize = sizeof(specializationData);
+    specializationInfo.pData = &data;
+    specializationInfo.mapEntryCount = 2;
+    specializationInfo.pMapEntries = specializationMapEntries; //if data is an array, we can use map entries to selectively map areas with offset/size
+
     VkPipelineShaderStageCreateInfo vertexShaderStage = {};
     vertexShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertexShaderStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
     vertexShaderStage.module = graphicsPipeline->m_vertShader.m_shaderModule;
     vertexShaderStage.pName = "main";
     // VkSpecializationInfo specializationInfo = {};
-    vertexShaderStage.pSpecializationInfo = NULL; //Can specify different values for constant used in this shader. allows better optimization at shader creation stage
+    vertexShaderStage.pSpecializationInfo = &specializationInfo; //Can specify different values for constant used in this shader. allows better optimization at shader creation stage
 
     VkPipelineShaderStageCreateInfo fragmentShaderStage = {};
     fragmentShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -280,7 +310,7 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     fragmentShaderStage.module = graphicsPipeline->m_fragShader.m_shaderModule;
     fragmentShaderStage.pName = "main";
     // VkSpecializationInfo specializationInfo = {};
-    fragmentShaderStage.pSpecializationInfo = NULL; //Can specify different values for constant used in this shader. allows better optimization at shader creation stage
+    fragmentShaderStage.pSpecializationInfo = &specializationInfo; //Can specify different values for constant used in this shader. allows better optimization at shader creation stage
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertexShaderStage, fragmentShaderStage};
 
@@ -463,6 +493,7 @@ void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* g
         CleanUpImageVkMemory(nanoRenderer, graphicsPipeline->textures[i]);
     }
     CleanUpImageVkMemory(nanoRenderer, &graphicsPipeline->defaultTexture);
+    CleanUpImageVkMemory(nanoRenderer, &graphicsPipeline->emptyTexture);
 
     vkDestroyDescriptorPool(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_descriptorSetLayout, nullptr);

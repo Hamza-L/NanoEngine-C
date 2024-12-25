@@ -28,6 +28,11 @@
 // is equivalent to 128 4K images;
 #define MAX_TOTAL_ALLOCATED_IMAGES_MEMSIZE 1061683200
 
+#define MAX_TEXTURE_PER_SCENE 256
+
+//this is a physical device limitation on macos
+#define MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE 16
+
 typedef struct String String;
 
 extern const int WINDOW_WIDTH;

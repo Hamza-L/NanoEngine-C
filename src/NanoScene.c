@@ -36,6 +36,8 @@ void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderab
 
 void CompileRenderableScene(RenderableScene* renderableScene){
     //setup graphics pipeline
+    // Setting up the image data of all the scene
+
     VkExtent2D extent = s_NanoEngine->m_Renderer.m_pNanoContext->swapchainContext.info.currentExtent;
     VkRenderPass renderpass = s_NanoEngine->m_Renderer.m_pNanoContext->defaultRenderpass;
 
@@ -48,19 +50,22 @@ void CompileRenderableScene(RenderableScene* renderableScene){
     AddFragShaderToGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, fragConfig);
 
     renderableScene->graphicsPipeline._renderpass = renderpass;
-    CompileGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, true);
 
-    if(!renderableScene->graphicsPipeline.m_isInitialized){
-        fprintf(stderr, "Failed to Initialize graphics pipeline for current scene\n");
-        DEBUG_BREAK;
-    }
-
-    // Setting up the image data of all the scene
+    // this needs to be called first so the graphics pipeline is compiled with the right number of texture updates
     for(int i = 0; i < renderableScene->numTextures; i++){
         if(renderableScene->textures[i]){
             SubmitImageToGPUMemory(&s_NanoEngine->m_Renderer, renderableScene->textures[i]);
             AddImageToGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, renderableScene->textures[i]);
         }
+    }
+
+    SetupDescriptors(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline);
+
+    CompileGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, true);
+
+    if(!renderableScene->graphicsPipeline.m_isInitialized){
+        fprintf(stderr, "Failed to Initialize graphics pipeline for current scene\n");
+        DEBUG_BREAK;
     }
 
 

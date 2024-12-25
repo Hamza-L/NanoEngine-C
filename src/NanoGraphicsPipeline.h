@@ -31,6 +31,7 @@ struct NanoGraphicsPipeline{
         // Textures
         NanoImage* textures[16];
         NanoImage defaultTexture;
+        NanoImage emptyTexture;
         uint32_t numTextures;
 
         // Uniform Buffers
@@ -48,6 +49,7 @@ void AddImageToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline
 void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, uint32_t currentFrame);
 void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline);
 void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline);
+void SetupDescriptors(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline);
 ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile);
 void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline);
 
