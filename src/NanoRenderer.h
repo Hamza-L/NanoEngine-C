@@ -99,13 +99,46 @@ struct RenderableObject {
     NanoImage* additionalTexture2;
 };
 
+typedef struct {
+    vec3 position1;
+    vec3 position2;
+    vec3 position3;
+} TriangleParam;
+
+typedef struct {
+    vec3 position; //top left corner
+    float width;
+    float height;
+} SquareParam;
+
+typedef struct {
+    vec3 position; //center position
+    float width;
+    float height;
+    float depth;
+} CubeParam;
+
+typedef struct {
+    vec3 position;
+    float radius;
+} SphereParam;
+
+typedef enum {
+TRIANGLE,
+SQUARE,
+CUBE,
+SPHERE,
+NUM_PRIMITIVE
+} Primitive;
+
 ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window);
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
 ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
 ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
 
-void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject);
-void AddTextureToRenderableObject(NanoImage* image, RenderableObject* renderableObject);
+RenderableObject CreateRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices);
+RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* primParam, float color[4]);
+RenderableObject CreateRenderableObjectFromFile(const char* fileName, float color[4]);
 
 void RenderScene(struct RenderableScene* scene);
 

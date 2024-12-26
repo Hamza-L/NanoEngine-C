@@ -1,4 +1,5 @@
 #include "NanoRenderer.h"
+#include "MemManager.h"
 #include "NanoUtility.h"
 #include "NanoScene.h"
 #include "NanoInput.h"
@@ -744,9 +745,7 @@ ERR recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
                             swapChainContext);
 
     // update the extent of all graphics pipeines to reflect the framebuffer change due to window resize
-    for(int i = 0; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++){
-        s_sceneToRender->graphicsPipeline.m_extent = swapChainContext->info.currentExtent;
-    }
+    s_sceneToRender->graphicsPipeline.m_extent = swapChainContext->info.currentExtent;
 
     return err;
 }
@@ -978,9 +977,6 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 
     vkResetCommandBuffer(nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], 0);
 
-    for(int i = 0; i < nanoRenderer->m_pNanoContext->graphicPipelinesCount; i++){
-    }
-
     if(s_sceneToRender){
         UpdateGraphicsPipelineAtFrame(nanoRenderer, &s_sceneToRender->graphicsPipeline, currentFrame);
         recordCommandBuffer(&s_sceneToRender->graphicsPipeline,
@@ -1116,6 +1112,9 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
     return err;
 }
 
+void RenderScene(RenderableScene* scene){
+    s_sceneToRender = scene;
+}
 
 void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject){
     AllocateMeshMemoryObject(&s_meshMemoryPtr->meshHostMemory, vertices, numVertices, indices, numIndices, &renderableObject->meshObject);
@@ -1127,11 +1126,86 @@ void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indi
     glm_mat4_identity(renderableObject->model);
 }
 
-void AddTextureToRenderableObject(NanoImage* image, RenderableObject* renderableObject){
-    renderableObject->albedoTexture = image;
-    SubmitImageToGPUMemory(s_nanoRenderer, image);
+void MakeTriangle(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, TriangleParam* param, float color[4]){
+    *numVertices = 3;
+    *numIndices = 3;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
 }
 
-void RenderScene(RenderableScene* scene){
-    s_sceneToRender = scene;
+void MakeSquare(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SquareParam* param, float color[4]){
+    *numVertices = 4;
+    *numIndices = 6;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
+
+    Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1]                , param->position[2]}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+                              {{ param->position[0]               , param->position[1]                , param->position[2]}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
+
+    uint32_t indicesTemp[6] = { 0, 1, 2, 2, 3, 0 };
+
+    memcpy(vertices, verticesTemp, *numVertices * sizeof(Vertex));
+    memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
+}
+
+void MakeCube(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, CubeParam* param, float color[4]){
+
+}
+
+void MakeSphere(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SphereParam* param, float color[4]){
+
+}
+
+RenderableObject CreateRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices){
+    RenderableObject object = {};
+    InitRenderableObject(vertices, numVertices, indices, numIndices, &object);
+    return object;
+}
+
+RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* primParam, float color[4]){
+    RenderableObject object = {};
+    uint32_t numVertex = 0;
+    uint32_t numIndices = 0;
+    Vertex* vertices = nullptr;
+    uint32_t* indices = nullptr;
+    switch (primType) {
+        case TRIANGLE:
+            MakeTriangle(nullptr, &numVertex, nullptr, &numIndices, (TriangleParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeTriangle(vertices, &numVertex, indices, &numIndices, (TriangleParam*)primParam, color);
+            break;
+        case SQUARE:
+            MakeSquare(nullptr, &numVertex, nullptr, &numIndices, (SquareParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeSquare(vertices, &numVertex, indices, &numIndices, (SquareParam*)primParam, color);
+            break;
+        case CUBE:
+            MakeCube(nullptr, &numVertex, nullptr, &numIndices, (CubeParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeCube(vertices, &numVertex, indices, &numIndices, (CubeParam*)primParam, color);
+            break;
+        case SPHERE:
+            MakeSphere(nullptr, &numVertex, nullptr, &numIndices, (SphereParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeSphere(vertices, &numVertex, indices, &numIndices, (SphereParam*)primParam, color);
+            break;
+        default:
+            fprintf(stderr, "Invalid primitive type\n");
+            break;
+            }
+    InitRenderableObject(vertices, numVertex, indices, numIndices, &object);
+    return object;
+}
+
+RenderableObject CreateRenderableObjectFromFile(const char* fileName, float color[4]){
+    RenderableObject object = {};
+    return object;
 }

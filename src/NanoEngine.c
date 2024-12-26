@@ -6,15 +6,23 @@
 
 #include <stdio.h>
 
+NanoEngine* s_nanoeEngineSingleton;
+
 ERR CleanUpEngine(NanoEngine* nanoEngine){
     ERR err = OK;
     CleanUpWindow(&nanoEngine->m_Window);
+    CleanUpMeshMemory(&nanoEngine->m_Renderer, &nanoEngine->m_meshMemory);
+    CleanUpImageMemory(&nanoEngine->m_Renderer, &nanoEngine->m_ImageMemory);
     CleanUpRenderer(&nanoEngine->m_Renderer);
+    nanoEngine->isInitializaed = false;
     return err;
 }
 
 ERR InitEngine(NanoEngine* nanoEngine){
     ERR err = OK;
+    if(s_nanoeEngineSingleton != nullptr && s_nanoeEngineSingleton->isInitializaed){
+        CleanUpEngine(s_nanoeEngineSingleton);
+    }
     InitWindow(&nanoEngine->m_Window, WINDOW_WIDTH, WINDOW_HEIGHT, true);
     InitMeshHostMemory(&nanoEngine->m_meshMemory.meshHostMemory, MAX_MEMORY_MESH_OBJECT * MAX_VERTEX_PER_OBJECT);
     InitImageHostMemory(&nanoEngine->m_ImageMemory.imageHostMemory, MAX_TOTAL_ALLOCATED_IMAGES_MEMSIZE);
@@ -22,6 +30,9 @@ ERR InitEngine(NanoEngine* nanoEngine){
                  &nanoEngine->m_meshMemory,
                  &nanoEngine->m_ImageMemory,
                  &nanoEngine->m_Window);
+
+    nanoEngine->isInitializaed = true;
+    s_nanoeEngineSingleton = nanoEngine;
     return err;
 }
 

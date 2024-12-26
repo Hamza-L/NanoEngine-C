@@ -52,17 +52,6 @@ typedef struct{
     bool isInitialized;
 } MeshMemory;
 
-typedef struct{
-    NanoVkImageMemory imageMemory;
-} ImageVKMemory;
-
-typedef struct{
-    ImageVKMemory imageVKMemory;
-    ImageHostMemory imageHostMemory;
-
-    bool isInitialized;
-} ImageMemory;
-
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription);
 void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindingDescription[DATA_MEMBER_PER_VERTEX]);
 
@@ -83,5 +72,6 @@ void SendAllocatedMeshMemoryToGPUMemory(NanoRenderer* nanoRenderer, MeshMemory* 
 void CleanUpMeshObject(NanoRenderer* nanoRenderer, MeshObject* meshObject);
 void CleanUpMeshVkMemory(NanoRenderer* nanoRenderer, MeshVKMemory* meshMemory);
 void CleanUpMeshMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory);
+
 
 #endif // NANOBUFFERS_H_

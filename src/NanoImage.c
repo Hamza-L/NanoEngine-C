@@ -452,3 +452,7 @@ void CleanUpImageVkMemory(NanoRenderer* nanoRenderer, NanoImage* nanoImage){
     vkDestroyImage(nanoRenderer->m_pNanoContext->device, nanoImage->nanoVkBuffer.textureImage, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, nanoImage->nanoVkBuffer.textureImageMemory, nullptr);
 }
+
+void CleanUpImageMemory(NanoRenderer* nanoRenderer, ImageMemory* imageMemory){
+    CleanUpImageHostMemory(&imageMemory->imageHostMemory);
+}

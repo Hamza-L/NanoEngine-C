@@ -11,6 +11,8 @@ struct NanoEngine{
     NanoWindow m_Window;
     MeshMemory m_meshMemory;
     ImageMemory m_ImageMemory;
+
+    bool isInitializaed;
 };
 
 ERR InitEngine(NanoEngine* nanoEngine);

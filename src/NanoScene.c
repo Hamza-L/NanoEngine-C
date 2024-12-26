@@ -3,6 +3,8 @@
 #include "NanoGraphicsPipeline.h"
 #include "NanoImage.h"
 #include "NanoEngine.h"
+#include "cglm/mat4.h"
+
 #include <string.h>
 #include <stdio.h>
 

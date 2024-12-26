@@ -10,6 +10,7 @@ struct NanoImage;
 struct RenderableObject;
 
 typedef struct RenderableScene RenderableScene;
+typedef struct RenderableNode RenderableNode;
 
 struct RenderableScene {
     struct RenderableObject* renderableObjects[256];
@@ -19,6 +20,13 @@ struct RenderableScene {
     uint32_t numTextures;
 
     NanoGraphicsPipeline graphicsPipeline;
+};
+
+struct RenderableNode{
+    uint32_t NODE_ID;
+    struct RenderableObject* renderableObject;
+
+    RenderableNode* chilNodes[16];
 };
 
 
