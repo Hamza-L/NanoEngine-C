@@ -80,6 +80,7 @@ struct NanoVKContext {
     SwapchainContext swapchainContext;
 
     bool isInitialized;
+    bool framebufferResized;
 };
 
 struct NanoRenderer {

@@ -2,13 +2,17 @@
 #include "NanoInput.h"
 #include "GLFW/glfw3.h"
 #include "NanoConfig.h"
+#include "NanoEngine.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
 static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    NanoWindow* nanoWindow = glfwGetWindowUserPointer(window);
-    nanoWindow->framebufferResized = true;
+    NanoEngine* nanoEngine = glfwGetWindowUserPointer(window);
+    nanoEngine->m_Window.framebufferResized = true;
+
+    PreDrawFrame(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
+    DrawFrame(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
 }
 
 ERR CleanUpWindow(NanoWindow* nanoWindow){
@@ -45,7 +49,6 @@ NanoWindow* InitWindow(NanoWindow* nanoWindow, const int32_t width, const int32_
         nanoWindow->m_isInit = false;
         return NULL;
     }
-    glfwSetWindowUserPointer(nanoWindow->_window, nanoWindow);
     glfwSetFramebufferSizeCallback(nanoWindow->_window, framebufferResizeCallback);
     glfwSetKeyCallback(nanoWindow->_window,key_callback);
     glfwSetMouseButtonCallback(nanoWindow->_window, mouse_callback);

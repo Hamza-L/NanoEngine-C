@@ -964,7 +964,7 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     VkResult result = vkAcquireNextImageKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain,
                                             UINT64_MAX, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
         recreateSwapchain(nanoRenderer, nanoWindow->_window);
         return OK;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -1018,6 +1018,7 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || nanoWindow->framebufferResized) {
         nanoWindow->framebufferResized = false;
+        fprintf(stderr, "recreating swapchain\n");
         recreateSwapchain(nanoRenderer, nanoWindow->_window);
         /* return OK; */
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {

@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-NanoEngine* s_nanoeEngineSingleton;
+NanoEngine* s_nanoEngineSingleton;
 
 ERR CleanUpEngine(NanoEngine* nanoEngine){
     ERR err = OK;
@@ -20,10 +20,12 @@ ERR CleanUpEngine(NanoEngine* nanoEngine){
 
 ERR InitEngine(NanoEngine* nanoEngine){
     ERR err = OK;
-    if(s_nanoeEngineSingleton != nullptr && s_nanoeEngineSingleton->isInitializaed){
-        CleanUpEngine(s_nanoeEngineSingleton);
+    if(s_nanoEngineSingleton != nullptr && s_nanoEngineSingleton->isInitializaed){
+        CleanUpEngine(s_nanoEngineSingleton);
     }
     InitWindow(&nanoEngine->m_Window, WINDOW_WIDTH, WINDOW_HEIGHT, true);
+    glfwSetWindowUserPointer(nanoEngine->m_Window._window, nanoEngine);
+
     InitMeshHostMemory(&nanoEngine->m_meshMemory.meshHostMemory, MAX_MEMORY_MESH_OBJECT * MAX_VERTEX_PER_OBJECT);
     InitImageHostMemory(&nanoEngine->m_ImageMemory.imageHostMemory, MAX_TOTAL_ALLOCATED_IMAGES_MEMSIZE);
     InitRenderer(&nanoEngine->m_Renderer,
@@ -32,12 +34,13 @@ ERR InitEngine(NanoEngine* nanoEngine){
                  &nanoEngine->m_Window);
 
     nanoEngine->isInitializaed = true;
-    s_nanoeEngineSingleton = nanoEngine;
+    s_nanoEngineSingleton = nanoEngine;
     return err;
 }
 
 ERR MainLoop(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     ERR err = OK;
+
     PreDrawFrame(nanoRenderer, nanoWindow);
     DrawFrame(nanoRenderer, nanoWindow);
     return err;
