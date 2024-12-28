@@ -904,7 +904,7 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
                 objectPushConstant.additionalTextureID2 = obj->additionalTexture2 ? obj->additionalTexture2->imageDescriptorID : -1;
 
                 // One dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
-                uint32_t dynamicOffset = i * graphicsPipeline->uniformBufferDynamic.dynamicAlignment;
+                uint32_t dynamicOffset = i * graphicsPipeline->uniformBufferDynamicAllignment;
                 // Bind the descriptor set for rendering a mesh using the dynamic offset
                 vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 1, &dynamicOffset);
 

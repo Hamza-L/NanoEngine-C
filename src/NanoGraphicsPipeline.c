@@ -5,6 +5,7 @@
 #include "NanoBuffers.h"
 #include "NanoRenderer.h"
 #include "cglm/cam.h"
+#include "cglm/mat4.h"
 #include "vulkan/vulkan_core.h"
 
 #include <stdint.h>
@@ -53,32 +54,37 @@ void CreateUniformBuffersWithMappedMem(NanoRenderer* nanoRenderer, NanoVkBufferM
     }
 }
 
-void InitializeDynamicUniformBufferMemory(NanoRenderer* nanoRenderer, UniformBufferObjectDynamic* uboDynamic, NanoVkBufferMemory UniformMemoryToInitialize[], uint32_t numBuffersToInitialize){
-    for(int i = 0; i < numBuffersToInitialize; i++){
+void UpdateDynamicUniformBufferMemory(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoVkBufferMemory UniformMemoryToInitialize[], uint32_t numBuffers){
+    for(int b = 0; b < numBuffers; b++){
+        mat4* modelMemory = (mat4*)UniformMemoryToInitialize[b].bufferMemoryMapped;
+        for(size_t i = 0; i < MAX_OBJECT_PER_SCENE ; i++)
+        {
+            glm_mat4_identity(modelMemory[i]);
+        }
+    }
+
+    for(int i = 0 ; i < numBuffers; i++) {
         VkMappedMemoryRange memoryRange = {};
         memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
         memoryRange.memory = UniformMemoryToInitialize[i].bufferMemory;
-        memoryRange.size = sizeof(mat4) * MAX_OBJECT_PER_SCENE;
-        for(int j = 0; j < MAX_OBJECT_PER_SCENE; j++){
-            glm_mat4_identity(uboDynamic->model[j]);
-        }
+        memoryRange.size = graphicsPipeline->uniformBufferDynamicAllignment * MAX_OBJECT_PER_SCENE;
         vkFlushMappedMemoryRanges(nanoRenderer->m_pNanoContext->device, 1, &memoryRange);
     }
 }
 
-void CreateDynamicUniformBufferWithMappedMem(NanoRenderer* nanoRenderer, UniformBufferObjectDynamic* uboDynamic, NanoVkBufferMemory uboDynamicMemoryToInitialize[], uint32_t numBuffers){
+void CreateDynamicUniformBufferWithMappedMem(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoVkBufferMemory uboDynamicMemoryToInitialize[], uint32_t numBuffers){
 // Calculate required alignment based on minimum device offset alignment
     size_t minUboAlignment = nanoRenderer->m_pNanoContext->deviceProperties.limits.minUniformBufferOffsetAlignment;
-    uboDynamic->dynamicAlignment = sizeof(mat4);
+    graphicsPipeline->uniformBufferDynamicAllignment = sizeof(mat4);
     if (minUboAlignment > 0) {
-        uboDynamic->dynamicAlignment = (uboDynamic->dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
+        graphicsPipeline->uniformBufferDynamicAllignment = (graphicsPipeline->uniformBufferDynamicAllignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
     }
-    size_t bufferSize = MAX_OBJECT_PER_SCENE * uboDynamic->dynamicAlignment;
-    uboDynamic->model = (mat4*)aligned_alloc(uboDynamic->dynamicAlignment, bufferSize);
+    size_t bufferSize = MAX_OBJECT_PER_SCENE * graphicsPipeline->uniformBufferDynamicAllignment;
+    /* uboDynamic->model = (mat4*)aligned_alloc(uboDynamic->dynamicAlignment, bufferSize); */
 
     for (int i = 0; i < numBuffers; i++) {
         uboDynamicMemoryToInitialize[i] = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufferSize);
-        vkMapMemory(nanoRenderer->m_pNanoContext->device, uboDynamicMemoryToInitialize[i].bufferMemory, 0, bufferSize, 0, (void**)&uboDynamic->model);
+        vkMapMemory(nanoRenderer->m_pNanoContext->device, uboDynamicMemoryToInitialize[i].bufferMemory, 0, bufferSize, 0, &uboDynamicMemoryToInitialize[i].bufferMemoryMapped);
     }
 }
 
@@ -248,8 +254,8 @@ void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
 
     // does not use a staging buffer since it's updated at every frame
     CreateUniformBuffersWithMappedMem(nanoRenderer, graphicsPipeline->UniformBufferMemory, MAX_FRAMES_IN_FLIGHT);
-    CreateDynamicUniformBufferWithMappedMem(nanoRenderer, &graphicsPipeline->uniformBufferDynamic, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
-    InitializeDynamicUniformBufferMemory(nanoRenderer, &graphicsPipeline->uniformBufferDynamic, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
+    CreateDynamicUniformBufferWithMappedMem(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
+    UpdateDynamicUniformBufferMemory(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
 
     CreateTextureSampler(nanoRenderer, graphicsPipeline);
     AddDefaultTexture(nanoRenderer, graphicsPipeline);

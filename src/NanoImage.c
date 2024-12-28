@@ -209,7 +209,7 @@ void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int ve
         abort();
     }
     error = FT_New_Face( library,
-                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
+                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
                          0,
                          &face );
 

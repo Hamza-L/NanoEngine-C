@@ -39,7 +39,7 @@ struct NanoGraphicsPipeline{
         NanoVkBufferMemory UniformBufferMemory[MAX_FRAMES_IN_FLIGHT];
 
         // dynamic uniform buffers
-        UniformBufferObjectDynamic uniformBufferDynamic;
+        uint32_t uniformBufferDynamicAllignment;
         NanoVkBufferMemory uniformBufferDynamicMemory[MAX_FRAMES_IN_FLIGHT];
 
         // optionals
