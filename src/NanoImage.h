@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "NanoBuffers.h"
+#include "Str.h"
 
 typedef struct NanoImage NanoImage;
 
@@ -39,8 +40,8 @@ typedef struct{
     bool isInitialized;
 } ImageMemory;
 
-void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text);
-void InitHostPersistentImage(ImageHostMemory* imageHostMemory, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* nanoImage);
+void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int verticalSpacing, float color[4]);
+NanoImage CreateHostPersistentImage(ImageHostMemory* imageHostMemory, int width, int height, int numChannels, float colour[4]);
 void InitHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, NanoImage* image, const char* fileName);
 NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, const char* fileName);
 void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* image);
@@ -52,5 +53,7 @@ void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image);
 
 //utility function
 VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat format);
+
+void WrapText(HeapString text, uint32_t width, uint32_t fontSize);
 
 #endif // NANOIMAGE_H_

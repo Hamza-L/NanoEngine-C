@@ -5,6 +5,7 @@
 #include "NanoVkUtility.h"
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
+#include <stdlib.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -15,17 +16,100 @@
 FT_Library  library;
 FT_Face     face;      /* handle to face object */
 
-int GetTextWidth(const char* text, int pixelFontSize){
+typedef struct {
+    uint32_t width;
+    uint32_t height;
+} TextDimensions;
+
+void InitFreeType(const char* fontType){
+    int error = FT_Init_FreeType( &library );
+    if ( error ) {
+        fprintf(stderr, "ERROR OCCURED LOADING FONTS\n");
+        abort();
+    }
+    error = FT_New_Face( library,
+                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
+                         0,
+                         &face );
+
+    if ( error == FT_Err_Unknown_File_Format ) {
+        fprintf(stderr, "UNKNOWW FILE FORMAT FOR GIVEN FONTS\n");
+        abort();
+    }
+    else if ( error ) {
+        fprintf(stderr, "UNKOWN ERROR OCCURED LOADING FONTS\n");
+        abort();
+    }
+}
+
+void WrapText(HeapString text, uint32_t width, uint32_t fontSize){
+    int textWidth = 0;
+
+    FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
+    int           pen_x, n;
+    int num_chars = text.m_size;
+    int error = FT_Set_Pixel_Sizes(
+        face,
+        0, // 0 if same as pixel height
+        fontSize);
+
+
+    int indxStartOfWord = 0;
+
+    pen_x = 0;
+    for ( n = 0; n < text.m_size; n++ ) //the size might change with the addition of new lines
+    {
+        FT_UInt  glyph_index;
+
+        /* retrieve glyph index from character code */
+        glyph_index = FT_Get_Char_Index( face, text.m_pData[n] );
+
+        /* load glyph image into the slot (erase previous one) */
+        error = FT_Load_Glyph( face, glyph_index, FT_LOAD_NO_BITMAP );
+        if ( error )
+            continue;  /* ignore errors */
+
+        if(text.m_pData[n] == ' ' || text.m_pData[n] == '\n' || text.m_pData[n] == '/'){
+            indxStartOfWord = n + 1;
+            if(text.m_pData[n] == '\n'){
+                pen_x = 0;
+            }
+        }
+
+        pen_x += slot->advance.x >> 6; // divide by 64 */
+
+        if (pen_x > width){
+            pen_x = 0;
+
+            if(text.m_pData[n] == ' ') {
+                indxStartOfWord = n;
+            }
+
+            char textToAppend[text.m_size - indxStartOfWord + 1] = {}; // extra space for null termination
+            memcpy(textToAppend, &text.m_pData[indxStartOfWord], text.m_size - indxStartOfWord);
+            // while(textToAppend[offset] == ' ') {
+            //     offset++;
+            // }
+            text.m_size = indxStartOfWord + 1;
+            AppendToHeapString(&text, &textToAppend[0]);
+            text.m_pData[indxStartOfWord] = '\n';
+
+            n = indxStartOfWord;
+        }
+    }
+}
+
+TextDimensions GetTextDimensions(const char* text, int pixelFontSize){
+    int textHeight = 0;
     int textWidth = 0;
 
     FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
     int           pen_x, pen_y, n;
     int num_chars = strlen(text);
-    uint32_t charWidth = pixelFontSize;
     int error = FT_Set_Pixel_Sizes(
         face,
         0, // 0 if same as pixel height
-        charWidth);
+        pixelFontSize);
 
     pen_x = 0;
     for ( n = 0; n < num_chars; n++ )
@@ -40,11 +124,23 @@ int GetTextWidth(const char* text, int pixelFontSize){
         if ( error )
             continue;  /* ignore errors */
 
-        int xOffset = pen_x + slot->bitmap_left;
-        pen_x += slot->advance.x >> 6; // divide by 64 */
-    }
+        int yOffset = slot->bitmap.rows;
+        if (yOffset > textHeight) {
+            textHeight = yOffset;
+        }
 
-    return pen_x;
+        if(text[n] == '\n'){
+            pen_x = 0;
+        }
+
+        pen_x += slot->advance.x >> 6; // divide by 64 */
+
+        if (pen_x > textWidth) {
+            textWidth = pen_x;
+        }
+    }
+    TextDimensions dimensions = {.width = textWidth, .height = textHeight};
+    return dimensions;
 }
 
 //TODO: Append the commands to the mainloop's recorded command buffers as an optimized pipeline transfer since this command only runs when the device Queue idles
@@ -101,7 +197,11 @@ void TransitionImageLayout(NanoRenderer* nanoRenderer, VkImage image, VkFormat f
     EndAndSubmitSingleTimeCommands(nanoRenderer, commandBuffer);
 }
 
-void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text){
+void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int verticalSpacing, float color[4]){
+
+    if(nanoImage->imageMemory.imageData == nullptr)
+        fprintf(stderr, "Image should be allocated first before adding text to it\n");
+
     // create an image from scratch
     int error = FT_Init_FreeType( &library );
     if ( error ) {
@@ -109,7 +209,7 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         abort();
     }
     error = FT_New_Face( library,
-                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
+                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
                          0,
                          &face );
 
@@ -122,51 +222,38 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         abort();
     }
 
-    uint32_t charWidth = 128;
     error = FT_Set_Pixel_Sizes(
         face,
         0, // 0 if same as pixel height
-        charWidth);
+        fontSize);
 
     if ( error ) {
         fprintf(stderr, "ERROR SETTING FONT SIZE\n");
         abort();
     }
 
-
+    TextDimensions dimensions = GetTextDimensions(text, fontSize);
+    HeapString heapText = AllocHeapString(text);
+    WrapText(heapText, nanoImage->width, fontSize);
 
     FT_GlyphSlot  slot = face->glyph;  /* a small shortcut */
     int           pen_x, pen_y, n;
-    const int num_chars = strlen(text);
+    const int num_chars = (int)strlen(heapText.m_pData); //TODO: Size if wrong here. we'll use strlen for now
     int numChannels = 4;
-    int width = GetTextWidth(text, charWidth);
-    int height = charWidth + 45;
-    const VkDeviceSize imageSize = width * height * numChannels;
+    int width = nanoImage->width;
+    int height = nanoImage->height;
 
-    if(nanoImage->isInitialized && (width > nanoImage->width || height > nanoImage->height || imageSize > nanoImage->imageDataSize)){
-        fprintf(stderr, "Input text content would exceed the size of the image\n");
-        return;
-    }
-
-    unsigned char* imageData = (unsigned char*)calloc(imageSize, sizeof(char));
-
-    /* for (int y = 0; y < height; y++) { */
-    /*     for (int x = 0; x < width; x++) { */
-    /*         imageData[(y * width * numChannels) + (x * numChannels)] = (y/(float)height) * 255; // r */
-    /*         imageData[(y * width * numChannels) + (x * numChannels) + 1] = 0; // g */
-    /*         imageData[(y * width * numChannels) + (x * numChannels) + 2] = 0; // b */
-    /*         imageData[(y * width * numChannels) + (x * numChannels) + 3] = 255; // a */
-    /*     } */
-    /* } */
+    unsigned char* imageData = (unsigned char*)nanoImage->imageMemory.imageData;
 
     pen_x = 0;
+    int yOffset = (verticalSpacing + dimensions.height);
 
     for ( n = 0; n < num_chars; n++ )
     {
         FT_UInt  glyph_index;
 
         /* retrieve glyph index from character code */
-        glyph_index = FT_Get_Char_Index( face, text[n] );
+        glyph_index = FT_Get_Char_Index( face, heapText.m_pData[n] );
 
         /* load glyph image into the slot (erase previous one) */
         error = FT_Load_Glyph( face, glyph_index, FT_LOAD_DEFAULT );
@@ -178,96 +265,39 @@ void InitText(NanoRenderer* nanoRenderer, NanoImage* nanoImage, const char* text
         if ( error )
             continue;
 
-        int yOffset = height - slot->bitmap_top - 45;
+        if(heapText.m_pData[n] == '\n'){
+            pen_x = 0;
+            yOffset += (verticalSpacing + dimensions.height);
+            continue;
+        }
+
         int xOffset = pen_x + slot->bitmap_left;
-        for (int y = yOffset ; y < yOffset + slot->bitmap.rows; y++) {
+        for (int y = yOffset - slot->bitmap_top; y < yOffset + slot->bitmap.rows - slot->bitmap_top; y++) {
             for (int x = xOffset; x < xOffset + slot->bitmap.width; x++) {
                 uint32_t bmapW = slot->bitmap.width;
-                unsigned char alphaVal = slot->bitmap.buffer[((y - yOffset) * bmapW) + (x - xOffset)];
+                unsigned char alphaVal = slot->bitmap.buffer[((y - (yOffset - slot->bitmap_top)) * bmapW) + (x - xOffset)];
+                float alphaValNormalized = alphaVal/255.0f;
                 if ( alphaVal == 0 ){
                     continue;
                 }
-                imageData[(y * width * numChannels) + (x * numChannels)] = 255; // r
-                imageData[(y * width * numChannels) + (x * numChannels) + 1] = 255; // g
-                imageData[(y * width * numChannels) + (x * numChannels) + 2] = 255; // b
-                imageData[(y * width * numChannels) + (x * numChannels) + 3] = slot->bitmap.buffer[((y - yOffset) * bmapW) + (x - xOffset)]; // a
+                imageData[(y * width * numChannels) + (x * numChannels) + 0] =  (1-alphaValNormalized) * imageData[(y * width * numChannels) + (x * numChannels) + 0] + (alphaValNormalized) * (color[0] * 255); // r
+                imageData[(y * width * numChannels) + (x * numChannels) + 1] =  (1-alphaValNormalized) * imageData[(y * width * numChannels) + (x * numChannels) + 1] + (alphaValNormalized) * (color[1] * 255); // g
+                imageData[(y * width * numChannels) + (x * numChannels) + 2] =  (1-alphaValNormalized) * imageData[(y * width * numChannels) + (x * numChannels) + 2] + (alphaValNormalized) * (color[2] * 255); // b
+                imageData[(y * width * numChannels) + (x * numChannels) + 3] =  (1-alphaValNormalized) * imageData[(y * width * numChannels) + (x * numChannels) + 3] + (alphaValNormalized) * (color[3] * 255); // a
             }
         }
-        /* /\* now, draw to our target surface *\/ */
-        /* my_draw_bitmap( &slot->bitmap, */
-        /*                 pen_x + slot->bitmap_left, */
-        /*                 pen_y - slot->bitmap_top ); */
 
         /* increment pen position */
         pen_x += slot->advance.x >> 6; // divide by 64 */
         /* pen_y += slot->advance.y >> 6; /\* not useful for now *\/ */
     }
 
-
-    if(!nanoImage->isInitialized){
-        nanoImage->width = width;
-        nanoImage->height = height;
-        nanoImage->numChannels = IMAGE_FORMAT_RGBA;
-        nanoImage->imageDataSize = imageSize;
-    }
-
-    if(imageSize <= 0) {
-        ASSERT(false, "no pixel has been written to the created image data \n");
-        return;
-    }
-
-    NanoVkBufferMemory stagingBufferMem; // we can use a VkBuffer for a VkImage copy
-    stagingBufferMem = CreateBuffer(nanoRenderer,
-                                    VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                                    imageSize);
-
-    void* data;
-    vkMapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, 0, imageSize, 0, &data);
-    memcpy(data, imageData, (size_t)imageSize);
-    vkUnmapMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory);
-
-    free(imageData);
-
-    if(!nanoImage->isInitialized){
-        nanoImage->nanoVkBuffer = CreateImageBuffer(nanoRenderer,
-                                                    width, height,
-                                                    VK_FORMAT_R8G8B8A8_SRGB,
-                                                    VK_IMAGE_TILING_LINEAR,
-                                                    VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    }
-
-    TransitionImageLayout(nanoRenderer,
-                          nanoImage->nanoVkBuffer.textureImage,
-                          VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    CopyBufferToImage(nanoRenderer,
-                      stagingBufferMem.buffer,
-                      nanoImage->nanoVkBuffer.textureImage,
-                      width, height);
-
-    TransitionImageLayout(nanoRenderer,
-                          nanoImage->nanoVkBuffer.textureImage,
-                          VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
-    vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
-
-    if(!nanoImage->isInitialized){
-        nanoImage->imageView = CreateImageView(nanoRenderer, nanoImage->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
-    }
-    nanoImage->isInitialized = true;
 }
 
 void InitHostPersistentImage(ImageHostMemory* imageHostMemory, uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* nanoImage){
     // create an image from scratch
     const VkDeviceSize imageSize = width * height * numChannels;
-    nanoImage->imageMemory = *GetAllocateImageMemoryObject(imageHostMemory, imageSize);
+    nanoImage->imageMemory = GetAllocateImageMemoryObject(imageHostMemory, imageSize);
     nanoImage->imageDescriptorID = - 1;
 
     int checkerBoardSquareSize = 64;
@@ -313,6 +343,38 @@ void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoIm
 }
 
 // file format default to RGBA for now
+NanoImage CreateHostPersistentImage(ImageHostMemory* imageHostMemory, int width, int height, int numChannels, float colour[4]){
+    NanoImage image;
+    int imageSize = width * height * numChannels;
+
+    image.imageMemory = GetAllocateImageMemoryObject(imageHostMemory, imageSize);
+    char* imageData = image.imageMemory.imageData;
+
+    for (int y=0; y < height; y++)
+    {
+        for (int x=0; x < width; x++)
+        {
+            imageData[y*width*numChannels+x*numChannels + 0] = colour[0] * 255;
+            imageData[y*width*numChannels+x*numChannels + 1] = colour[1] * 255;
+            imageData[y*width*numChannels+x*numChannels + 2] = colour[2] * 255;
+            imageData[y*width*numChannels+x*numChannels + 3] = colour[3] * 255;
+        }
+    }
+
+    image.width = width;
+    image.height = height;
+    image.numChannels = IMAGE_FORMAT_RGBA;
+    image.imageDataSize = imageSize;
+    image.imageDescriptorID = - 1;
+
+    if (!imageData) {
+        fprintf(stderr, "failed to allocate an image\n");
+    }
+
+    return image;
+}
+
+// file format default to RGBA for now
 NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, const char* fileName){
     NanoImage image;
     int width, height, numChannels;
@@ -330,6 +392,10 @@ NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, co
     }
 
     CopyImageDataToAllocatedMemoryObject(imageHostMemory, (char*)imageData, imageSize, &image);
+
+    float color[4] = {0,0,0,1.0f};
+    int textLength = strlen(fileName);
+    AddTextToImage(&image, fileName, image.width / 24.0f, 10, color);
 
     stbi_image_free(imageData);
     return image;

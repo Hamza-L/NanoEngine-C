@@ -6,6 +6,7 @@
 #include "NanoEngine.h"
 #include "NanoImage.h"
 #include "NanoRenderer.h"
+#include "Str.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -73,19 +74,27 @@ int main(int argc, char *argv[]) {
     SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.75f,0.5f,0}};
     RenderableObject object1 = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
 
-    NanoImage texture1 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Vulkan Texture.jpg");
+    float color[4] = {0.25f, 0.2f, 0.3f, 1.0f};
+    float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    int verticalTextSpacing = 10;
+    NanoImage texture1 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg");
+    /* NanoImage texture1 = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 500, 500, 4, color); */
+    /* AddTextToImage(&texture1, "Hello!", 50, verticalTextSpacing, textColor); */
+
+    //HeapString myText = AllocHeapString("Hello my name is Hamza and i love Zara");
+    //WrapText( myText, 400, 100);
     object1.albedoTexture = &texture1;
 
-    // create object 2
-    float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f};
-    SquareParam param2 = {.width = 0.5f, .height = 0.5f, .position = {0.25f,0.5f,0}};
-    RenderableObject object2 = CreateRenderableObjectFromPrimitive(SQUARE, &param2, color2);
+    /* // create object 2 */
+    /* float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f}; */
+    /* SquareParam param2 = {.width = 0.5f, .height = 0.5f, .position = {0.25f,0.5f,0}}; */
+    /* RenderableObject object2 = CreateRenderableObjectFromPrimitive(SQUARE, &param2, color2); */
 
-    NanoImage texture2 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg");
-    object2.albedoTexture = &texture2;
+    /* NanoImage texture2 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg"); */
+    /* object2.albedoTexture = &texture2; */
 
     AddObjectToScene(&object1, &scene);
-    AddObjectToScene(&object2, &scene);
+    /* AddObjectToScene(&object2, &scene); */
     CompileRenderableScene(&scene);
     RenderScene(&scene);
 

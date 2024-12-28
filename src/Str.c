@@ -66,6 +66,7 @@ HeapString AllocHeapString(const char* string){
         i++;
     }
     stringToReturn.m_size = i;
+    stringToReturn.m_pData[i] = '\0';
 
     return stringToReturn;
 }
@@ -76,12 +77,13 @@ String* AppendToString(String* srcString, const char* stringToAppend){
 }
 
 HeapString* AppendToHeapString(HeapString* srcString, const char* stringToAppend){
-    if(srcString->m_size == 0){
+    if(srcString->m_size == 0) {
         CleanUpString(srcString);
         srcString->m_pData = (char*)calloc(DEFAULT_STRING_ALLOC_LENGTH, sizeof(char));
-        srcString->m_size = 0;
+        srcString->m_size = AppendToRawString(&srcString->m_pData[srcString->m_size], stringToAppend);
+    } else {
+        srcString->m_size += AppendToRawStringAt(srcString->m_pData, stringToAppend, (int)srcString->m_size-1);
     }
-    srcString->m_size = AppendToRawString(srcString->m_pData, stringToAppend);
 
     return srcString;
 }
@@ -182,4 +184,20 @@ int AppendToRawString(const char* srcString, const char* stringToAdd){
     *ptr1 = '\0';
 
     return index;
+}
+
+int AppendToRawStringAt(const char* srcString, const char* stringToAdd, int index){
+    int numWrites = 0;
+    char* ptr1 = (char*)&srcString[index+1];
+    char* ptr2 = (char*)stringToAdd;
+
+    while(*ptr2){
+        *ptr1 = *ptr2;
+        ptr1++;
+        ptr2++;
+        numWrites++;
+    }
+    *ptr1 = '\0';
+
+    return numWrites;
 }

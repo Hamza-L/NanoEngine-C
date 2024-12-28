@@ -56,7 +56,7 @@ void AllocateMeshMemoryObject(MeshHostMemory* meshHostMemory, Vertex* vertices, 
 void CleanUpMeshHostMemory(MeshHostMemory* meshHostMemory);
 
 void InitImageHostMemory(ImageHostMemory* imageHostMemory, uint32_t InitialMemSize);
-ImageMemoryObject* GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory, uint32_t imageDataMemSize);
+ImageMemoryObject GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory, uint32_t imageDataMemSize);
 void CopyImageDataToAllocatedMemoryObject(ImageHostMemory* imageHostMemory, char* imageData, uint32_t imageDataMemSize, struct NanoImage* imageObject);
 void CleanUpImageHostMemory(ImageHostMemory* imageHostMemory);
 

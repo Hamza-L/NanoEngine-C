@@ -45,16 +45,16 @@ void AllocateMeshMemoryObject(MeshHostMemory* meshHostMemory, Vertex* vertices, 
     meshHostMemory->numIndices += numIndices;
 }
 
-ImageMemoryObject* GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory, uint32_t imageDataMemSize){
+ImageMemoryObject GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory, uint32_t imageDataMemSize){
     if(!imageHostMemory->isInitialized){
         fprintf(stderr, "memoryAllocator not initialized. Cannot get allocated ImageObjectMemory/n");
         DEBUG_BREAK;
     }
 
-    ImageMemoryObject* memMeshObj = &imageHostMemory->imageMemObjects[imageHostMemory->numImageMemObjects];
+    ImageMemoryObject memMeshObj = imageHostMemory->imageMemObjects[imageHostMemory->numImageMemObjects];
 
-    memMeshObj->imageData = &imageHostMemory->ImageMemory[imageHostMemory->imageMemSize];
-    memMeshObj->imageMemSize = imageDataMemSize;
+    memMeshObj.imageData = &imageHostMemory->ImageMemory[imageHostMemory->imageMemSize];
+    memMeshObj.imageMemSize = imageDataMemSize;
 
     imageHostMemory->numImageMemObjects++;
     imageHostMemory->imageMemSize += imageDataMemSize;

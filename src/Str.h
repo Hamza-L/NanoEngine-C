@@ -33,6 +33,7 @@ void CleanUpString(HeapString* stringToClean);
 int FindRawString(const char* srcString, const char* stringToFind);
 int FindLastRawString(const char* srcString, const char* stringToFind);
 int AppendToRawString(const char* srcString, const char* stringToApped);
+int AppendToRawStringAt(const char* srcString, const char* stringToAdd, int index);
 void RawSubString(char* srcString, int offset, int size);
 
 #endif // STR_H_
