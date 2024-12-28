@@ -14,6 +14,9 @@ typedef struct SwapchainContext SwapchainContext;
 typedef struct NanoVKContext NanoVKContext;
 typedef struct RenderableObject RenderableObject;
 
+typedef struct{
+    double time;
+} FrameData;
 
 struct QueueFamilyIndices{
     int32_t graphicsFamily;
@@ -79,6 +82,8 @@ struct NanoVKContext {
 
     SwapchainContext swapchainContext;
 
+    FrameData m_frameData;
+
     bool isInitialized;
     bool framebufferResized;
 };
@@ -98,6 +103,9 @@ struct RenderableObject {
     NanoImage* normalTexture;
     NanoImage* additionalTexture1;
     NanoImage* additionalTexture2;
+
+    //update function
+    void (*Update)(void* objectToUpdate, void* frameData);
 };
 
 typedef struct {

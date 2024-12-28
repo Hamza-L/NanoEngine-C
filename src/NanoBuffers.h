@@ -9,16 +9,21 @@
 
 typedef struct NanoRenderer NanoRenderer;//forward decl
 
+typedef struct UniformBufferObjectDynamic UniformBufferObjectDynamic;
 typedef struct UniformBufferObject UniformBufferObject;
 typedef struct NanoVkBufferMemory NanoVkBufferMemory;
 typedef struct NanoVkImageMemory NanoVkImageMemory;
-typedef struct MeshObject MeshObject;
 typedef struct MeshObjectPushConstant MeshObjectPushConstant;
+typedef struct MeshObject MeshObject;
 
 struct UniformBufferObject {
-    mat4 model;
     mat4 view;
     mat4 proj;
+};
+
+struct UniformBufferObjectDynamic {
+  mat4 *model;
+  uint32_t dynamicAlignment;
 };
 
 struct MeshObjectPushConstant {

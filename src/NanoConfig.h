@@ -4,6 +4,8 @@
 #include <vulkan/vulkan_core.h>
 #include <stdbool.h>
 
+#define TEXTURE_DEBUG 0
+
 #define MAX_FRAMES_IN_FLIGHT 2
 #define MAX_GRAPHICS_PIPELINE 16
 #define MAX_FILEPATH_LENGTH 512
@@ -29,6 +31,7 @@
 #define MAX_TOTAL_ALLOCATED_IMAGES_MEMSIZE 1061683200
 
 #define MAX_TEXTURE_PER_SCENE 256
+#define MAX_OBJECT_PER_SCENE 256
 
 //this is a physical device limitation on macos
 #define MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE 16

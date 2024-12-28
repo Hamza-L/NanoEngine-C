@@ -1,4 +1,5 @@
 #include "NanoEngine.h"
+#include "GLFW/glfw3.h"
 #include "MemManager.h"
 #include "NanoRenderer.h"
 #include "NanoWindow.h"
@@ -40,7 +41,6 @@ ERR InitEngine(NanoEngine* nanoEngine){
 
 ERR MainLoop(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     ERR err = OK;
-
     PreDrawFrame(nanoRenderer, nanoWindow);
     DrawFrame(nanoRenderer, nanoWindow);
     return err;
@@ -57,12 +57,13 @@ void ProcessEvents(NanoEngine* nanoEngine){
 
 ERR RunEngine(NanoEngine* nanoEngine){
     ERR err = OK;
+    nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time = 0;
+    glfwSetTime(0);
     while(!ShouldWindowClose(&nanoEngine->m_Window)){
-
+        nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time = glfwGetTime();
         PollEvents(&nanoEngine->m_Window);
         ProcessEvents(nanoEngine);
         MainLoop(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
-
     }
     return err;
 }

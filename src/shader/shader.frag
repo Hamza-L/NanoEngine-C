@@ -23,7 +23,7 @@ layout(location = 0) out vec4 outColor;
 
 //GLOBALS
 // layout(binding = 2) uniform sampler2D textSampler;
-layout(binding = 1) uniform sampler2D textureSampler[MAX_TEXTURES_PER_SCENE];
+layout(binding = 2) uniform sampler2D textureSampler[MAX_TEXTURES_PER_SCENE];
 
 void main() {
     if(objectPushConstant.albedoTextureID >= 0)

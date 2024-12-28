@@ -894,7 +894,6 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
             vkCmdBindVertexBuffers(*commandBuffer, 0, 1, vertexBuffers, offsets);
             vkCmdBindIndexBuffer(*commandBuffer, s_meshMemoryPtr->meshVKMemory.indexMemory.buffer, 0, VK_INDEX_TYPE_UINT32);
 
-            vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 0, nullptr);
             for(int i = 0; i < s_sceneToRender->numRenderableObjects ; i++){
                 RenderableObject* obj = s_sceneToRender->renderableObjects[i];
 
@@ -903,6 +902,11 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
                 objectPushConstant.normalTextureID = obj->normalTexture ? obj->normalTexture->imageDescriptorID : -1;
                 objectPushConstant.additionalTextureID = obj->additionalTexture1 ? obj->additionalTexture1->imageDescriptorID : -1;
                 objectPushConstant.additionalTextureID2 = obj->additionalTexture2 ? obj->additionalTexture2->imageDescriptorID : -1;
+
+                // One dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
+                uint32_t dynamicOffset = i * graphicsPipeline->uniformBufferDynamic.dynamicAlignment;
+                // Bind the descriptor set for rendering a mesh using the dynamic offset
+                vkCmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline->m_pipelineLayout, 0, 1, &graphicsPipeline->DescSets[currentFrame], 1, &dynamicOffset);
 
                 //upload the matrix to the GPU via push constants
                 vkCmdPushConstants(*commandBuffer, graphicsPipeline->m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(MeshObjectPushConstant), &objectPushConstant);
@@ -951,6 +955,13 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
     ERR err = OK;
     //CreateImageData(renderer, &texture);
+    RenderableObject* objectToRender = nullptr;
+    for(int i = 0; i < s_sceneToRender->numRenderableObjects; i++){
+        objectToRender = s_sceneToRender->renderableObjects[i];
+        if(objectToRender->Update){
+            objectToRender->Update(objectToRender, &renderer->m_pNanoContext->m_frameData);
+        }
+    }
     return err;
 }
 

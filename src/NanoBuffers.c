@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "cglm/mat4.h"
+
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription) {
     pVertexInputBindingDescription->binding = 0;
     pVertexInputBindingDescription->stride = sizeof(Vertex);

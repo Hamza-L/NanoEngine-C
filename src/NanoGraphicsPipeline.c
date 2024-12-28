@@ -1,4 +1,5 @@
 #include "NanoGraphicsPipeline.h"
+#include "NanoConfig.h"
 #include "NanoImage.h"
 #include "NanoShader.h"
 #include "NanoBuffers.h"
@@ -52,10 +53,39 @@ void CreateUniformBuffersWithMappedMem(NanoRenderer* nanoRenderer, NanoVkBufferM
     }
 }
 
+void InitializeDynamicUniformBufferMemory(NanoRenderer* nanoRenderer, UniformBufferObjectDynamic* uboDynamic, NanoVkBufferMemory UniformMemoryToInitialize[], uint32_t numBuffersToInitialize){
+    for(int i = 0; i < numBuffersToInitialize; i++){
+        VkMappedMemoryRange memoryRange = {};
+        memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        memoryRange.memory = UniformMemoryToInitialize[i].bufferMemory;
+        memoryRange.size = sizeof(mat4) * MAX_OBJECT_PER_SCENE;
+        for(int j = 0; j < MAX_OBJECT_PER_SCENE; j++){
+            glm_mat4_identity(uboDynamic->model[j]);
+        }
+        vkFlushMappedMemoryRanges(nanoRenderer->m_pNanoContext->device, 1, &memoryRange);
+    }
+}
+
+void CreateDynamicUniformBufferWithMappedMem(NanoRenderer* nanoRenderer, UniformBufferObjectDynamic* uboDynamic, NanoVkBufferMemory uboDynamicMemoryToInitialize[], uint32_t numBuffers){
+// Calculate required alignment based on minimum device offset alignment
+    size_t minUboAlignment = nanoRenderer->m_pNanoContext->deviceProperties.limits.minUniformBufferOffsetAlignment;
+    uboDynamic->dynamicAlignment = sizeof(mat4);
+    if (minUboAlignment > 0) {
+        uboDynamic->dynamicAlignment = (uboDynamic->dynamicAlignment + minUboAlignment - 1) & ~(minUboAlignment - 1);
+    }
+    size_t bufferSize = MAX_OBJECT_PER_SCENE * uboDynamic->dynamicAlignment;
+    uboDynamic->model = (mat4*)aligned_alloc(uboDynamic->dynamicAlignment, bufferSize);
+
+    for (int i = 0; i < numBuffers; i++) {
+        uboDynamicMemoryToInitialize[i] = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufferSize);
+        vkMapMemory(nanoRenderer->m_pNanoContext->device, uboDynamicMemoryToInitialize[i].bufferMemory, 0, bufferSize, 0, (void**)&uboDynamic->model);
+    }
+}
+
 void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        VkWriteDescriptorSet descriptorWrites[2] = {};
-        uint32_t numDescriptorUpdates = 1;
+        VkWriteDescriptorSet descriptorWrites[3] = {};
+        uint32_t numDescriptorUpdates = 2;
 
         // Uniform buffer descriptor set update
         VkDescriptorBufferInfo bufferInfo = {};
@@ -73,6 +103,22 @@ void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
         descriptorWrites[0].pImageInfo = nullptr; // Optional
         descriptorWrites[0].pTexelBufferView = nullptr; // Optional
 
+        // Dynamic Uniform buffer descriptor set update
+        VkDescriptorBufferInfo dynamicBufferInfo = {};
+        dynamicBufferInfo.buffer = graphicsPipeline->uniformBufferDynamicMemory[i].buffer;
+        dynamicBufferInfo.offset = 0;
+        dynamicBufferInfo.range = sizeof(UniformBufferObjectDynamic);
+
+        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[1].dstSet = graphicsPipeline->DescSets[i];
+        descriptorWrites[1].dstBinding = 1;
+        descriptorWrites[1].dstArrayElement = 0;
+        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+        descriptorWrites[1].descriptorCount = 1;
+        descriptorWrites[1].pBufferInfo = &dynamicBufferInfo;
+        descriptorWrites[1].pImageInfo = nullptr; // Optional
+        descriptorWrites[1].pTexelBufferView = nullptr; // Optional
+
         // combined image sampler descriptor set update
         VkDescriptorImageInfo imageInfos[MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE] = {};
         int textureCount = 0;
@@ -89,14 +135,14 @@ void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
                 imageInfos[j].sampler = graphicsPipeline->m_sampler;
             }
         }
-        descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        descriptorWrites[1].dstSet = graphicsPipeline->DescSets[i];
-        descriptorWrites[1].dstBinding = 1;
-        descriptorWrites[1].dstArrayElement = 0;
-        descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descriptorWrites[1].descriptorCount = MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE;
-        descriptorWrites[1].pImageInfo = imageInfos;
-        descriptorWrites[1].pTexelBufferView = nullptr; // Optional
+        descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[2].dstSet = graphicsPipeline->DescSets[i];
+        descriptorWrites[2].dstBinding = 2;
+        descriptorWrites[2].dstArrayElement = 0;
+        descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descriptorWrites[2].descriptorCount = MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE;
+        descriptorWrites[2].pImageInfo = imageInfos;
+        descriptorWrites[2].pTexelBufferView = nullptr; // Optional
 
         numDescriptorUpdates += 1; //add 1 if we have at least one image update
 
@@ -123,24 +169,31 @@ static void CreateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipelin
 
 static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
     VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-    uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.binding = 0;
     uboLayoutBinding.descriptorCount = 1; //could pass an array of uniform buffer objects
     uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     uboLayoutBinding.pImmutableSamplers = nullptr; // Optional. used for texture sampling
 
-    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
-    samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE;
-    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    VkDescriptorSetLayoutBinding uboDynLayoutBinding = {};
+    uboDynLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    uboDynLayoutBinding.binding = 1;
+    uboDynLayoutBinding.descriptorCount = 1;
+    uboDynLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    uboDynLayoutBinding.pImmutableSamplers = nullptr;
 
-    VkDescriptorSetLayoutBinding bindings[2] = {uboLayoutBinding, samplerLayoutBinding};
+    VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+    samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerLayoutBinding.binding = 2;
+    samplerLayoutBinding.descriptorCount = MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE;
+    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+    VkDescriptorSetLayoutBinding bindings[3] = {uboLayoutBinding, uboDynLayoutBinding, samplerLayoutBinding};
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = 2;
+    layoutInfo.bindingCount = 3;
     layoutInfo.pBindings = bindings;
 
     if (vkCreateDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, &layoutInfo, nullptr, &graphicsPipeline->m_descriptorSetLayout) != VK_SUCCESS) {
@@ -150,15 +203,17 @@ static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoGraphicsPi
 }
 
 static void CreateDescriptorPool(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
-    VkDescriptorPoolSize poolSize[2] = {};
+    VkDescriptorPoolSize poolSize[3] = {};
     poolSize[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSize[0].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT);
-    poolSize[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSize[1].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT * MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE);
+    poolSize[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    poolSize[1].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT); //TODO: need to make sure we don't need MAX_FRAMES_IN_FLIGHT amount
+    poolSize[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSize[2].descriptorCount = (uint32_t)(MAX_FRAMES_IN_FLIGHT * MAX_COMBINED_IMAGE_SAMPLER_DESCRIPTOR_PER_SCENE);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    poolInfo.poolSizeCount = (uint32_t)2;
+    poolInfo.poolSizeCount = (uint32_t)3;
     poolInfo.pPoolSizes = poolSize;
     poolInfo.maxSets = (uint32_t)MAX_FRAMES_IN_FLIGHT;
 
@@ -188,12 +243,13 @@ void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
     graphicsPipeline->m_isInitialized = true;
     graphicsPipeline->numTextures = 0;
 
-    glm_mat4_identity(graphicsPipeline->uniformBuffer.model);
     glm_mat4_identity(graphicsPipeline->uniformBuffer.proj);
     glm_mat4_identity(graphicsPipeline->uniformBuffer.view);
 
     // does not use a staging buffer since it's updated at every frame
     CreateUniformBuffersWithMappedMem(nanoRenderer, graphicsPipeline->UniformBufferMemory, MAX_FRAMES_IN_FLIGHT);
+    CreateDynamicUniformBufferWithMappedMem(nanoRenderer, &graphicsPipeline->uniformBufferDynamic, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
+    InitializeDynamicUniformBufferMemory(nanoRenderer, &graphicsPipeline->uniformBufferDynamic, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
 
     CreateTextureSampler(nanoRenderer, graphicsPipeline);
     AddDefaultTexture(nanoRenderer, graphicsPipeline);
@@ -237,7 +293,6 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
 
 void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
     UniformBufferObject ubo = graphicsPipeline->uniformBuffer;
-    glm_mat4_identity(ubo.model);
     /* vec3 axis = {0.0f, 1.0f, 0.0f}; */
     /* glm_mat4_identity(ubo.model); */
     /* glm_rotate(ubo.model, 45.0f, axis); */
@@ -487,7 +542,11 @@ void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* g
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, graphicsPipeline->UniformBufferMemory[i].buffer, nullptr);
         vkFreeMemory(nanoRenderer->m_pNanoContext->device, graphicsPipeline->UniformBufferMemory[i].bufferMemory, nullptr);
+        vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, graphicsPipeline->uniformBufferDynamicMemory[i].buffer, nullptr);
+        vkFreeMemory(nanoRenderer->m_pNanoContext->device, graphicsPipeline->uniformBufferDynamicMemory[i].bufferMemory, nullptr);
     }
+
+    //free(graphicsPipeline->uniformBufferDynamic.model);
 
     for(int i = 0; i < graphicsPipeline->numTextures; i++){
         CleanUpImageVkMemory(nanoRenderer, graphicsPipeline->textures[i]);

@@ -7,6 +7,7 @@
 #include "NanoImage.h"
 #include "NanoRenderer.h"
 #include "Str.h"
+#include "cglm/cglm.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -50,6 +51,13 @@
 /*     return squareObject; */
 /* } */
 
+void Update(void* objectToUpdate, void* frameData){
+    RenderableObject* object = (RenderableObject*)objectToUpdate;
+    FrameData* fData = (FrameData*)frameData;
+    float position[3] = {sin(fData->time), 0.0f, 0.0f};
+    glm_translate(object->model, position);
+};
+
 int main(int argc, char *argv[]) {
 
     SetVar(argv[0]);
@@ -73,6 +81,7 @@ int main(int argc, char *argv[]) {
     float color1[4] = {1.0f, 0.0f, 0.0f, 1.0f};
     SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.75f,0.5f,0}};
     RenderableObject object1 = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
+    object1.Update = Update;
 
     float color[4] = {0.25f, 0.2f, 0.3f, 1.0f};
     float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};

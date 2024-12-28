@@ -26,7 +26,8 @@ struct RenderableNode{
     uint32_t NODE_ID;
     struct RenderableObject* renderableObject;
 
-    RenderableNode* chilNodes[16];
+    RenderableNode* childNodes[16];
+    uint32_t numChild;
 };
 
 
@@ -34,5 +35,8 @@ void InitRenderableScene(struct NanoEngine* nanoEngine, RenderableScene* rendera
 void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene);
 void CompileRenderableScene(RenderableScene* renderableScene);
 void CleanUpScene(RenderableScene* renderableScene);
+
+RenderableNode CreateRenderableNode(struct RenderableObject* renderableObj);
+RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild);
 
 #endif // NANOSCENE_H_

@@ -6,6 +6,10 @@ layout(binding = 0) uniform UniformBufferObject {
     mat4 proj;
 } ubo;
 
+layout (binding = 1) uniform UboInstance {
+	mat4 model;
+} uboInstance;
+
 //It is important to know that some types, like dvec3 64 bit vectors, use multiple slots. That means that the index after it must be at least 2 higher
 //INPUTS--------------------------
 layout(location = 0) in vec3 inPosition;

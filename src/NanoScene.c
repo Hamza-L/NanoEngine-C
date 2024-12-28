@@ -5,10 +5,12 @@
 #include "NanoEngine.h"
 #include "cglm/mat4.h"
 
+#include <stdint.h>
 #include <string.h>
 #include <stdio.h>
 
 NanoEngine* s_NanoEngine;
+static uint32_t s_numNodes;
 
 void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScene){
     s_NanoEngine = nanoEngine;
@@ -79,4 +81,18 @@ void CompileRenderableScene(RenderableScene* renderableScene){
 
 void CleanUpScene(RenderableScene* renderableScene){
     CleanUpGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline);
+}
+
+RenderableNode CreateRenderableNode(struct RenderableObject* renderableObj){
+    RenderableNode node = {};
+    node.renderableObject = renderableObj;
+    node.NODE_ID = s_numNodes;
+    node.numChild = 0;
+
+    return node;
+}
+
+RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild){
+    renderableParent->childNodes[renderableParent->numChild++] = renderableChild;
+    return renderableParent;
 }

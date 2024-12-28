@@ -209,7 +209,7 @@ void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int ve
         abort();
     }
     error = FT_New_Face( library,
-                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
+                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
                          0,
                          &face );
 
@@ -393,9 +393,11 @@ NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, co
 
     CopyImageDataToAllocatedMemoryObject(imageHostMemory, (char*)imageData, imageSize, &image);
 
+#if TEXTURE_DEBUG
     float color[4] = {0,0,0,1.0f};
     int textLength = strlen(fileName);
-    AddTextToImage(&image, fileName, image.width / 24.0f, 10, color);
+    AddTextToImage(&image, fileName, image.width / 16.0f, 10, color);
+#endif
 
     stbi_image_free(imageData);
     return image;
