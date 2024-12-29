@@ -8,9 +8,11 @@ struct NanoRenderer;
 struct NanoEngine;
 struct NanoImage;
 struct RenderableObject;
+struct FrameData;
 
 typedef struct RenderableScene RenderableScene;
 typedef struct RenderableNode RenderableNode;
+typedef struct FrameData FrameData;
 
 struct RenderableScene {
     struct RenderableObject* renderableObjects[256];
@@ -33,6 +35,7 @@ struct RenderableNode{
 
 void InitRenderableScene(struct NanoEngine* nanoEngine, RenderableScene* renderableScene);
 void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene);
+void UpdateScene(RenderableScene* renderableScene, FrameData* data);
 void CompileRenderableScene(RenderableScene* renderableScene);
 void CleanUpScene(RenderableScene* renderableScene);
 

@@ -14,8 +14,6 @@
 #include <string.h>
 #include <time.h>
 
-#include <cglm/cglm.h>
-
 double startTime = 0;
 bool timeStarted = false;
 
@@ -54,22 +52,12 @@ void CreateUniformBuffersWithMappedMem(NanoRenderer* nanoRenderer, NanoVkBufferM
     }
 }
 
-void UpdateDynamicUniformBufferMemory(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoVkBufferMemory UniformMemoryToInitialize[], uint32_t numBuffers){
-    for(int b = 0; b < numBuffers; b++){
-        mat4* modelMemory = (mat4*)UniformMemoryToInitialize[b].bufferMemoryMapped;
-        for(size_t i = 0; i < MAX_OBJECT_PER_SCENE ; i++)
-        {
-            glm_mat4_identity(modelMemory[i]);
-        }
-    }
-
-    for(int i = 0 ; i < numBuffers; i++) {
+void UpdateDynamicUniformBufferMemory(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoVkBufferMemory UniformMemoryToInitialize){
         VkMappedMemoryRange memoryRange = {};
         memoryRange.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-        memoryRange.memory = UniformMemoryToInitialize[i].bufferMemory;
+        memoryRange.memory = UniformMemoryToInitialize.bufferMemory;
         memoryRange.size = graphicsPipeline->uniformBufferDynamicAllignment * MAX_OBJECT_PER_SCENE;
         vkFlushMappedMemoryRanges(nanoRenderer->m_pNanoContext->device, 1, &memoryRange);
-    }
 }
 
 void CreateDynamicUniformBufferWithMappedMem(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, NanoVkBufferMemory uboDynamicMemoryToInitialize[], uint32_t numBuffers){
@@ -86,6 +74,16 @@ void CreateDynamicUniformBufferWithMappedMem(NanoRenderer* nanoRenderer, NanoGra
         uboDynamicMemoryToInitialize[i] = CreateBuffer(nanoRenderer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, bufferSize);
         vkMapMemory(nanoRenderer->m_pNanoContext->device, uboDynamicMemoryToInitialize[i].bufferMemory, 0, bufferSize, 0, &uboDynamicMemoryToInitialize[i].bufferMemoryMapped);
     }
+
+    // initialize the model matrices
+    for(int b = 0; b < numBuffers; b++){
+        mat4* modelMemory = (mat4*)uboDynamicMemoryToInitialize[b].bufferMemoryMapped;
+        for(size_t i = 0; i < MAX_OBJECT_PER_SCENE ; i++)
+        {
+            glm_mat4_identity(modelMemory[i]);
+        }
+    }
+
 }
 
 void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
@@ -255,7 +253,9 @@ void InitGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
     // does not use a staging buffer since it's updated at every frame
     CreateUniformBuffersWithMappedMem(nanoRenderer, graphicsPipeline->UniformBufferMemory, MAX_FRAMES_IN_FLIGHT);
     CreateDynamicUniformBufferWithMappedMem(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
-    UpdateDynamicUniformBufferMemory(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory, MAX_FRAMES_IN_FLIGHT);
+    for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
+        UpdateDynamicUniformBufferMemory(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory[i]);
+    }
 
     CreateTextureSampler(nanoRenderer, graphicsPipeline);
     AddDefaultTexture(nanoRenderer, graphicsPipeline);
@@ -295,6 +295,7 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
     /* fprintf(stderr, "currentTime: %f\n", currentTime); */
     memcpy(graphicsPipeline->UniformBufferMemory[currentFrame].bufferMemoryMapped, ubo, sizeof(UniformBufferObject));
 
+    UpdateDynamicUniformBufferMemory(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory[currentFrame]);
 }
 
 void UpdateGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){

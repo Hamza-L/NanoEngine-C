@@ -61,6 +61,7 @@ ERR RunEngine(NanoEngine* nanoEngine){
     glfwSetTime(0);
     while(!ShouldWindowClose(&nanoEngine->m_Window)){
         nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time = glfwGetTime();
+        nanoEngine->m_Renderer.m_pNanoContext->m_frameData.currentFrame = nanoEngine->m_Renderer.m_pNanoContext->swapchainContext.currentFrame;
         PollEvents(&nanoEngine->m_Window);
         ProcessEvents(nanoEngine);
         MainLoop(&nanoEngine->m_Renderer, &nanoEngine->m_Window);

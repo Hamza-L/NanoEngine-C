@@ -13,10 +13,12 @@ typedef struct SwapchainSyncObjects SwapchainSyncObjects;
 typedef struct SwapchainContext SwapchainContext;
 typedef struct NanoVKContext NanoVKContext;
 typedef struct RenderableObject RenderableObject;
+typedef struct FrameData FrameData;
 
-typedef struct{
+struct FrameData{
     double time;
-} FrameData;
+    int currentFrame; //max is MAX_FRAME_IN_FLIGHT
+};
 
 struct QueueFamilyIndices{
     int32_t graphicsFamily;

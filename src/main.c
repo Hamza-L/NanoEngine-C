@@ -2,15 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "MemManager.h"
 #include "NanoEngine.h"
-#include "NanoImage.h"
-#include "NanoRenderer.h"
-#include "Str.h"
 #include "cglm/cglm.h"
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <string.h>
 
 //cube.obj
@@ -54,6 +48,8 @@
 void Update(void* objectToUpdate, void* frameData){
     RenderableObject* object = (RenderableObject*)objectToUpdate;
     FrameData* fData = (FrameData*)frameData;
+
+    glm_mat4_identity(object->model);
     float position[3] = {sin(fData->time), 0.0f, 0.0f};
     glm_translate(object->model, position);
 };

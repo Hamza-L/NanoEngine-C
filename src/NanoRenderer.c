@@ -955,13 +955,7 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
     ERR err = OK;
     //CreateImageData(renderer, &texture);
-    RenderableObject* objectToRender = nullptr;
-    for(int i = 0; i < s_sceneToRender->numRenderableObjects; i++){
-        objectToRender = s_sceneToRender->renderableObjects[i];
-        if(objectToRender->Update){
-            objectToRender->Update(objectToRender, &renderer->m_pNanoContext->m_frameData);
-        }
-    }
+    UpdateScene(s_sceneToRender, &renderer->m_pNanoContext->m_frameData);
     return err;
 }
 

@@ -1,9 +1,6 @@
 #include "NanoScene.h"
-#include "NanoError.h"
 #include "NanoGraphicsPipeline.h"
-#include "NanoImage.h"
 #include "NanoEngine.h"
-#include "cglm/mat4.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -14,7 +11,6 @@ static uint32_t s_numNodes;
 
 void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScene){
     s_NanoEngine = nanoEngine;
-
     renderableScene->numRenderableObjects = 0;
     memset(renderableScene->renderableObjects, 0, sizeof(struct RenderableObject*)*256);
     renderableScene->numTextures = 0;
@@ -36,6 +32,18 @@ void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderab
     if(object->additionalTexture2)
         renderableScene->textures[renderableScene->numTextures++] = object->additionalTexture2;
 
+}
+
+void UpdateScene(RenderableScene* renderableScene, FrameData* data){
+    for(int i = 0; i < renderableScene->numRenderableObjects; i++){
+        RenderableObject* obj = renderableScene->renderableObjects[i];
+        if(obj->Update){
+            obj->Update(obj, data);
+        }
+        uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
+        mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (i * memOffset));
+        memcpy(modelMemDest, &obj->model, sizeof(mat4));
+    }
 }
 
 void CompileRenderableScene(RenderableScene* renderableScene){
