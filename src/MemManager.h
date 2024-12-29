@@ -8,9 +8,10 @@
 struct NanoImage;
 struct RenderableObject;
 
-// DATA_MEMBER_PER_VERTEX = number of members in vertex struct
+#define DATA_MEMBER_PER_VERTEX 4
 typedef struct{
     vec3 pos;
+    vec3 normal;
     vec4 color;
     vec2 uv;
 } Vertex;

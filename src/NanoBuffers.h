@@ -5,8 +5,6 @@
 #include <vulkan/vulkan.h>
 #include <stdint.h>
 
-#define DATA_MEMBER_PER_VERTEX 3
-
 typedef struct NanoRenderer NanoRenderer;//forward decl
 
 typedef struct UniformBufferObjectDynamic UniformBufferObjectDynamic;

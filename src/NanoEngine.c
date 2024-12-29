@@ -58,9 +58,12 @@ void ProcessEvents(NanoEngine* nanoEngine){
 ERR RunEngine(NanoEngine* nanoEngine){
     ERR err = OK;
     nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time = 0;
+    nanoEngine->m_Renderer.m_pNanoContext->m_frameData.deltaTime = 0;
     glfwSetTime(0);
     while(!ShouldWindowClose(&nanoEngine->m_Window)){
-        nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time = glfwGetTime();
+        double newTime = glfwGetTime();
+        nanoEngine->m_Renderer.m_pNanoContext->m_frameData.deltaTime = newTime - nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time;
+        nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time = newTime;
         nanoEngine->m_Renderer.m_pNanoContext->m_frameData.currentFrame = nanoEngine->m_Renderer.m_pNanoContext->swapchainContext.currentFrame;
         PollEvents(&nanoEngine->m_Window);
         ProcessEvents(nanoEngine);

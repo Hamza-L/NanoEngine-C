@@ -3,7 +3,10 @@
 #include <stdlib.h>
 
 #include "NanoEngine.h"
+#include "NanoRenderer.h"
+#include "NanoScene.h"
 #include "cglm/cglm.h"
+#include "cglm/mat4.h"
 
 #include <string.h>
 
@@ -54,6 +57,14 @@ void Update(void* objectToUpdate, void* frameData){
     glm_translate(object->model, position);
 };
 
+void UpdateNode(void* objectToUpdate, void* frameData){
+    RenderableNode* object = (RenderableNode*)objectToUpdate;
+    FrameData* fData = (FrameData*)frameData;
+
+    float position[3] = {0.5f*sin(fData->time) - 0.5f*sin(fData->time - fData->deltaTime), 0.0f, 0.0f};
+    glm_translate(object->localModel, position);
+};
+
 int main(int argc, char *argv[]) {
 
     SetVar(argv[0]);
@@ -73,39 +84,57 @@ int main(int argc, char *argv[]) {
     RenderableScene scene;
     InitRenderableScene(&nanoEngine, &scene);
 
+    RenderableNode cube[6] = {};
+    RenderableObject cubeObject[6] = {};
     // create object 1
-    float color1[4] = {1.0f, 0.0f, 0.0f, 1.0f};
-    SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.75f,0.5f,0}};
-    RenderableObject object1 = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
-    object1.Update = Update;
+    float color1[4] = {0.8f, 0.7f, 0.3f, 1.0f};
+    SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.5f,0.5f,0}};
+    /* RenderableNode node1 = CreateRenderableNode(&object1); */
 
-    float color[4] = {0.25f, 0.2f, 0.3f, 1.0f};
-    float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-    int verticalTextSpacing = 10;
-    NanoImage texture1 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg");
+    cubeObject[0] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
+    cube[0] = CreateRenderableNode(&cubeObject[0]);
+
+    for(int i = 1; i < 6; i++){
+        cubeObject[i] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
+        cube[i] = CreateRenderableNode(&cubeObject[i]);
+        AddChildRenderableNode(&cube[0], &cube[i]);
+    }
+    /* node1.Update = UpdateNode; */
+    /* object1.Update = Update; */
+
+    /* float color[4] = {0.25f, 0.2f, 0.3f, 1.0f}; */
+    /* float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f}; */
+    /* int verticalTextSpacing = 10; */
+    /* NanoImage texture1 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg"); */
     /* NanoImage texture1 = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 500, 500, 4, color); */
     /* AddTextToImage(&texture1, "Hello!", 50, verticalTextSpacing, textColor); */
 
     //HeapString myText = AllocHeapString("Hello my name is Hamza and i love Zara");
     //WrapText( myText, 400, 100);
-    object1.albedoTexture = &texture1;
+    /* object1.albedoTexture = &texture1; */
 
-    /* // create object 2 */
+
+    // create object 2
     /* float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f}; */
-    /* SquareParam param2 = {.width = 0.5f, .height = 0.5f, .position = {0.25f,0.5f,0}}; */
+    /* SquareParam param2 = {.width = 0.25f, .height = 0.25f, .position = {-0.25f,0.25f,0}}; */
     /* RenderableObject object2 = CreateRenderableObjectFromPrimitive(SQUARE, &param2, color2); */
+    /* RenderableNode node2 = CreateRenderableNode(&object2); */
+    /* node2.Update = UpdateNode; */
 
-    /* NanoImage texture2 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg"); */
+    /* NanoImage texture2 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Vulkan Texture.jpg"); */
     /* object2.albedoTexture = &texture2; */
 
-    AddObjectToScene(&object1, &scene);
-    /* AddObjectToScene(&object2, &scene); */
+    /* float position[3] = {0.1f, 0.0f, 0.0f}; */
+    /* glm_translate(node2.localModel , position); */
+
+
+    AddRootNodeToScene(&cube[0], &scene);
+
     CompileRenderableScene(&scene);
     RenderScene(&scene);
 
     RunEngine(&nanoEngine);
 
-    /* CleanUpMeshObject(&nanoEngine.m_Renderer, &object); */
     CleanUpScene(&scene);
     CleanUpEngine(&nanoEngine);
 

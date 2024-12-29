@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "cglm/mat4.h"
 
 void GetVertexBindingDescription(VkVertexInputBindingDescription* pVertexInputBindingDescription) {
     pVertexInputBindingDescription->binding = 0;
@@ -26,13 +25,18 @@ void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindi
 
     vertexInputBindingDescription[1].binding = 0;
     vertexInputBindingDescription[1].location = 1;
-    vertexInputBindingDescription[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    vertexInputBindingDescription[1].offset = offsetof(Vertex, color);
+    vertexInputBindingDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexInputBindingDescription[1].offset = offsetof(Vertex, normal);
 
     vertexInputBindingDescription[2].binding = 0;
     vertexInputBindingDescription[2].location = 2;
-    vertexInputBindingDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
-    vertexInputBindingDescription[2].offset = offsetof(Vertex, uv);
+    vertexInputBindingDescription[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    vertexInputBindingDescription[2].offset = offsetof(Vertex, color);
+
+    vertexInputBindingDescription[3].binding = 0;
+    vertexInputBindingDescription[3].location = 3;
+    vertexInputBindingDescription[3].format = VK_FORMAT_R32G32_SFLOAT;
+    vertexInputBindingDescription[3].offset = offsetof(Vertex, uv);
 }
 
 // usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT for vertices

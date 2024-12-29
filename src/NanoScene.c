@@ -1,6 +1,9 @@
 #include "NanoScene.h"
+#include "NanoConfig.h"
 #include "NanoGraphicsPipeline.h"
 #include "NanoEngine.h"
+#include "NanoRenderer.h"
+#include "cglm/mat4.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -18,6 +21,8 @@ void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScen
 }
 
 void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene){
+
+    object->ID = renderableScene->numRenderableObjects;
     renderableScene->renderableObjects[renderableScene->numRenderableObjects++] = object;
 
     if(object->albedoTexture)
@@ -34,15 +39,68 @@ void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderab
 
 }
 
-void UpdateScene(RenderableScene* renderableScene, FrameData* data){
-    for(int i = 0; i < renderableScene->numRenderableObjects; i++){
-        RenderableObject* obj = renderableScene->renderableObjects[i];
-        if(obj->Update){
-            obj->Update(obj, data);
+void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* renderableScene){
+    if(rootNode == nullptr){
+        fprintf(stderr, "rootNode to add to scene is null\n");
+        return;
+    }
+
+    renderableScene->rootNode = rootNode;
+    AddObjectToScene(rootNode->renderableObject, renderableScene);
+
+    RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
+
+    int queueSize = 1; // we know the root node is not null so size is 1
+    int currHead = 0;
+    RenderableNode* currNode = queue[currHead] = rootNode;
+
+    while(currNode){
+        for(int i = 0; i < currNode->numChild; i++){
+            RenderableNode* currChildNode = currNode->childNodes[i];
+            AddObjectToScene(currChildNode->renderableObject, renderableScene);
+            queue[queueSize++] = currNode->childNodes[i];
         }
-        uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
-        mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (i * memOffset));
-        memcpy(modelMemDest, &obj->model, sizeof(mat4));
+        currHead++;
+        currNode = queue[currHead];
+    }
+}
+
+void UpdateScene(RenderableScene* renderableScene, FrameData* data){
+    RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
+
+    int queueSize = 1; // we know the root node is not null so size is 1
+    int currHead = 0;
+    mat4 currTransform = {0};
+    RenderableNode* currNode = queue[currHead] = renderableScene->rootNode;
+    if(currNode->Update) {
+        currNode->Update(currNode, data);
+    }
+
+    glm_mat4_copy(currNode->localModel, currNode->renderableObject->model);
+    uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
+    mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (currNode->renderableObject->ID * memOffset));
+    memcpy(modelMemDest, &currNode->renderableObject->model, sizeof(mat4));
+
+    while(currNode){
+        glm_mat4_copy(currNode->renderableObject->model, currTransform);
+        for(int i = 0; i < currNode->numChild; i++){
+            RenderableNode* currChildNode = currNode->childNodes[i];
+            RenderableObject* obj = currChildNode->renderableObject;
+
+            if(currChildNode->Update){
+                currChildNode->Update(currChildNode, data);
+            }
+
+            glm_mat4_copy(currChildNode->localModel, obj->model);
+            glm_mat4_mul(currTransform, obj->model, obj->model);
+
+            uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
+            mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (obj->ID * memOffset));
+            memcpy(modelMemDest, &obj->model, sizeof(mat4));
+
+        }
+        currHead++;
+        currNode = queue[currHead];
     }
 }
 
@@ -96,11 +154,40 @@ RenderableNode CreateRenderableNode(struct RenderableObject* renderableObj){
     node.renderableObject = renderableObj;
     node.NODE_ID = s_numNodes;
     node.numChild = 0;
+    glm_mat4_identity(node.localModel);
 
     return node;
 }
 
 RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild){
     renderableParent->childNodes[renderableParent->numChild++] = renderableChild;
+    glm_mat4_mul(renderableParent->renderableObject->model, renderableChild->renderableObject->model, renderableChild->renderableObject->model);
     return renderableParent;
+}
+
+void PropagateNodeTransform(struct RenderableNode* rootNode){
+    RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
+
+    if(rootNode == nullptr){
+        fprintf(stderr, "rootNode to propagate is null\n");
+        return;
+    }
+
+    int queueSize = 1; // we know the root node is not null so size is 1
+    int currHead = 0;
+    mat4 currTransform = {0};
+    RenderableNode* currNode = queue[currHead] = rootNode;
+    glm_mat4_copy(rootNode->localModel, rootNode->renderableObject->model);
+
+    while(currNode){
+        glm_mat4_copy(currNode->renderableObject->model, currTransform);
+        for(int i = 0; i < currNode->numChild; i++){
+            RenderableNode* currChildNode = currNode->childNodes[i];
+            glm_mat4_copy(currChildNode->localModel, currChildNode->renderableObject->model);
+            glm_mat4_mul(currTransform, currChildNode->renderableObject->model, currChildNode->renderableObject->model);
+            queue[queueSize++] = currNode->childNodes[i];
+        }
+        currHead++;
+        currNode = queue[currHead];
+    }
 }

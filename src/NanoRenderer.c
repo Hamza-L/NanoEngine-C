@@ -1124,7 +1124,7 @@ void RenderScene(RenderableScene* scene){
 
 void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject){
     AllocateMeshMemoryObject(&s_meshMemoryPtr->meshHostMemory, vertices, numVertices, indices, numIndices, &renderableObject->meshObject);
-    renderableObject->ID = s_meshMemoryPtr->meshHostMemory.numMemMeshObjects - 1; //current meshObject index
+    renderableObject->ID = -1; //current meshObject index
     renderableObject->albedoTexture = nullptr;
     renderableObject->normalTexture = nullptr;
     renderableObject->additionalTexture1 = nullptr;
@@ -1147,10 +1147,10 @@ void MakeSquare(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint
         return;
     }
 
-    Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
-                              {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
-                              {{ param->position[0] + param->width, param->position[1]                , param->position[2]}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
-                              {{ param->position[0]               , param->position[1]                , param->position[2]}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
+    Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+                              {{ param->position[0]               , param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
 
     uint32_t indicesTemp[6] = { 0, 1, 2, 2, 3, 0 };
 
@@ -1159,7 +1159,21 @@ void MakeSquare(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint
 }
 
 void MakeCube(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, CubeParam* param, float color[4]){
+    *numVertices = 4;
+    *numIndices = 6;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
 
+    Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+                              {{ param->position[0]               , param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
+
+    uint32_t indicesTemp[6] = { 0, 1, 2, 2, 3, 0 };
+
+    memcpy(vertices, verticesTemp, *numVertices * sizeof(Vertex));
+    memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
 }
 
 void MakeSphere(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SphereParam* param, float color[4]){

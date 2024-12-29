@@ -17,6 +17,7 @@ typedef struct FrameData FrameData;
 
 struct FrameData{
     double time;
+    double deltaTime;
     int currentFrame; //max is MAX_FRAME_IN_FLIGHT
 };
 
@@ -96,7 +97,7 @@ struct NanoRenderer {
 
 struct RenderableObject {
     MeshMemoryObject meshObject;
-    int32_t ID;
+    int32_t ID; //on a per scene basis. 0 for the first object of every scene
 
     mat4 model;
 
@@ -105,9 +106,6 @@ struct RenderableObject {
     NanoImage* normalTexture;
     NanoImage* additionalTexture1;
     NanoImage* additionalTexture2;
-
-    //update function
-    void (*Update)(void* objectToUpdate, void* frameData);
 };
 
 typedef struct {
