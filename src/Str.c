@@ -1,5 +1,6 @@
 #include "Str.h"
 #include "NanoConfig.h"
+#include "NanoError.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,7 +10,7 @@ String CreateString(const char* string){
     int i = 0;
     while(string[i]){
         if(i >= DEFAULT_STRING_ALLOC_LENGTH) {
-            fprintf(stderr, "CreateString(char* string): string too large to be initialized");
+            LOG_MSG(stderr, "CreateString(char* string): string too large to be initialized");
             break;
         }
         stringToReturn.m_data[i] = string[i];
@@ -25,7 +26,7 @@ void InitString(String* srcString, const char* string){
     int i = 0;
     while(string[i]){
         if(i >= DEFAULT_STRING_ALLOC_LENGTH) {
-            fprintf(stderr, "InitString(String* srcString, const char* string): string too large to be initialized");
+            LOG_MSG(stderr, "InitString(String* srcString, const char* string): string too large to be initialized");
             break;
         }
         srcString->m_data[i] = string[i];
@@ -42,7 +43,7 @@ void InitHeapString(HeapString* srcString, const char* string){
     int i = 0;
     while(string[i]){
         if(i >= DEFAULT_STRING_ALLOC_LENGTH) {
-            fprintf(stderr, "InitHeapString(HeapString* srcString, char* string): string too large to be initialized");
+            LOG_MSG(stderr, "InitHeapString(HeapString* srcString, char* string): string too large to be initialized");
             break;
         }
         srcString->m_pData[i] = string[i];
@@ -59,7 +60,7 @@ HeapString AllocHeapString(const char* string){
     int i = 0;
     while(string[i]){
         if(i >= DEFAULT_STRING_ALLOC_LENGTH) {
-            fprintf(stderr, "AllocHeapString(char* string): string too large to be initialized");
+            LOG_MSG(stderr, "AllocHeapString(char* string): string too large to be initialized");
             break;
         }
         stringToReturn.m_pData[i] = string[i];

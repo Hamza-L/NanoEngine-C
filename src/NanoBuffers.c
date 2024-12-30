@@ -50,7 +50,7 @@ NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBit
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; //this is only going to be accessed by the graphics queue
 
     if (vkCreateBuffer(nanoRenderer->m_pNanoContext->device, &bufferInfo, NULL, &vertexMem.buffer) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create vertex buffer!\n");
+        LOG_MSG(stderr, "failed to create vertex buffer!\n");
         abort();
     }
 
@@ -63,7 +63,7 @@ NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBit
     allocInfo.memoryTypeIndex = findMemoryType(nanoRenderer, memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     if (vkAllocateMemory(nanoRenderer->m_pNanoContext->device, &allocInfo, nullptr, &vertexMem.bufferMemory) != VK_SUCCESS) {
-        fprintf(stderr, "failed to allocate vertex buffer memory!\n");
+        LOG_MSG(stderr, "failed to allocate vertex buffer memory!\n");
         abort();
     }
 
@@ -92,7 +92,7 @@ NanoVkImageMemory CreateImageBuffer(NanoRenderer* nanoRenderer, uint32_t width, 
     imageInfo.flags = 0; // Optional
 
     if (vkCreateImage(nanoRenderer->m_pNanoContext->device, &imageInfo, nullptr, &imageMem.textureImage) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create image!\n");
+        LOG_MSG(stderr, "failed to create image!\n");
     }
 
     VkMemoryRequirements memRequirements;
@@ -104,7 +104,7 @@ NanoVkImageMemory CreateImageBuffer(NanoRenderer* nanoRenderer, uint32_t width, 
     allocInfo.memoryTypeIndex = findMemoryType(nanoRenderer, memRequirements.memoryTypeBits, memProperties);
 
     if (vkAllocateMemory(nanoRenderer->m_pNanoContext->device, &allocInfo, nullptr, &imageMem.textureImageMemory) != VK_SUCCESS) {
-        fprintf(stderr, "failed to allocate image memory!\n");
+        LOG_MSG(stderr, "failed to allocate image memory!\n");
     }
 
     vkBindImageMemory(nanoRenderer->m_pNanoContext->device, imageMem.textureImage, imageMem.textureImageMemory, 0);
@@ -213,7 +213,7 @@ void CleanUpBuffer(NanoRenderer* nanoRenderer, NanoVkBufferMemory* bufferMem){
 
 void SendAllocatedMeshMemoryToGPUMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory){
     if(!meshMemory->meshHostMemory.isInitialized){
-        fprintf(stderr, "Failed to send allocated memory to gpu. Host Memory is not initialized/n");
+        LOG_MSG(stderr, "Failed to send allocated memory to gpu. Host Memory is not initialized/n");
         DEBUG_BREAK;
         return;
     }

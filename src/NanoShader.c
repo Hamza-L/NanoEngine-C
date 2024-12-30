@@ -21,7 +21,7 @@ void CleanUpShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCleanUp){
 static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
   VkShaderModule shaderModule = {};
   if(!shader->m_isCompiled){
-      fprintf(stderr, "Attempting to create a shader module from uncompiled shader\n");
+      LOG_MSG(stderr, "Attempting to create a shader module from uncompiled shader\n");
       return shaderModule; // failed the re-attempt at compiling
   }
 
@@ -31,7 +31,7 @@ static VkShaderModule CreateShaderModule(VkDevice device, NanoShader* shader) {
   createInfo.pCode = (const uint32_t*)shader->m_rawShaderCode;
 
   if (vkCreateShaderModule(device, &createInfo, NULL, &shaderModule) != VK_SUCCESS) {
-    fprintf(stderr, "failed to create shader module!\n");
+    LOG_MSG(stderr, "failed to create shader module!\n");
   }
 
   return shaderModule;
@@ -72,14 +72,14 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
     );
 
   // Wait until child process exits.
-  fprintf(stderr, "compiling : %s\n", fileName);
+  LOG_MSG(stderr, "compiling : %s\n", fileName);
   WaitForSingleObject( pi.hProcess, INFINITE );
 
   DWORD exit_code;
   GetExitCodeProcess(pi.hProcess, &exit_code);
 
   int compilerExitCode = (int)exit_code;
-  fprintf(stderr, "finished compiling: %s\t with exit code: %d\n", shaderName, compilerExitCode);
+  LOG_MSG(stderr, "finished compiling: %s\t with exit code: %d\n", shaderName, compilerExitCode);
 
   // Close process and thread handles.
   CloseHandle( pi.hProcess );
@@ -95,33 +95,33 @@ int RunGLSLCompiler(const char* lpApplicationName, char const* fileName, const c
   int status;
   pid_t pid;
 
-  fprintf(stderr, "compiling : %s\n", shaderName);
+  LOG_MSG(stderr, "compiling : %s\n", shaderName);
 
   pid = fork();
   if(pid == -1){
-    fprintf(stderr, "error pid\n");
+    LOG_MSG(stderr, "error pid\n");
     exit(EXIT_FAILURE);
   }else if(pid == 0){
     err = execl(lpApplicationName, "", fileName, "-o", outputFileName, (char *)0);
-    /* fprintf(stderr, "lpApplicationName: %s\n", lpApplicationName); */
-    /* fprintf(stderr, "fileName: %s\n", fileName); */
-    /* fprintf(stderr, "outputFileName: %s\n", outputFileName); */
-    fprintf(stderr, "finished compiling: %s\t with exit code: %d\n", shaderName, err);
+    /* LOG_MSG(stderr, "lpApplicationName: %s\n", lpApplicationName); */
+    /* LOG_MSG(stderr, "fileName: %s\n", fileName); */
+    /* LOG_MSG(stderr, "outputFileName: %s\n", outputFileName); */
+    LOG_MSG(stderr, "finished compiling: %s\t with exit code: %d\n", shaderName, err);
     exit(0);
   }else{
     if(waitpid(pid, &status, 0) > 0){
       if (WIFEXITED(status)){
         if(!WEXITSTATUS(status)){
           //LOG_MSG(ERRLevel::INFO, "glslc ran with no issues");
-          fprintf(stderr, "glslc exited with no error\n");
+          LOG_MSG(stderr, "glslc exited with no error\n");
         } else if ( WEXITSTATUS(status) == 127){
-          fprintf(stderr, "glslc exited with error 127\n");
+          LOG_MSG(stderr, "glslc exited with error 127\n");
         }
       } else {
-        fprintf(stderr, "process did not exit normally\n");
+        LOG_MSG(stderr, "process did not exit normally\n");
       }
     } else {
-        fprintf(stderr, "error occured with waitpid\n");
+        LOG_MSG(stderr, "error occured with waitpid\n");
     }
   }
     return err;
@@ -166,9 +166,9 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
 
     if(!forceCompile){
       if ((file = fopen(outputFile.m_data, "rb")) != NULL) {
-        fprintf(stderr, "compiled shader found! ForceCompile is not enabled so no need to compile\n");
+        LOG_MSG(stderr, "compiled shader found! ForceCompile is not enabled so no need to compile\n");
         if(fclose(file) == EOF){
-          fprintf(stderr, "failed to close the file!\n");
+          LOG_MSG(stderr, "failed to close the file!\n");
         }
         compileNeeded = false;
         exitCode = 0;
@@ -197,7 +197,7 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
 
     if(!exitCode){
       shaderToCompile->m_isCompiled = true;
-      /* fprintf(stderr, "reading raw shader code from: %s\n", outputFile.m_data); */
+      /* LOG_MSG(stderr, "reading raw shader code from: %s\n", outputFile.m_data); */
       shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);
       shaderToCompile->m_shaderModule = CreateShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCompile);
     } else {

@@ -21,27 +21,6 @@ typedef struct {
     uint32_t height;
 } TextDimensions;
 
-void InitFreeType(const char* fontType){
-    int error = FT_Init_FreeType( &library );
-    if ( error ) {
-        fprintf(stderr, "ERROR OCCURED LOADING FONTS\n");
-        abort();
-    }
-    error = FT_New_Face( library,
-                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
-                         0,
-                         &face );
-
-    if ( error == FT_Err_Unknown_File_Format ) {
-        fprintf(stderr, "UNKNOWW FILE FORMAT FOR GIVEN FONTS\n");
-        abort();
-    }
-    else if ( error ) {
-        fprintf(stderr, "UNKOWN ERROR OCCURED LOADING FONTS\n");
-        abort();
-    }
-}
-
 void WrapText(HeapString text, uint32_t width, uint32_t fontSize){
     int textWidth = 0;
 
@@ -183,7 +162,7 @@ void TransitionImageLayout(NanoRenderer* nanoRenderer, VkImage image, VkFormat f
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
             destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
         } else {
-            fprintf(stderr, "unsupported layout transition!\n");
+            LOG_MSG(stderr, "unsupported layout transition!\n");
         }
 
         vkCmdPipelineBarrier(
@@ -200,25 +179,25 @@ void TransitionImageLayout(NanoRenderer* nanoRenderer, VkImage image, VkFormat f
 void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int verticalSpacing, float color[4]){
 
     if(nanoImage->imageMemory.imageData == nullptr)
-        fprintf(stderr, "Image should be allocated first before adding text to it\n");
+        LOG_MSG(stderr, "Image should be allocated first before adding text to it\n");
 
     // create an image from scratch
     int error = FT_Init_FreeType( &library );
     if ( error ) {
-        fprintf(stderr, "ERROR OCCURED LOADING FONTS\n");
+        LOG_MSG(stderr, "ERROR OCCURED LOADING FONTS\n");
         abort();
     }
     error = FT_New_Face( library,
-                         "/Users/h_lahmimsi/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
+                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
                          0,
                          &face );
 
     if ( error == FT_Err_Unknown_File_Format ) {
-        fprintf(stderr, "UNKNOWW FILE FORMAT FOR GIVEN FONTS\n");
+        LOG_MSG(stderr, "UNKNOWW FILE FORMAT FOR GIVEN FONTS\n");
         abort();
     }
     else if ( error ) {
-        fprintf(stderr, "UNKOWN ERROR OCCURED LOADING FONTS\n");
+        LOG_MSG(stderr, "UNKOWN ERROR OCCURED LOADING FONTS\n");
         abort();
     }
 
@@ -228,7 +207,7 @@ void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int ve
         fontSize);
 
     if ( error ) {
-        fprintf(stderr, "ERROR SETTING FONT SIZE\n");
+        LOG_MSG(stderr, "ERROR SETTING FONT SIZE\n");
         abort();
     }
 
@@ -368,7 +347,7 @@ NanoImage CreateHostPersistentImage(ImageHostMemory* imageHostMemory, int width,
     image.imageDescriptorID = - 1;
 
     if (!imageData) {
-        fprintf(stderr, "failed to allocate an image\n");
+        LOG_MSG(stderr, "failed to allocate an image\n");
     }
 
     return image;
@@ -388,7 +367,7 @@ NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, co
     image.imageDescriptorID = - 1;
 
     if (!imageData) {
-        fprintf(stderr, "failed to open and load image\n");
+        LOG_MSG(stderr, "failed to open and load image\n");
     }
 
     CopyImageDataToAllocatedMemoryObject(imageHostMemory, (char*)imageData, imageSize, &image);
@@ -416,7 +395,7 @@ void InitHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, NanoImage
     image->imageDescriptorID = - 1;
 
     if (!imageData) {
-        fprintf(stderr, "failed to open and load image\n");
+        LOG_MSG(stderr, "failed to open and load image\n");
     }
 
     CopyImageDataToAllocatedMemoryObject(imageHostMemory, (char*)imageData, imageSize, image);
@@ -439,7 +418,7 @@ void InitImageFromFile(const char* fileName, NanoImage* image){
     image->imageDataSize = imageSize;
 
     if (!imageData) {
-        fprintf(stderr, "failed to open and load image\n");
+        LOG_MSG(stderr, "failed to open and load image\n");
     }
 
     memcpy(image->imageMemory.imageData, imageData, imageSize);
@@ -510,7 +489,7 @@ VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat 
     viewInfo.subresourceRange.layerCount = 1;
 
     if (vkCreateImageView(nanoRenderer->m_pNanoContext->device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create texture image view!\n");
+        LOG_MSG(stderr, "failed to create texture image view!\n");
     }
     return imageView;
 }

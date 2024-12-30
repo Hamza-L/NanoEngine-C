@@ -24,7 +24,7 @@ void InitImageHostMemory(ImageHostMemory* imageHostMemory, uint32_t InitialMemSi
 
 void AllocateMeshMemoryObject(MeshHostMemory* meshHostMemory, Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, MeshMemoryObject* meshObject){
     if(!meshHostMemory->isInitialized){
-        fprintf(stderr, "memoryAllocator not initialized. Cannot allocated MeshObjectMemory/n");
+        LOG_MSG(stderr, "memoryAllocator not initialized. Cannot allocated MeshObjectMemory/n");
         DEBUG_BREAK;
     }
 
@@ -47,7 +47,7 @@ void AllocateMeshMemoryObject(MeshHostMemory* meshHostMemory, Vertex* vertices, 
 
 ImageMemoryObject GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory, uint32_t imageDataMemSize){
     if(!imageHostMemory->isInitialized){
-        fprintf(stderr, "memoryAllocator not initialized. Cannot get allocated ImageObjectMemory/n");
+        LOG_MSG(stderr, "memoryAllocator not initialized. Cannot get allocated ImageObjectMemory/n");
         DEBUG_BREAK;
     }
 
@@ -64,7 +64,7 @@ ImageMemoryObject GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory,
 
 void CopyImageDataToAllocatedMemoryObject(ImageHostMemory* imageHostMemory, char* imageData, uint32_t imageDataMemSize, NanoImage* imageObject){
     if(!imageHostMemory->isInitialized){
-        fprintf(stderr, "memoryAllocator not initialized. Cannot allocate ImageObjectMemory/n");
+        LOG_MSG(stderr, "memoryAllocator not initialized. Cannot allocate ImageObjectMemory/n");
         DEBUG_BREAK;
     }
 

@@ -1,12 +1,16 @@
 #include "NanoInput.h"
+#include "NanoError.h"
+#include "Str.h"
 #include <stdio.h>
 
 static float scroll = 0;
 enum {max_key_buffer_size = 4};
 
-static NanoKey key_stack[max_key_buffer_size];
-static NanoKey mouse_stack[max_key_buffer_size];
-static short int currentIndx;
+static NanoKey key_stack[max_key_buffer_size] = {};
+static NanoKey mouse_stack[max_key_buffer_size] = {};
+static short int currentIndx = 0;
+
+static String droppedInFileName = {};
 
 void InitNanoInput(){
     for(int i = 0; i < max_key_buffer_size; i++){
@@ -80,4 +84,12 @@ void mouse_callback(GLFWwindow *window, int button, int action, int mods){
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset){
     scroll += 2.0f*yoffset;
+}
+
+String GetDroppedInFile(){
+    return droppedInFileName;
+}
+
+void SetDroppedInFile(const char* fileName){
+    InitString(&droppedInFileName, fileName);
 }

@@ -87,14 +87,14 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
         break;
     }
 
-    fprintf(stderr, "%s", pCallbackData->pMessage);
-    fprintf(stderr, "Objects involved: \n");
+    LOG_MSG(stderr, "%s", pCallbackData->pMessage);
+    LOG_MSG(stderr, "Objects involved: \n");
 
     for (int i = 0; i < pCallbackData->objectCount; i++) {
-        fprintf(stderr, "\t%s\n", pCallbackData->pObjects[i].pObjectName);
+        LOG_MSG(stderr, "\t%s\n", pCallbackData->pObjects[i].pObjectName);
     }
 
-    fprintf(stderr, "\n");
+    LOG_MSG(stderr, "\n");
 
     if (messageLevel == NANO_FATAL){
         DEBUG_BREAK;
@@ -254,8 +254,8 @@ static ERR createInstance(const char *applicationName, const char *engineName, V
     ERR err = OK;
 
     if (enableValidationLayers && !checkValidationLayerSupport(desiredValidationLayers)) {
-        fprintf(stderr, "Number of Desired Layers %zu\n", SizeOf(desiredValidationLayers));
-        fprintf(stderr, "validation layers requested, but not available!");
+        LOG_MSG(stderr, "Number of Desired Layers %zu\n", SizeOf(desiredValidationLayers));
+        LOG_MSG(stderr, "validation layers requested, but not available!");
         abort();
     }
 
@@ -393,21 +393,21 @@ int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surf
 
     // Application can't function without geometry shaders
     if (!deviceFeatures.geometryShader) {
-        fprintf(stderr, "No Geometry shader support found\n");
+        LOG_MSG(stderr, "No Geometry shader support found\n");
     }
 
     if (!deviceFeatures.tessellationShader) {
-        fprintf(stderr, "No Tesselation shader support found\n");
+        LOG_MSG(stderr, "No Tesselation shader support found\n");
     }
 
     if (!deviceFeatures.samplerAnisotropy) {
-        fprintf(stderr, "No Anisotropy support found\n");
+        LOG_MSG(stderr, "No Anisotropy support found\n");
     }
 
     // Application can't function without the required device extensions
     bool extensionsSupported = OK == checkDeviceExtensionSupport(device);
     if (!extensionsSupported) {
-        fprintf(stderr, "missing extensions. score = 0\n");
+        LOG_MSG(stderr, "missing extensions. score = 0\n");
         return 0;
     }
 
@@ -416,13 +416,13 @@ int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surf
         SwapchainDetails swapchainSupport = querySwapChainSupport(device, surface);
         swapchainAdequate = swapchainSupport.formats_size && swapchainSupport.presentModes_size;
         if (!swapchainAdequate) {
-            fprintf(stderr, "swapchain not adequate. score = 0\n");
+            LOG_MSG(stderr, "swapchain not adequate. score = 0\n");
             return 0; // Application can't function without an adequate swapchain extensions
         }
     }
 
     if (NOT_FOUND == findQueueFamilies(device, surface, queueIndices)) {
-        fprintf(stderr, "queue family not found. score = 0\n");
+        LOG_MSG(stderr, "queue family not found. score = 0\n");
         return 0;
     }
 
@@ -438,7 +438,7 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
 
     if (deviceCount == 0) {
-        fprintf(stderr, "failed to find GPUs with Vulkan support!\n");
+        LOG_MSG(stderr, "failed to find GPUs with Vulkan support!\n");
         abort();
     }
 
@@ -460,7 +460,7 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
 
     if (*physicalDevice == VK_NULL_HANDLE) {
         err = NOT_FOUND;
-        fprintf(stderr, "failed to find a suitable GPU!\n");
+        LOG_MSG(stderr, "failed to find a suitable GPU!\n");
         abort();
     } else {
         vkGetPhysicalDeviceProperties(*physicalDevice, physicalDeviceProperties);
@@ -485,7 +485,7 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
         default:
             strcpy(deviceType, "UNKNOWN");
         }
-        fprintf(stderr, "Physical device selected: %s [%s]\n", physicalDeviceProperties->deviceName, deviceType);
+        LOG_MSG(stderr, "Physical device selected: %s [%s]\n", physicalDeviceProperties->deviceName, deviceType);
     }
 
     return OK; // this is never reached if we use try/catch.
@@ -498,7 +498,7 @@ ERR createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKH
     ERR err = OK;
 
     if (!IsQueueFamilyIndicesValid(indices) && NOT_FOUND == findQueueFamilies(physicalDevice, surface, &indices)) {
-        fprintf(stderr, "failed to find a graphics familiy queue!");
+        LOG_MSG(stderr, "failed to find a graphics familiy queue!");
         abort();
     }
 
@@ -547,7 +547,7 @@ ERR createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKH
     }
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, device) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create logical device!");
+        LOG_MSG(stderr, "failed to create logical device!");
         abort();
     }
 
@@ -566,7 +566,7 @@ ERR createSurface(VkInstance instance, GLFWwindow *window, VkSurfaceKHR* surface
 
     if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS) {
         err = INVALID;
-        fprintf(stderr, "failed to create window surface!");
+        LOG_MSG(stderr, "failed to create window surface!");
         abort();
     }
     return err;
@@ -576,8 +576,8 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* availableFo
 
     for(int i = 0; i < formatCount ; i++) {
         if (availableFormats[i].format == VK_FORMAT_B8G8R8A8_SRGB && availableFormats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-            fprintf(stderr, "swapchain format used: VK_FORMAT_B8G8R8A8_SRGB\n");
-            fprintf(stderr, "swapchain colorspace used: VK_COLOR_SPACE_SRGB_NONLINEAR_KHR\n");
+            /* LOG_MSG(stderr, "swapchain format used: VK_FORMAT_B8G8R8A8_SRGB\n"); */
+            /* LOG_MSG(stderr, "swapchain colorspace used: VK_COLOR_SPACE_SRGB_NONLINEAR_KHR\n"); */
             return availableFormats[i];
         }
     }
@@ -587,7 +587,7 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* availableFo
 VkPresentModeKHR chooseSwapPresentMode(const VkPresentModeKHR* availablePresentModes, uint32_t presentModeCount) {
     for(int i = 0; i < presentModeCount; i++) {
         if (availablePresentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
-            fprintf(stderr, "swapchain present mode used: VK_PRESENT_MODE_MAILBOX_KHR\n");
+            /* LOG_MSG(stderr, "swapchain present mode used: VK_PRESENT_MODE_MAILBOX_KHR\n"); */
             return availablePresentModes[i];
         }
     }
@@ -596,7 +596,7 @@ VkPresentModeKHR chooseSwapPresentMode(const VkPresentModeKHR* availablePresentM
 
 VkExtent2D chooseSwapExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR capabilities) {
     if (capabilities.currentExtent.width != UINT32_MAX) {
-        fprintf(stderr, "swapchain extent mode used: {%d,%d}\n", capabilities.currentExtent.width, capabilities.currentExtent.height);
+        /* LOG_MSG(stderr, "swapchain extent mode used: {%d,%d}\n", capabilities.currentExtent.width, capabilities.currentExtent.height); */
         return capabilities.currentExtent;
     } else {
         int width, height;
@@ -638,7 +638,7 @@ ERR createFramebuffer(const VkDevice device, const VkRenderPass renderpass, Swap
         framebufferInfo.layers = 1;
 
         if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapchainContext->framebuffers[i]) != VK_SUCCESS) {
-            fprintf(stderr, "failed to create framebuffer!");
+            LOG_MSG(stderr, "failed to create framebuffer!");
             abort();
         }
     }
@@ -658,7 +658,7 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
         swapchainContext->info.imageCount = swapchainContext->info.capabilities.maxImageCount;
     }
 
-    fprintf(stderr, "Number of images used by the swapchain: %d\n", swapchainContext->info.imageCount);
+    /* LOG_MSG(stderr, "Number of images used by the swapchain: %d\n", swapchainContext->info.imageCount); */
 
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -677,14 +677,14 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
         queueFamilyIndices[0] = indices.graphicsFamily;
         queueFamilyIndices[1] = indices.presentFamily;
     } else {
-        fprintf(stderr, "Queue Family indices is invalid. called in : createSwapchain(...)");
+        LOG_MSG(stderr, "Queue Family indices is invalid. called in : createSwapchain(...)");
     }
 
     if (indices.graphicsFamily != indices.presentFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
-        fprintf(stderr, "Graphics queue family is not the same as Present queue family. Swapchain images have to be concurent");
+        LOG_MSG(stderr, "Graphics queue family is not the same as Present queue family. Swapchain images have to be concurent");
     } else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
         createInfo.queueFamilyIndexCount = 0;     // Optional
@@ -693,14 +693,14 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
     createInfo.preTransform = swapchainContext->info.capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // TODO: If transparency is to be enabled, change this
     if (createInfo.compositeAlpha != VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
-        fprintf(stderr, "swapchain images not set to OPAQUE_BIT_KHR. Transparent window might be enabled");
+        LOG_MSG(stderr, "swapchain images not set to OPAQUE_BIT_KHR. Transparent window might be enabled");
     }
     createInfo.presentMode = swapchainContext->info.selectedPresentMode;
     createInfo.clipped = VK_TRUE; // This deals with obstructed pixels when, for example, another window is ontop.
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchainContext->swapchain) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create swap chain!");
+        LOG_MSG(stderr, "failed to create swap chain!");
     }
 
     vkGetSwapchainImagesKHR(device, swapchainContext->swapchain, &swapchainContext->info.imageCount, nullptr);
@@ -798,7 +798,7 @@ ERR createRenderPass(VkDevice device, const SwapchainDetails swapchainDetails, V
     renderPassInfo.pDependencies = &dependency;
 
     if (vkCreateRenderPass(device, &renderPassInfo, nullptr, renderpass) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create render pass!");
+        LOG_MSG(stderr, "failed to create render pass!");
         abort();
     }
 
@@ -815,7 +815,7 @@ ERR createCommandPool(VkDevice device, const QueueFamilyIndices queueFamilyIndic
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily;
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, commandPool) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create command pool!");
+        LOG_MSG(stderr, "failed to create command pool!");
         abort();
     }
 
@@ -833,7 +833,7 @@ ERR createCommandBuffers(VkDevice device, const VkCommandPool commandPool, VkCom
 
     for(int i = 0; i < size ; i++){
         if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffer) != VK_SUCCESS) {
-            fprintf(stderr, "failed to allocate command buffers!");
+            LOG_MSG(stderr, "failed to allocate command buffers!");
             abort();
         }
     }
@@ -850,7 +850,7 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
     beginInfo.pInheritanceInfo = nullptr; // Optional
 
     if (vkBeginCommandBuffer(*commandBuffer, &beginInfo) != VK_SUCCESS) {
-        fprintf(stderr, "failed to begin recording command buffer!");
+        LOG_MSG(stderr, "failed to begin recording command buffer!");
         abort();
     }
 
@@ -921,7 +921,7 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         vkCmdEndRenderPass(*commandBuffer);
 
     if (vkEndCommandBuffer(*commandBuffer) != VK_SUCCESS) {
-        fprintf(stderr, "failed to record command buffer!");
+        LOG_MSG(stderr, "failed to record command buffer!");
         abort();
     }
 
@@ -941,11 +941,11 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
     for(int i = 0; i < size ; i++){
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects[i].imageAvailableSemaphore) != VK_SUCCESS ||
             vkCreateSemaphore(device, &semaphoreInfo, nullptr, &syncObjects[i].renderFinishedSemaphore) != VK_SUCCESS) {
-            fprintf(stderr, "failed to create semaphores!");
+            LOG_MSG(stderr, "failed to create semaphores!");
         }
 
         if (vkCreateFence(device, &fenceInfo, nullptr, &syncObjects[i].inFlightFence)) {
-            fprintf(stderr, "failed to create frences!");
+            LOG_MSG(stderr, "failed to create frences!");
         }
     }
 
@@ -978,7 +978,7 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
         recreateSwapchain(nanoRenderer, nanoWindow->_window);
         return OK;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        fprintf(stderr, "failed to acquire swap chain image!\n");
+        LOG_MSG(stderr, "failed to acquire swap chain image!\n");
         abort();
     }
 
@@ -994,7 +994,7 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
                             &nanoRenderer->m_pNanoContext->swapchainContext.commandBuffer[currentFrame], //command buffer to write to.
                             currentFrame);
     } else {
-        fprintf(stderr, "No scene to render");
+        LOG_MSG(stderr, "No scene to render");
     }
 
     VkSubmitInfo submitInfo = {};
@@ -1011,7 +1011,7 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     submitInfo.pWaitDstStageMask = waitStages;
 
     if (vkQueueSubmit(nanoRenderer->m_pNanoContext->graphicsQueue, 1, &submitInfo, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence) != VK_SUCCESS) {
-        fprintf(stderr, "failed to submit draw command buffer!");
+        LOG_MSG(stderr, "failed to submit draw command buffer!");
     }
 
     VkPresentInfoKHR presentInfo = {};
@@ -1028,11 +1028,11 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || nanoWindow->framebufferResized) {
         nanoWindow->framebufferResized = false;
-        fprintf(stderr, "recreating swapchain\n");
+        /* LOG_MSG(stderr, "recreating swapchain\n"); */
         recreateSwapchain(nanoRenderer, nanoWindow->_window);
         /* return OK; */
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        fprintf(stderr, "failed to present swap chain image!\n");
+        LOG_MSG(stderr, "failed to present swap chain image!\n");
         abort();
     }
 
@@ -1047,7 +1047,7 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
     ERR err = OK;
 
     if(!meshMemory->meshHostMemory.isInitialized){
-       fprintf(stderr, "Mesh Host Memory is not yet initialized. Renderer needs an initialized Mesh Host Memory\n");
+       LOG_MSG(stderr, "Mesh Host Memory is not yet initialized. Renderer needs an initialized Mesh Host Memory\n");
        DEBUG_BREAK;
        abort();
     }
@@ -1276,7 +1276,7 @@ RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* p
             MakeSphere(vertices, &numVertex, indices, &numIndices, (SphereParam*)primParam, color);
             break;
         default:
-            fprintf(stderr, "Invalid primitive type\n");
+            LOG_MSG(stderr, "Invalid primitive type\n");
             break;
             }
     InitRenderableObject(vertices, numVertex, indices, numIndices, &object);

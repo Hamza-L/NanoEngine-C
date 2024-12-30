@@ -41,7 +41,7 @@ void CreateTextureSampler(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
     samplerInfo.maxLod = 0.0f;
 
     if(vkCreateSampler(nanoRenderer->m_pNanoContext->device, &samplerInfo, nullptr, &graphicsPipeline->m_sampler) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create texture sampler!\n");
+        LOG_MSG(stderr, "failed to create texture sampler!\n");
         abort();
     }
 }
@@ -177,7 +177,7 @@ static void CreateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipelin
     allocInfo.pSetLayouts = layouts;
 
     if (vkAllocateDescriptorSets(nanoRenderer->m_pNanoContext->device, &allocInfo, graphicsPipeline->DescSets) != VK_SUCCESS) {
-        fprintf(stderr, "failed to allocate descriptor sets!\n");
+        LOG_MSG(stderr, "failed to allocate descriptor sets!\n");
     }
 }
 
@@ -211,7 +211,7 @@ static void CreateDescriptorSetLayout(NanoRenderer* nanoRenderer, NanoGraphicsPi
     layoutInfo.pBindings = bindings;
 
     if (vkCreateDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, &layoutInfo, nullptr, &graphicsPipeline->m_descriptorSetLayout) != VK_SUCCESS) {
-      fprintf(stderr, "failed to create descriptor set layout!");
+      LOG_MSG(stderr, "failed to create descriptor set layout!");
       ASSERT(false, "failed to create descriptor set layout!");
     }
 }
@@ -232,7 +232,7 @@ static void CreateDescriptorPool(NanoRenderer* nanoRenderer, NanoGraphicsPipelin
     poolInfo.maxSets = (uint32_t)MAX_FRAMES_IN_FLIGHT;
 
     if (vkCreateDescriptorPool(nanoRenderer->m_pNanoContext->device, &poolInfo, nullptr, &graphicsPipeline->m_descriptorPool) != VK_SUCCESS) {
-      fprintf(stderr, "failed to create descriptor pool!\n");
+      LOG_MSG(stderr, "failed to create descriptor pool!\n");
     }
 
 }
@@ -299,7 +299,7 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
     }
     /* double currentTime = (double)clock()/CLOCKS_PER_SEC - startTime; */
 
-    /* fprintf(stderr, "currentTime: %f\n", currentTime); */
+    /* LOG_MSG(stderr, "currentTime: %f\n", currentTime); */
     memcpy(graphicsPipeline->UniformBufferMemory[currentFrame].bufferMemoryMapped, ubo, sizeof(UniformBufferObject));
 
     UpdateDynamicUniformBufferMemory(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory[currentFrame]);
@@ -435,7 +435,7 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     rasterizer.depthClampEnable = VK_FALSE;
     // If rasterizerDiscardEnable is set to VK_TRUE, then geometry never passes through the rasterizer stage. This basically disables any output to the framebuffer.
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
-    rasterizer.polygonMode = graphicsPipeline->m_isWireFrame ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL; // using anything other than fill requires enabling a gpu feature (this can allow us to set line width and point size)
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL; // using anything other than fill requires enabling a gpu feature (this can allow us to set line width and point size)
     rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
     rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE; // sometimes used for shadow mapping
@@ -503,7 +503,7 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantInfo; // Optional
 
     if (vkCreatePipelineLayout(nanoRenderer->m_pNanoContext->device, &pipelineLayoutInfo, NULL, &graphicsPipeline->m_pipelineLayout) != VK_SUCCESS) {
-        fprintf(stderr, "failed to create pipeline layout!");
+        LOG_MSG(stderr, "failed to create pipeline layout!");
         exit(1);
     }
 
@@ -527,7 +527,7 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
 
     if (vkCreateGraphicsPipelines(nanoRenderer->m_pNanoContext->device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &graphicsPipeline->m_pipeline) != VK_SUCCESS) {
         err = INVALID;
-        fprintf(stderr, "failed to create graphics pipeline!");
+        LOG_MSG(stderr, "failed to create graphics pipeline!");
         exit(0);
     }
 

@@ -15,13 +15,13 @@ ERR CleanUpEngine(NanoEngine* nanoEngine){
     CleanUpMeshMemory(&nanoEngine->m_Renderer, &nanoEngine->m_meshMemory);
     CleanUpImageMemory(&nanoEngine->m_Renderer, &nanoEngine->m_ImageMemory);
     CleanUpRenderer(&nanoEngine->m_Renderer);
-    nanoEngine->isInitializaed = false;
+    nanoEngine->isInitialized = false;
     return err;
 }
 
 ERR InitEngine(NanoEngine* nanoEngine){
     ERR err = OK;
-    if(s_nanoEngineSingleton != nullptr && s_nanoEngineSingleton->isInitializaed){
+    if(s_nanoEngineSingleton != nullptr && s_nanoEngineSingleton->isInitialized){
         CleanUpEngine(s_nanoEngineSingleton);
     }
     InitWindow(&nanoEngine->m_Window, WINDOW_WIDTH, WINDOW_HEIGHT, true);
@@ -34,7 +34,7 @@ ERR InitEngine(NanoEngine* nanoEngine){
                  &nanoEngine->m_ImageMemory,
                  &nanoEngine->m_Window);
 
-    nanoEngine->isInitializaed = true;
+    nanoEngine->isInitialized = true;
     s_nanoEngineSingleton = nanoEngine;
     return err;
 }

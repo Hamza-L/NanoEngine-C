@@ -3,50 +3,13 @@
 #include <stdlib.h>
 
 #include "NanoEngine.h"
+#include "NanoInput.h"
 #include "NanoRenderer.h"
 #include "NanoScene.h"
 #include "cglm/cglm.h"
 #include "cglm/mat4.h"
 
 #include <string.h>
-
-//cube.obj
-/* v 1.000000 -1.000000 -1.000000 */
-/* v 1.000000 -1.000000 1.000000 */
-/* v -1.000000 -1.000000 1.000000 */
-/* v -1.000000 -1.000000 -1.000000 */
-/* v 1.000000 1.000000 -0.999999 */
-/* v 0.999999 1.000000 1.000001 */
-/* v -1.000000 1.000000 1.000000 */
-/* v -1.000000 1.000000 -1.000000 */
-/* f 2/1/1 3/2/1 4/3/1 */
-/* f 8/1/2 7/4/2 6/5/2 */
-/* f 5/6/3 6/7/3 2/8/3 */
-/* f 6/8/4 7/5/4 3/4/4 */
-/* f 3/9/5 7/10/5 8/11/5 */
-/* f 1/12/6 4/13/6 8/11/6 */
-/* f 1/4/1 2/1/1 4/3/1 */
-/* f 5/14/2 8/1/2 6/5/2 */
-/* f 1/12/3 5/6/3 2/8/3 */
-/* f 2/12/4 6/8/4 3/4/4 */
-/* f 4/13/5 3/9/5 8/11/5 */
-/* f 5/6/6 1/12/6 8/11/6 */
-
-/* RenderableObject CreateSquare(NanoEngine* engine, float offset[2], float size[2], float color[4]){ */
-
-/*     RenderableObject squareObject; */
-
-/*     Vertex vertices[4] = {{{ offset[0]          , offset[1] - size[1], 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}}, */
-/*                       {{ offset[0] + size[0], offset[1] - size[1], 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}}, */
-/*                       {{ offset[0] + size[0], offset[1]          , 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}}, */
-/*                       {{ offset[0]          , offset[1]          , 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}}; */
-
-/*     uint32_t indices[6] = { 0, 1, 2, 2, 3, 0 }; */
-
-/*     InitRenderableObject(engine, vertices, 4, indices, 6, &squareObject); */
-
-/*     return squareObject; */
-/* } */
 
 void Update(void* objectToUpdate, void* frameData){
     RenderableObject* object = (RenderableObject*)objectToUpdate;
@@ -66,25 +29,31 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     float axis_y[3] = {0.0f, 1.0f, 0.0f};
     float axis_z[3] = {0.0f, 0.0f, 1.0f};
     glm_spin(object->localModel, fData->deltaTime * 0.5f, axis_x);
-    glm_spin(object->localModel, fData->deltaTime * -0.7f, axis_y);
+    glm_spin(object->localModel, fData->deltaTime * -0.8f, axis_y);
     /* glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z); */
 };
 
+void NewDroppedInFile_CallBack(void* self, void* frameData){
+    NanoEngine* engine = (NanoEngine*)self;
+    FrameData* fData = (FrameData*)frameData;
+
+    LOG_MSG(stderr, "new file dropped: %s", GetDroppedInFile().m_data);
+}
 
 int main(int argc, char *argv[]) {
-
     SetVar(argv[0]);
     if(argc > 1){
-        fprintf(stderr, "argument passed in\n");
+        LOG_MSG(stderr, "argument passed in\n");
         if(strcmp(argv[1], "-FSC") == 0){
-            fprintf(stderr, "force shader compilation enabled\n");
+            LOG_MSG(stderr, "force shader compilation enabled\n");
             SetForceShaderRecompile(true);
         }
     }
-    fprintf(stderr, "ARG0: %s\n", GetArg0());
+    LOG_MSG(stderr, "ARG0: %s\n", GetArg0());
 
     NanoEngine nanoEngine = {};
     InitEngine(&nanoEngine);
+    nanoEngine.fileDrop_callback = NewDroppedInFile_CallBack;
 
     // create scene
     RenderableScene scene;

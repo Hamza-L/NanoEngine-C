@@ -41,7 +41,7 @@ void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderab
 
 void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* renderableScene){
     if(rootNode == nullptr){
-        fprintf(stderr, "rootNode to add to scene is null\n");
+        LOG_MSG(stderr, "rootNode to add to scene is null\n");
         return;
     }
 
@@ -134,7 +134,7 @@ void CompileRenderableScene(RenderableScene* renderableScene){
     CompileGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, true);
 
     if(!renderableScene->graphicsPipeline.m_isInitialized){
-        fprintf(stderr, "Failed to Initialize graphics pipeline for current scene\n");
+        LOG_MSG(stderr, "Failed to Initialize graphics pipeline for current scene\n");
         DEBUG_BREAK;
     }
 
@@ -169,7 +169,7 @@ void PropagateNodeTransform(struct RenderableNode* rootNode){
     RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
 
     if(rootNode == nullptr){
-        fprintf(stderr, "rootNode to propagate is null\n");
+        LOG_MSG(stderr, "rootNode to propagate is null\n");
         return;
     }
 

@@ -12,7 +12,14 @@ struct NanoEngine{
     MeshMemory m_meshMemory;
     ImageMemory m_ImageMemory;
 
-    bool isInitializaed;
+    bool isInitialized;
+
+    void (*framebufferResize_callback)(void* self, void* frameData);
+    void (*key_callback)(void* self, void* frameData);
+    void (*mouseButton_callback)(void* self, void* frameData);
+    void (*cursorPos_callback)(void* self, void* frameData);
+    void (*cursorScroll_callback)(void* self, void* frameData);
+    void (*fileDrop_callback)(void* self, void* frameData);
 };
 
 ERR InitEngine(NanoEngine* nanoEngine);

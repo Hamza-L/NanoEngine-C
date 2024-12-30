@@ -29,27 +29,29 @@ layout(location = 0) out vec4 outColor;
 layout(binding = 2) uniform sampler2D textureSampler[MAX_TEXTURES_PER_SCENE];
 
 void main() {
-    if(objectPushConstant.albedoTextureID >= 0)
-        outColor = texture(textureSampler[objectPushConstant.albedoTextureID], fragTexUV);
-    else {
-        vec3 lightDirection = normalize(fragLightPos - fragPos);
-        vec3 viewDirection = normalize(-fragPos );
-        vec3 halfVector = normalize( lightDirection + viewDirection);
 
-        float diffuse = max(0.0f,dot( fragNormal.xyz, lightDirection));
-        float specular = max(0.0f,dot( fragNormal.xyz, halfVector ) );
-        float distanceFromLight = length(fragLightPos - fragPos);
-        if (diffuse == 0.0) {
-            specular = 0.0;
-        } else {
-            specular = pow( specular, 32.0f );
-        }
-
-        vec3 scatteredLight = 1.0f/distanceFromLight * fragColor.xyz * diffuse;
-        vec3 reflectedLight = vec3(1.0f,1.0f,1.0f) * specular;
-        vec3 ambientLight = fragColor.xyz * 0.01f;
-
-        outColor = vec4(min( ambientLight + scatteredLight + reflectedLight, vec3(1,1,1)), 1.0);
+    vec4 colorToUse = fragColor;
+    if(objectPushConstant.albedoTextureID >= 0){
+        colorToUse = texture(textureSampler[objectPushConstant.albedoTextureID], fragTexUV);
     }
+
+    vec3 lightDirection = normalize(fragLightPos - fragPos);
+    vec3 viewDirection = normalize(-fragPos );
+    vec3 halfVector = normalize( lightDirection + viewDirection);
+
+    float diffuse = max(0.0f,dot( fragNormal.xyz, lightDirection));
+    float specular = max(0.0f,dot( fragNormal.xyz, halfVector ) );
+    float distanceFromLight = length(fragLightPos - fragPos);
+    if (diffuse == 0.0) {
+        specular = 0.0;
+    } else {
+        specular = pow( specular, 64.0f );
+    }
+
+    vec3 scatteredLight = 1.0f/distanceFromLight * colorToUse.xyz * diffuse * 10.0f;
+    vec3 reflectedLight = vec3(1.0f,1.0f,1.0f) * specular;
+    vec3 ambientLight = colorToUse.xyz * 0.01f;
+
+    outColor = vec4(min( ambientLight + scatteredLight + reflectedLight, vec3(1,1,1)), 1.0);
 
 }

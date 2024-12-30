@@ -45,6 +45,6 @@ uint32_t findMemoryType(NanoRenderer* nanoRenderer, uint32_t typeFilter, VkMemor
         }
     }
 
-    fprintf(stderr, "failed to find suitable memory type!\n");
+    LOG_MSG(stderr, "failed to find suitable memory type!\n");
     abort();
 }

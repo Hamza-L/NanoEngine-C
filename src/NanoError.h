@@ -6,10 +6,12 @@
 void __Assert(const char* expr_str, bool expr, const char* file, int line, const char* msg);
 
 #ifndef NDEBUG
-#   define ASSERT(Expr, Msg) \
-    __Assert(#Expr, Expr, __FILE__, __LINE__, Msg)
+    #define ASSERT(Expr, Msg) \
+         __Assert(#Expr, Expr, __FILE__, __LINE__, Msg)
+    #define LOG_MSG(out, ...) fprintf(out, __VA_ARGS__)
 #else
-#   define ASSERT(Expr, Msg) ;
+    #define ASSERT(Expr, Msg)
+    #define LOG_MSG(out, ...)
 #endif
 
 // Debugbreak
@@ -19,6 +21,8 @@ void __Assert(const char* expr_str, bool expr, const char* file, int line, const
 #include <signal.h>
 #define DEBUG_BREAK raise(SIGTRAP)
 #endif
+
+
 
 enum ERRLevel {
     NANO_FATAL,

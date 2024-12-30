@@ -4,6 +4,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "Str.h"
+
 typedef enum {
     KEY_STATE_PRESSED,
     KEY_STATE_HELD,
@@ -30,6 +32,8 @@ void InitNanoInput();
 void ResetNanoInput();
 NanoKey PopMostRecentInputKey();
 NanoKey PeekMostRecentInputKey();
+String GetDroppedInFile();
+void SetDroppedInFile(const char* fileName);
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow *window, int button, int action, int mods);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
