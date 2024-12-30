@@ -67,7 +67,7 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     float axis_z[3] = {0.0f, 0.0f, 1.0f};
     glm_spin(object->localModel, fData->deltaTime * 0.5f, axis_x);
     glm_spin(object->localModel, fData->deltaTime * -0.7f, axis_y);
-    glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z);
+    /* glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z); */
 };
 
 
@@ -92,16 +92,17 @@ int main(int argc, char *argv[]) {
 
     RenderableNode cube[6] = {};
     RenderableObject cubeObject[6] = {};
-    // create object 1
-    float color1[4] = {0.8f, 0.7f, 0.3f, 1.0f};
-    SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.5f,0.5f,0.5f}};
+
     /* SphereParam param = {.position = {0.0f,0.0f,0.0f}, .radius = 1.0f}; */
     /* RenderableNode node1 = CreateRenderableNode(&object1); */
 
+    float color1[4] = {0.8f, 0.7f, 0.3f, 1.0f};
+    SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.5f,0.5f,0.5f}};
     cubeObject[0] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
     cube[0] = CreateRenderableNode(&cubeObject[0]);
     cube[0].Update = UpdateNode;
 
+    // assembling the cube
     for(int i = 1; i < 4; i++){
         cubeObject[i] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
         cube[i] = CreateRenderableNode(&cubeObject[i]);
@@ -121,34 +122,17 @@ int main(int argc, char *argv[]) {
     glm_rotate(cube[5].localModel, M_PI * -0.5f, axis);
     AddChildRenderableNode(&cube[0], &cube[5]);
 
-
-    /* node1.Update = UpdateNode; */
-    /* object1.Update = Update; */
-
-    /* float color[4] = {0.25f, 0.2f, 0.3f, 1.0f}; */
-    /* float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f}; */
-    /* int verticalTextSpacing = 10; */
-    /* NanoImage texture1 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Giraffe.jpg"); */
-    /* NanoImage texture1 = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 500, 500, 4, color); */
-    /* AddTextToImage(&texture1, "Hello!", 50, verticalTextSpacing, textColor); */
-
-    //HeapString myText = AllocHeapString("Hello my name is Hamza and i love Zara");
-    //WrapText( myText, 400, 100);
-    /* object1.albedoTexture = &texture1; */
-
-
-    // create object 2
-    /* float color2[4] = {0.0f, 0.0f, 1.0f, 1.0f}; */
-    /* SquareParam param2 = {.width = 0.25f, .height = 0.25f, .position = {-0.25f,0.25f,0}}; */
-    /* RenderableObject object2 = CreateRenderableObjectFromPrimitive(SQUARE, &param2, color2); */
-    /* RenderableNode node2 = CreateRenderableNode(&object2); */
-    /* node2.Update = UpdateNode; */
-
-    /* NanoImage texture2 = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./textures/Vulkan Texture.jpg"); */
-    /* object2.albedoTexture = &texture2; */
-
-    /* float position[3] = {0.1f, 0.0f, 0.0f}; */
-    /* glm_translate(node2.localModel , position); */
+    // texturize the cube
+    NanoImage textures[6] = {};
+    const char* texts[6] = {"face 1","face 2","face 3","face 4","face 5","face 6"};
+    float color[4] = {0.25f, 0.2f, 0.3f, 1.0f};
+    float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+    int verticalTextSpacing = 10;
+    for(int i = 0; i < 6; i++){
+        textures[i] = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        AddTextToImage(&textures[i], texts[i], 70, verticalTextSpacing, textColor);
+        cubeObject[i].albedoTexture = &textures[i];
+    }
 
 
     AddRootNodeToScene(&cube[0], &scene);
