@@ -95,19 +95,6 @@ struct NanoRenderer {
     NanoVKContext* m_pNanoContext;
 };
 
-struct RenderableObject {
-    MeshMemoryObject meshObject;
-    int32_t ID; //on a per scene basis. 0 for the first object of every scene
-
-    mat4 model;
-
-    // Texture
-    NanoImage* albedoTexture;
-    NanoImage* normalTexture;
-    NanoImage* additionalTexture1;
-    NanoImage* additionalTexture2;
-};
-
 typedef struct {
     vec3 position1;
     vec3 position2;
@@ -132,22 +119,10 @@ typedef struct {
     float radius;
 } SphereParam;
 
-typedef enum {
-TRIANGLE,
-SQUARE,
-CUBE,
-SPHERE,
-NUM_PRIMITIVE
-} Primitive;
-
 ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window);
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
 ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
 ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
-
-RenderableObject CreateRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices);
-RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* primParam, float color[4]);
-RenderableObject CreateRenderableObjectFromFile(const char* fileName, float color[4]);
 
 void RenderScene(struct RenderableScene* scene);
 

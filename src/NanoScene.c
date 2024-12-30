@@ -21,6 +21,10 @@ void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScen
 }
 
 void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene){
+    //if the object contains no geometry, we do not add it to the scene
+    if(object->meshObject.vertexMemSize == 0 || object->meshObject.indexMemSize == 0){
+        return;
+    }
 
     object->ID = renderableScene->numRenderableObjects;
     renderableScene->renderableObjects[renderableScene->numRenderableObjects++] = object;
@@ -46,7 +50,7 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
     }
 
     renderableScene->rootNode = rootNode;
-    AddObjectToScene(rootNode->renderableObject, renderableScene);
+    AddObjectToScene(&rootNode->renderableObject, renderableScene);
 
     RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
 
@@ -57,7 +61,7 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
     while(currNode){
         for(int i = 0; i < currNode->numChild; i++){
             RenderableNode* currChildNode = currNode->childNodes[i];
-            AddObjectToScene(currChildNode->renderableObject, renderableScene);
+            AddObjectToScene(&currChildNode->renderableObject, renderableScene);
             queue[queueSize++] = currNode->childNodes[i];
         }
         currHead++;
@@ -76,16 +80,16 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data){
         currNode->Update(currNode, data);
     }
 
-    glm_mat4_copy(currNode->localModel, currNode->renderableObject->model);
+    glm_mat4_copy(currNode->localModel, currNode->renderableObject.model);
     uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
-    mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (currNode->renderableObject->ID * memOffset));
-    memcpy(modelMemDest, &currNode->renderableObject->model, sizeof(mat4));
+    mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (currNode->renderableObject.ID * memOffset));
+    memcpy(modelMemDest, &currNode->renderableObject.model, sizeof(mat4));
 
     while(currNode){
-        glm_mat4_copy(currNode->renderableObject->model, currTransform);
+        glm_mat4_copy(currNode->renderableObject.model, currTransform);
         for(int i = 0; i < currNode->numChild; i++){
             RenderableNode* currChildNode = currNode->childNodes[i];
-            RenderableObject* obj = currChildNode->renderableObject;
+            RenderableObject* obj = &currChildNode->renderableObject;
 
             if(currChildNode->Update){
                 currChildNode->Update(currChildNode, data);
@@ -149,19 +153,9 @@ void CleanUpScene(RenderableScene* renderableScene){
     CleanUpGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline);
 }
 
-RenderableNode CreateRenderableNode(struct RenderableObject* renderableObj){
-    RenderableNode node = {};
-    node.renderableObject = renderableObj;
-    node.NODE_ID = s_numNodes;
-    node.numChild = 0;
-    glm_mat4_identity(node.localModel);
-
-    return node;
-}
-
 RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild){
     renderableParent->childNodes[renderableParent->numChild++] = renderableChild;
-    glm_mat4_mul(renderableParent->renderableObject->model, renderableChild->renderableObject->model, renderableChild->renderableObject->model);
+    glm_mat4_mul(renderableParent->renderableObject.model, renderableChild->renderableObject.model, renderableChild->renderableObject.model);
     return renderableParent;
 }
 
@@ -177,17 +171,206 @@ void PropagateNodeTransform(struct RenderableNode* rootNode){
     int currHead = 0;
     mat4 currTransform = {0};
     RenderableNode* currNode = queue[currHead] = rootNode;
-    glm_mat4_copy(rootNode->localModel, rootNode->renderableObject->model);
+    glm_mat4_copy(rootNode->localModel, rootNode->renderableObject.model);
 
     while(currNode){
-        glm_mat4_copy(currNode->renderableObject->model, currTransform);
+        glm_mat4_copy(currNode->renderableObject.model, currTransform);
         for(int i = 0; i < currNode->numChild; i++){
             RenderableNode* currChildNode = currNode->childNodes[i];
-            glm_mat4_copy(currChildNode->localModel, currChildNode->renderableObject->model);
-            glm_mat4_mul(currTransform, currChildNode->renderableObject->model, currChildNode->renderableObject->model);
+            glm_mat4_copy(currChildNode->localModel, currChildNode->renderableObject.model);
+            glm_mat4_mul(currTransform, currChildNode->renderableObject.model, currChildNode->renderableObject.model);
             queue[queueSize++] = currNode->childNodes[i];
         }
         currHead++;
         currNode = queue[currHead];
     }
+}
+
+void MakeTriangle(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, TriangleParam* param, float color[4]){
+    *numVertices = 3;
+    *numIndices = 3;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
+}
+
+void MakeSquare(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SquareParam* param, float color[4]){
+    *numVertices = 4;
+    *numIndices = 6;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
+
+    Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+                              {{ param->position[0]               , param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
+
+    uint32_t indicesTemp[6] = { 0, 1, 2, 2, 3, 0 };
+
+    memcpy(vertices, verticesTemp, *numVertices * sizeof(Vertex));
+    memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
+}
+
+void MakeCube(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, CubeParam* param, float color[4]){
+    *numVertices = 4;
+    *numIndices = 6;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
+
+    Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+                              {{ param->position[0] + param->width, param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+                              {{ param->position[0]               , param->position[1]                , param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}}};
+
+    uint32_t indicesTemp[6] = { 0, 1, 2, 2, 3, 0 };
+
+    memcpy(vertices, verticesTemp, *numVertices * sizeof(Vertex));
+    memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
+}
+
+void MakeSphere(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SphereParam* param, float color[4]){
+
+    *numVertices = 12;
+    *numIndices = 60;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
+
+    float phi = (1 + sqrt(5.0f)) / 2.0f;
+    Vertex v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11;
+    Vertex verticesTemp[12] = {
+        {{-1.0f,  phi, 0.0f}, {-1.0f,  phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+        {{ 1.0f,  phi, 0.0f}, { 1.0f,  phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+        {{-1.0f, -phi, 0.0f}, {-1.0f, -phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+        {{ 1.0f, -phi, 0.0f}, { 1.0f, -phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}},
+
+        {{0.0f, -1.0f,  phi}, {0.0f, -1.0f,  phi}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+        {{0.0f,  1.0f,  phi}, {0.0f,  1.0f,  phi}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+        {{0.0f, -1.0f, -phi}, {0.0f, -1.0f, -phi}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+        {{0.0f,  1.0f, -phi}, {0.0f,  1.0f, -phi}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}},
+
+        {{ phi, 0.0f, -1.0f}, { phi, 0.0f, -1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+        {{ phi, 0.0f,  1.0f}, { phi, 0.0f,  1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+        {{-phi, 0.0f, -1.0f}, {-phi, 0.0f, -1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+        {{-phi, 0.0f,  1.0f}, {-phi, 0.0f,  1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}},
+    };
+
+    uint32_t indicesTemp[60] =  {0, 11,  5,
+                                 0,  5,  1,
+                                 0,  1,  7,
+                                 0,  7, 10,
+                                 0, 10, 11,
+
+                                 1,  5,  9,
+                                 5, 11,  4,
+                                 11, 10,  2,
+                                 10,  7,  6,
+                                 7,  1,  8,
+
+                                 3,  9,  4,
+                                 3,  4,  2,
+                                 3,  2,  6,
+                                 3,  6,  8,
+                                 3,  8,  9,
+
+                                 4,  9,  5,
+                                 2,  4, 11,
+                                 6,  2, 10,
+                                 8,  6,  7,
+                                 9,  8,  1};
+
+
+    memcpy(vertices, verticesTemp, *numVertices * sizeof(Vertex));
+    memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
+        /* subdivide(10); */
+}
+
+void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject){
+    AllocateMeshMemoryObject(&s_NanoEngine->m_meshMemory.meshHostMemory, vertices, numVertices, indices, numIndices, &renderableObject->meshObject);
+    renderableObject->ID = -1; //current meshObject index
+    renderableObject->albedoTexture = nullptr;
+    renderableObject->normalTexture = nullptr;
+    renderableObject->additionalTexture1 = nullptr;
+    renderableObject->additionalTexture2 = nullptr;
+    glm_mat4_identity(renderableObject->model);
+}
+
+
+RenderableObject CreateRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices){
+    RenderableObject object = {};
+    InitRenderableObject(vertices, numVertices, indices, numIndices, &object);
+    return object;
+}
+
+RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* primParam, float color[4]){
+    RenderableObject object = {};
+    uint32_t numVertex = 0;
+    uint32_t numIndices = 0;
+    Vertex* vertices = nullptr;
+    uint32_t* indices = nullptr;
+    switch (primType) {
+        case TRIANGLE:
+            MakeTriangle(nullptr, &numVertex, nullptr, &numIndices, (TriangleParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeTriangle(vertices, &numVertex, indices, &numIndices, (TriangleParam*)primParam, color);
+            break;
+        case SQUARE:
+            MakeSquare(nullptr, &numVertex, nullptr, &numIndices, (SquareParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeSquare(vertices, &numVertex, indices, &numIndices, (SquareParam*)primParam, color);
+            break;
+        case CUBE:
+            MakeCube(nullptr, &numVertex, nullptr, &numIndices, (CubeParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeCube(vertices, &numVertex, indices, &numIndices, (CubeParam*)primParam, color);
+            break;
+        case SPHERE:
+            MakeSphere(nullptr, &numVertex, nullptr, &numIndices, (SphereParam*)primParam, color);
+            vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
+            indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
+            MakeSphere(vertices, &numVertex, indices, &numIndices, (SphereParam*)primParam, color);
+            break;
+        default:
+            LOG_MSG(stderr, "Invalid primitive type\n");
+            break;
+            }
+    InitRenderableObject(vertices, numVertex, indices, numIndices, &object);
+    return object;
+}
+
+RenderableObject CreateRenderableObjectFromFile(const char* fileName, float color[4]){
+    RenderableObject object = {};
+    return object;
+}
+
+RenderableNode CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices){
+    RenderableNode node = {};
+    node.renderableObject = CreateRenderableObject(vertices, numVertices, indices, numIndices);
+    node.NODE_ID = s_numNodes;
+    node.numChild = 0;
+    glm_mat4_identity(node.localModel);
+    return node;
+}
+
+RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam, float color[4]){
+    RenderableNode node = {};
+    node.renderableObject = CreateRenderableObjectFromPrimitive(primType, primParam, color);
+    node.NODE_ID = s_numNodes;
+    node.numChild = 0;
+    glm_mat4_identity(node.localModel);
+    return node;
+}
+
+RenderableNode CreateRenderableNodeFromFile(const char* fileName, float color[4]){
+    RenderableNode node = {};
+    node.renderableObject = CreateRenderableObjectFromFile(fileName, color);
+    node.NODE_ID = s_numNodes;
+    node.numChild = 0;
+    glm_mat4_identity(node.localModel);
+    return node;
 }

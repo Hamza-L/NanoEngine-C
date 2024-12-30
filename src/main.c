@@ -11,15 +11,6 @@
 
 #include <string.h>
 
-void Update(void* objectToUpdate, void* frameData){
-    RenderableObject* object = (RenderableObject*)objectToUpdate;
-    FrameData* fData = (FrameData*)frameData;
-
-    glm_mat4_identity(object->model);
-    float position[3] = {sin(fData->time), 0.0f, 0.0f};
-    glm_translate(object->model, position);
-};
-
 void UpdateNode(void* objectToUpdate, void* frameData){
     RenderableNode* object = (RenderableNode*)objectToUpdate;
     FrameData* fData = (FrameData*)frameData;
@@ -32,13 +23,6 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     glm_spin(object->localModel, fData->deltaTime * -0.8f, axis_y);
     /* glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z); */
 };
-
-void NewDroppedInFile_CallBack(void* self, void* frameData){
-    NanoEngine* engine = (NanoEngine*)self;
-    FrameData* fData = (FrameData*)frameData;
-
-    LOG_MSG(stderr, "new file dropped: %s", GetDroppedInFile().m_data);
-}
 
 int main(int argc, char *argv[]) {
     SetVar(argv[0]);
@@ -53,43 +37,36 @@ int main(int argc, char *argv[]) {
 
     NanoEngine nanoEngine = {};
     InitEngine(&nanoEngine);
-    nanoEngine.fileDrop_callback = NewDroppedInFile_CallBack;
 
     // create scene
     RenderableScene scene;
     InitRenderableScene(&nanoEngine, &scene);
 
-    RenderableNode cube[6] = {};
-    RenderableObject cubeObject[6] = {};
-
-    /* SphereParam param = {.position = {0.0f,0.0f,0.0f}, .radius = 1.0f}; */
-    /* RenderableNode node1 = CreateRenderableNode(&object1); */
+    RenderableNode cubeRoot = {};
+    glm_mat4_identity(cubeRoot.localModel);
 
     float color1[4] = {0.8f, 0.7f, 0.3f, 1.0f};
     SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.5f,0.5f,0.5f}};
-    cubeObject[0] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
-    cube[0] = CreateRenderableNode(&cubeObject[0]);
-    cube[0].Update = UpdateNode;
+
+    RenderableNode cube[6] = {};
+    /* cube[0] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1); */
 
     // assembling the cube
-    for(int i = 1; i < 4; i++){
-        cubeObject[i] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
-        cube[i] = CreateRenderableNode(&cubeObject[i]);
+    for(int i = 0; i < 4; i++){
+        cube[i] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1);
         float axis[3] = {0.0f, 1.0f, 0.0f};
         glm_rotate(cube[i].localModel, M_PI * 0.5f * (i), axis);
-        AddChildRenderableNode(&cube[0], &cube[i]);
+        AddChildRenderableNode(&cubeRoot, &cube[i]);
     }
 
     float axis[3] = {1.0f, 0.0f, 0.0f};
-    cubeObject[4] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
-    cube[4] = CreateRenderableNode(&cubeObject[4]);
+    cube[4] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1);
     glm_rotate(cube[4].localModel, M_PI * 0.5f, axis);
-    AddChildRenderableNode(&cube[0], &cube[4]);
+    AddChildRenderableNode(&cubeRoot, &cube[4]);
 
-    cubeObject[5] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
-    cube[5] = CreateRenderableNode(&cubeObject[5]);
+    cube[5] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1);
     glm_rotate(cube[5].localModel, M_PI * -0.5f, axis);
-    AddChildRenderableNode(&cube[0], &cube[5]);
+    AddChildRenderableNode(&cubeRoot, &cube[5]);
 
     // texturize the cube
     NanoImage textures[6] = {};
@@ -100,11 +77,12 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < 6; i++){
         textures[i] = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
         AddTextToImage(&textures[i], texts[i], 70, verticalTextSpacing, textColor);
-        cubeObject[i].albedoTexture = &textures[i];
+        cube[i].renderableObject.albedoTexture = &textures[i];
     }
 
+    cubeRoot.Update = UpdateNode;
 
-    AddRootNodeToScene(&cube[0], &scene);
+    AddRootNodeToScene(&cubeRoot, &scene);
 
     CompileRenderableScene(&scene);
     RenderScene(&scene);
