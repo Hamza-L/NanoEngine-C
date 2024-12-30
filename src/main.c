@@ -61,9 +61,15 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     RenderableNode* object = (RenderableNode*)objectToUpdate;
     FrameData* fData = (FrameData*)frameData;
 
-    float position[3] = {0.5f*sin(fData->time) - 0.5f*sin(fData->time - fData->deltaTime), 0.0f, 0.0f};
-    glm_translate(object->localModel, position);
+    /* glm_mat4_identity(object->localModel); */
+    float axis_x[3] = {1.0f, 0.0f, 0.0f};
+    float axis_y[3] = {0.0f, 1.0f, 0.0f};
+    float axis_z[3] = {0.0f, 0.0f, 1.0f};
+    glm_spin(object->localModel, fData->deltaTime * 0.5f, axis_x);
+    glm_spin(object->localModel, fData->deltaTime * -0.7f, axis_y);
+    glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z);
 };
+
 
 int main(int argc, char *argv[]) {
 
@@ -88,17 +94,34 @@ int main(int argc, char *argv[]) {
     RenderableObject cubeObject[6] = {};
     // create object 1
     float color1[4] = {0.8f, 0.7f, 0.3f, 1.0f};
-    SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.5f,0.5f,0}};
+    SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.5f,0.5f,0.5f}};
+    /* SphereParam param = {.position = {0.0f,0.0f,0.0f}, .radius = 1.0f}; */
     /* RenderableNode node1 = CreateRenderableNode(&object1); */
 
     cubeObject[0] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
     cube[0] = CreateRenderableNode(&cubeObject[0]);
+    cube[0].Update = UpdateNode;
 
-    for(int i = 1; i < 6; i++){
+    for(int i = 1; i < 4; i++){
         cubeObject[i] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
         cube[i] = CreateRenderableNode(&cubeObject[i]);
+        float axis[3] = {0.0f, 1.0f, 0.0f};
+        glm_rotate(cube[i].localModel, M_PI * 0.5f * (i), axis);
         AddChildRenderableNode(&cube[0], &cube[i]);
     }
+
+    float axis[3] = {1.0f, 0.0f, 0.0f};
+    cubeObject[4] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
+    cube[4] = CreateRenderableNode(&cubeObject[4]);
+    glm_rotate(cube[4].localModel, M_PI * 0.5f, axis);
+    AddChildRenderableNode(&cube[0], &cube[4]);
+
+    cubeObject[5] = CreateRenderableObjectFromPrimitive(SQUARE, &param1, color1);
+    cube[5] = CreateRenderableNode(&cubeObject[5]);
+    glm_rotate(cube[5].localModel, M_PI * -0.5f, axis);
+    AddChildRenderableNode(&cube[0], &cube[5]);
+
+
     /* node1.Update = UpdateNode; */
     /* object1.Update = Update; */
 

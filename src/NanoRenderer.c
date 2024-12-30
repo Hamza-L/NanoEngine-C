@@ -874,9 +874,9 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         // need to manually set the viewport and scissor here because we defined them as dynamic.
         VkViewport viewport = {};
         viewport.x = 0.0f;
-        viewport.y = 0.0f;
+        viewport.y = (float)graphicsPipeline->m_extent.height;
         viewport.width = (float)graphicsPipeline->m_extent.width;
-        viewport.height = (float)graphicsPipeline->m_extent.height;
+        viewport.height = -(float)graphicsPipeline->m_extent.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(*commandBuffer, 0, 1, &viewport);
@@ -955,6 +955,11 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
     ERR err = OK;
     //CreateImageData(renderer, &texture);
+    double newTime = glfwGetTime();
+    renderer->m_pNanoContext->m_frameData.deltaTime = newTime - renderer->m_pNanoContext->m_frameData.time;
+    renderer->m_pNanoContext->m_frameData.time = newTime;
+    renderer->m_pNanoContext->m_frameData.currentFrame = renderer->m_pNanoContext->swapchainContext.currentFrame;
+
     UpdateScene(s_sceneToRender, &renderer->m_pNanoContext->m_frameData);
     return err;
 }
@@ -1178,6 +1183,59 @@ void MakeCube(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32
 
 void MakeSphere(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SphereParam* param, float color[4]){
 
+    *numVertices = 12;
+    *numIndices = 60;
+    if (vertices == nullptr || indices == nullptr){
+        return;
+    }
+
+    float phi = (1 + sqrt(5.0f)) / 2.0f;
+    Vertex v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11;
+    Vertex verticesTemp[12] = {
+        {{-1.0f,  phi, 0.0f}, {-1.0f,  phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+        {{ 1.0f,  phi, 0.0f}, { 1.0f,  phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+        {{-1.0f, -phi, 0.0f}, {-1.0f, -phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+        {{ 1.0f, -phi, 0.0f}, { 1.0f, -phi, 0.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}},
+
+        {{0.0f, -1.0f,  phi}, {0.0f, -1.0f,  phi}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+        {{0.0f,  1.0f,  phi}, {0.0f,  1.0f,  phi}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+        {{0.0f, -1.0f, -phi}, {0.0f, -1.0f, -phi}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+        {{0.0f,  1.0f, -phi}, {0.0f,  1.0f, -phi}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}},
+
+        {{ phi, 0.0f, -1.0f}, { phi, 0.0f, -1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
+        {{ phi, 0.0f,  1.0f}, { phi, 0.0f,  1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
+        {{-phi, 0.0f, -1.0f}, {-phi, 0.0f, -1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 0.0f}},
+        {{-phi, 0.0f,  1.0f}, {-phi, 0.0f,  1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 0.0f}},
+    };
+
+    uint32_t indicesTemp[60] =  {0, 11,  5,
+                                 0,  5,  1,
+                                 0,  1,  7,
+                                 0,  7, 10,
+                                 0, 10, 11,
+
+                                 1,  5,  9,
+                                 5, 11,  4,
+                                 11, 10,  2,
+                                 10,  7,  6,
+                                 7,  1,  8,
+
+                                 3,  9,  4,
+                                 3,  4,  2,
+                                 3,  2,  6,
+                                 3,  6,  8,
+                                 3,  8,  9,
+
+                                 4,  9,  5,
+                                 2,  4, 11,
+                                 6,  2, 10,
+                                 8,  6,  7,
+                                 9,  8,  1};
+
+
+    memcpy(vertices, verticesTemp, *numVertices * sizeof(Vertex));
+    memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
+        /* subdivide(10); */
 }
 
 RenderableObject CreateRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices){

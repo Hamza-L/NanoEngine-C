@@ -21,10 +21,29 @@ layout(constant_id = 0) const int VERT_CONSTANT = 0;
 
 //OUTPUTS-------------------------
 layout(location = 0) out vec4 fragColor;
-layout(location = 1) out vec2 fragTexUV;
+layout(location = 1) out vec3 fragNormal;
+layout(location = 2) out vec2 fragTexUV;
+layout(location = 3) out vec3 fragLightPos;
+layout(location = 4) out vec3 fragPos;
+
+
+mat3 adjugate(in mat3 m) {
+    return mat3(
+        cross(m[1], m[2]),
+        cross(m[2], m[0]),
+        cross(m[0], m[1])
+    );
+}
 
 void main() {
     gl_Position = ubo.proj * ubo.view * uboInstance.model * vec4(inPosition, 1.0);
+
+    vec4 tempPos = ubo.view * uboInstance.model * vec4(inPosition, 1.0);
+    fragPos = tempPos.xyz;
+
     fragColor = inColor;
     fragTexUV = inTexUV;
+    fragNormal = normalize(adjugate(mat3(uboInstance.model)) * inNormal);
+
+    fragLightPos = mat3(ubo.view) * vec3(4.0f,4.0f,4.0f);;
 }
