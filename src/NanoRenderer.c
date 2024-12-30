@@ -391,10 +391,10 @@ int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surf
     // Maximum possible size of textures affects graphics quality
     score += deviceProperties.limits.maxImageDimension2D;
 
-    // Application can't function without geometry shaders
-    if (!deviceFeatures.geometryShader) {
-        LOG_MSG(stderr, "No Geometry shader support found\n");
-    }
+    //optional feature. Does not exist on macos
+    /* if (!deviceFeatures.geometryShader) { */
+    /*     LOG_MSG(stderr, "No Geometry shader support found\n"); */
+    /* } */
 
     if (!deviceFeatures.tessellationShader) {
         LOG_MSG(stderr, "No Tesselation shader support found\n");

@@ -6,6 +6,7 @@
 #include "NanoInput.h"
 #include "NanoRenderer.h"
 #include "NanoScene.h"
+#include "Str.h"
 #include "cglm/cglm.h"
 #include "cglm/mat4.h"
 
@@ -24,24 +25,7 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     /* glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z); */
 };
 
-int main(int argc, char *argv[]) {
-    SetVar(argv[0]);
-    if(argc > 1){
-        LOG_MSG(stderr, "argument passed in\n");
-        if(strcmp(argv[1], "-FSC") == 0){
-            LOG_MSG(stderr, "force shader compilation enabled\n");
-            SetForceShaderRecompile(true);
-        }
-    }
-    LOG_MSG(stderr, "ARG0: %s\n", GetArg0());
-
-    NanoEngine nanoEngine = {};
-    InitEngine(&nanoEngine);
-
-    // create scene
-    RenderableScene scene;
-    InitRenderableScene(&nanoEngine, &scene);
-
+RenderableNode MakeCubeNode(NanoEngine* nanoEngine){
     RenderableNode cubeRoot = CreateEmptyRenderableNode();
     SquareParam param1 = {.width = 1.0f,
                           .height = 1.0f,
@@ -73,12 +57,34 @@ int main(int argc, char *argv[]) {
     float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
     int verticalTextSpacing = 10;
     for(int i = 0; i < 6; i++){
-        textures[i] = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        textures[i] = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
         AddTextToImage(&textures[i], texts[i], 70, verticalTextSpacing, textColor);
         cube[i].renderableObject.albedoTexture = &textures[i];
     }
 
     cubeRoot.Update = UpdateNode;
+    return cubeRoot;
+}
+
+int main(int argc, char *argv[]) {
+    String cwd = CreateString(argv[0]);
+    SubString(&cwd, 0, strlen(argv[0]) - strlen("NanoEngine"));
+    SetArg0(cwd.m_data);
+    if(argc > 1){
+        if(strcmp(argv[1], "-FSC") == 0){
+            LOG_MSG(stderr, "force shader compilation enabled\n");
+            SetForceShaderRecompile(true);
+        }
+    }
+
+    NanoEngine nanoEngine = {};
+    InitEngine(&nanoEngine);
+
+    // create scene
+    RenderableScene scene;
+    InitRenderableScene(&nanoEngine, &scene);
+
+    RenderableNode cubeRoot = MakeCubeNode(&nanoEngine);
 
     AddRootNodeToScene(&cubeRoot, &scene);
 

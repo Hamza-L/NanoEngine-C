@@ -51,7 +51,7 @@ extern const char* desiredInstanceExtensions[MAX_ARRAY_OF_EXTENSIONS];
 
 char* GetArg0();
 void GetExecutablePath(String* exePath);
-void SetVar(char* arg0);
+void SetArg0(char* arg0);
 
 void SetForceShaderRecompile(bool isForceCompile);
 

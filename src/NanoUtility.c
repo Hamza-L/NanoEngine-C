@@ -1,6 +1,9 @@
 #include "NanoUtility.h"
+#include "NanoConfig.h"
+#include "Str.h"
 #include <stdlib.h>
 #include <unistd.h>
+#include "string.h"
 
 size_t SizeOf(const char** array){
     size_t size = 0;
@@ -76,4 +79,27 @@ int clamp(int val, int max, int min){
     val = val > max ? max : val;
     val = val < min ? min : val;
     return val;
+}
+
+String PrependCWD(const char* relativePath){
+    String absPath = CreateString(GetArg0());
+    AppendToString(&absPath, relativePath);
+    return absPath;
+}
+
+bool IsFileInPath(const char* filePath, const char* ifFileNotFoundMsg){
+
+    FILE* file;
+    bool sourceFileExists = true;
+
+    if ((file = fopen(filePath, "r")) == NULL) {
+        LOG_MSG(stderr, "%s\n", ifFileNotFoundMsg);
+        sourceFileExists = false;
+    } else { //if shader source code does exist
+        if(fclose(file) == EOF){
+            LOG_MSG(stderr, "failed to close the file!\n");
+        }
+    }
+
+    return sourceFileExists;
 }

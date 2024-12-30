@@ -311,17 +311,17 @@ void SetupDescriptors(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphics
     CreateDescriptorSets(nanoRenderer, graphicsPipeline);
 }
 
-ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, bool forceReCompile){
+ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, bool forceShaderCompile){
     ERR err = OK;
 
-    if(!graphicsPipeline->m_vertShader.m_isCompiled || forceReCompile){
-        CompileShader(nanoRenderer, &graphicsPipeline->m_vertShader, true);
+    if(!graphicsPipeline->m_vertShader.m_isCompiled || forceShaderCompile){
+        CompileShader(nanoRenderer, &graphicsPipeline->m_vertShader, forceShaderCompile);
         /* ASSERT(vertShader->m_isCompiled, "graphics pipeline's vertex shader was not compiled\n"); */
         /* return NOT_INITIALIZED; */
     }
 
-    if(graphicsPipeline->m_fragShader.m_isCompiled || forceReCompile){
-        CompileShader(nanoRenderer, &graphicsPipeline->m_fragShader, true);
+    if(!graphicsPipeline->m_fragShader.m_isCompiled || forceShaderCompile){
+        CompileShader(nanoRenderer, &graphicsPipeline->m_fragShader, forceShaderCompile);
         /* ASSERT(fragShader->m_isCompiled, "graphics pipeline's fragment shader was not compiled\n"); */
         /* return NOT_INITIALIZED; */
     }

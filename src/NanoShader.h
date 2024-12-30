@@ -2,6 +2,7 @@
 #define NANOSHADER_H_
 
 #include "NanoBuffers.h"
+#include "Str.h"
 
 #include "vulkan/vulkan_core.h"
 
@@ -9,7 +10,8 @@ struct NanoShader;
 typedef struct NanoShader NanoShader;
 
 typedef struct {
-        char m_fileFullPath[512];
+        String m_sourcefileFullPath;
+        String m_binaryfileFullPath;
         bool hasSampler;
         bool hasUniformBuffer;
 } NanoShaderConfig;

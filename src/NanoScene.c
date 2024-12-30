@@ -3,6 +3,7 @@
 #include "NanoGraphicsPipeline.h"
 #include "NanoEngine.h"
 #include "NanoRenderer.h"
+#include "NanoUtility.h"
 #include "cglm/mat4.h"
 
 #include <stdint.h>
@@ -50,7 +51,9 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
     }
 
     renderableScene->rootNode = rootNode;
-    AddObjectToScene(&rootNode->renderableObject, renderableScene);
+    if(rootNode->renderableObject.meshObject.vertexMemSize > 0 && rootNode->renderableObject.meshObject.indexMemSize > 0){
+        AddObjectToScene(&rootNode->renderableObject, renderableScene);
+    }
 
     RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
 
@@ -117,10 +120,16 @@ void CompileRenderableScene(RenderableScene* renderableScene){
 
     InitGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, extent);
 
-    NanoShaderConfig vertConfig = {.m_fileFullPath = "./src/shader/shader.vert", .hasSampler = false, .hasUniformBuffer = true};
+    NanoShaderConfig vertConfig = {.m_sourcefileFullPath = PrependCWD("../src/shader-code/shader.vert"),
+                                   .m_binaryfileFullPath = PrependCWD("Shaders/vert_shader.spv"),
+                                   .hasSampler = false,
+                                   .hasUniformBuffer = true};
     AddVertShaderToGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, vertConfig);
 
-    NanoShaderConfig fragConfig = {.m_fileFullPath = "./src/shader/shader.frag", .hasSampler = true, .hasUniformBuffer = false};
+    NanoShaderConfig fragConfig = {.m_sourcefileFullPath = PrependCWD("../src/shader-code/shader.frag"),
+                                   .m_binaryfileFullPath = PrependCWD("Shaders/frag_shader.spv"),
+                                   .hasSampler = false,
+                                   .hasUniformBuffer = true};
     AddFragShaderToGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, fragConfig);
 
     renderableScene->graphicsPipeline._renderpass = renderpass;
@@ -135,7 +144,7 @@ void CompileRenderableScene(RenderableScene* renderableScene){
 
     SetupDescriptors(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline);
 
-    CompileGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, true);
+    CompileGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline, FORCE_RECOMPILE);
 
     if(!renderableScene->graphicsPipeline.m_isInitialized){
         LOG_MSG(stderr, "Failed to Initialize graphics pipeline for current scene\n");

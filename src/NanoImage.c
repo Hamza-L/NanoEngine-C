@@ -2,7 +2,9 @@
 #include "MemManager.h"
 #include "NanoRenderer.h"
 #include "NanoBuffers.h"
+#include "NanoUtility.h"
 #include "NanoVkUtility.h"
+#include "Str.h"
 #include "vulkan/vulkan_core.h"
 #include <stdint.h>
 #include <stdlib.h>
@@ -187,8 +189,9 @@ void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int ve
         LOG_MSG(stderr, "ERROR OCCURED LOADING FONTS\n");
         abort();
     }
+
     error = FT_New_Face( library,
-                         "/Users/shaderize/Library/Fonts/CascadiaCode.ttf", // can't use relative paths here
+                         PrependCWD("Fonts/CascadiaCode.ttf").m_data, // can't use relative paths here
                          0,
                          &face );
 

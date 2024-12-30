@@ -44,7 +44,7 @@ void SetForceShaderRecompile(bool isForceCompile){
     FORCE_RECOMPILE = isForceCompile;
 }
 
-void SetVar(char *arg0){
+void SetArg0(char *arg0){
     memcpy(s_arg0, arg0, 512);
 }
 

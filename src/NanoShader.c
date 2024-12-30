@@ -1,5 +1,6 @@
 #include "NanoShader.h"
 #include "NanoConfig.h"
+#include "NanoError.h"
 #include "NanoRenderer.h"
 #include "NanoUtility.h"
 #include "NanoBuffers.h"
@@ -140,68 +141,54 @@ int CompileShader(NanoRenderer* nanoRenderer, NanoShader* shaderToCompile, bool 
 
     FILE* file;
     bool compileNeeded = forceCompile;
+    bool sourceFileExists = IsFileInPath(shaderToCompile->config.m_sourcefileFullPath.m_data, "source file not found");
+    bool binaryFileExists = IsFileInPath(shaderToCompile->config.m_binaryfileFullPath.m_data, "binary file not found");
 
     // String op to get the resulting spv path from the input shader file
-    int exitCode = 1;
-    String outputFile = CreateString("./src/shader/");
-
-    if(FindRawString(shaderToCompile->config.m_fileFullPath, ".vert") >= 0){
-        AppendToString(&outputFile, "vert");
-    } else if (FindRawString(shaderToCompile->config.m_fileFullPath, ".frag") >= 0){
-        AppendToString(&outputFile, "frag");
-    } else if (FindRawString(shaderToCompile->config.m_fileFullPath, ".comp") >= 0){
-        AppendToString(&outputFile, "comp");
-    }
-    AppendToString(&outputFile, "_");
-
-    int startIndx = FindLastRawString(shaderToCompile->config.m_fileFullPath, "/") + 1; //we don't want to include the "/"
-    int endIndx = FindLastRawString(shaderToCompile->config.m_fileFullPath, ".");
+    int exitCode = 0;
+    int startIndx = FindLastRawString(shaderToCompile->config.m_sourcefileFullPath.m_data, "/") + 1; //we don't want to include the "/"
+    int endIndx = FindLastRawString(shaderToCompile->config.m_sourcefileFullPath.m_data, ".");
 
     String filename;
-    InitString(&filename, shaderToCompile->config.m_fileFullPath);
+    InitString(&filename, shaderToCompile->config.m_sourcefileFullPath.m_data);
     SubString(&filename, startIndx, endIndx-startIndx);
 
-    AppendToString(&outputFile, filename.m_data);
-    AppendToString(&outputFile, ".spv");
-
-    if(!forceCompile){
-      if ((file = fopen(outputFile.m_data, "rb")) != NULL) {
-        LOG_MSG(stderr, "compiled shader found! ForceCompile is not enabled so no need to compile\n");
-        if(fclose(file) == EOF){
-          LOG_MSG(stderr, "failed to close the file!\n");
-        }
-        compileNeeded = false;
-        exitCode = 0;
-      }
-    }
+    compileNeeded = (!binaryFileExists || forceCompile);
 
     if(compileNeeded){
-      String cmdArgument = CreateString(" ");
-      AppendToString(&cmdArgument, shaderToCompile->config.m_fileFullPath);
-      AppendToString(&cmdArgument, " -g ");
-      AppendToString(&cmdArgument, " -o ");
-      AppendToString(&cmdArgument, outputFile.m_data);
+          if(!sourceFileExists){
+              LOG_MSG(stderr, "source file not found. cannot compile\n");
+              exitCode = -1;
+          } else {
+              String cmdArgument = CreateString(" ");
+              AppendToString(&cmdArgument, shaderToCompile->config.m_sourcefileFullPath.m_data);
+              AppendToString(&cmdArgument, " -g ");
+              AppendToString(&cmdArgument, " -o ");
+              AppendToString(&cmdArgument, shaderToCompile->config.m_sourcefileFullPath.m_data);
+
+              String glslcExe = CreateString("");
 
 #ifdef __APPLE__
-      const char* executable = "./external/VULKAN/mac/glslc";
+              AppendToString(&glslcExe, "./external/VULKAN/mac/glslc");
 #elif _WIN32
-      const char* executable = "./external/VULKAN/win/glslc.exe";
+              AppendToString(&glslcExe, "./external/VULKAN/win/glslc.exe");
 #else
-      const char* executable = "./external/VULKAN/linux/glslc";
+              AppendToString(&glslcExe, "./external/VULKAN/linux/glslc");
 #endif
-      exitCode = RunGLSLCompiler(executable,
-                                 shaderToCompile->config.m_fileFullPath,
-                                 outputFile.m_data,
-                                 &shaderToCompile->config.m_fileFullPath[startIndx]);
+              exitCode = RunGLSLCompiler(glslcExe.m_data,
+                                         shaderToCompile->config.m_sourcefileFullPath.m_data,
+                                         shaderToCompile->config.m_binaryfileFullPath.m_data,
+                                         &shaderToCompile->config.m_sourcefileFullPath.m_data[startIndx]);
+          }
     }
 
     if(!exitCode){
-      shaderToCompile->m_isCompiled = true;
-      /* LOG_MSG(stderr, "reading raw shader code from: %s\n", outputFile.m_data); */
-      shaderToCompile->m_rawShaderCode = ReadBinaryFile(outputFile.m_data, &shaderToCompile->m_rawShaderCodeSize);
-      shaderToCompile->m_shaderModule = CreateShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCompile);
+        shaderToCompile->m_isCompiled = true;
+        /* LOG_MSG(stderr, "reading raw shader code from: %s\n", shaderToCompile->config.m_binaryfileFullPath.m_data); */
+        shaderToCompile->m_rawShaderCode = ReadBinaryFile(shaderToCompile->config.m_binaryfileFullPath.m_data, &shaderToCompile->m_rawShaderCodeSize);
+        shaderToCompile->m_shaderModule = CreateShaderModule(nanoRenderer->m_pNanoContext->device, shaderToCompile);
     } else {
-      shaderToCompile->m_isCompiled = false;
+        shaderToCompile->m_isCompiled = false;
     }
 
     return exitCode;
