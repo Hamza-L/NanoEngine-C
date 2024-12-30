@@ -186,20 +186,28 @@ void PropagateNodeTransform(struct RenderableNode* rootNode){
     }
 }
 
-void MakeTriangle(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, TriangleParam* param, float color[4]){
+void MakeTriangle(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, TriangleParam* param){
     *numVertices = 3;
     *numIndices = 3;
     if (vertices == nullptr || indices == nullptr){
         return;
     }
+
+    float color[4] = {};
+    for(int i = 0; i < 4; i++)
+        color[i] = param->color[i];
 }
 
-void MakeSquare(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SquareParam* param, float color[4]){
+void MakeSquare(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SquareParam* param){
     *numVertices = 4;
     *numIndices = 6;
     if (vertices == nullptr || indices == nullptr){
         return;
     }
+
+    float color[4] = {};
+    for(int i = 0; i < 4; i++)
+        color[i] = param->color[i];
 
     Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
                               {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
@@ -212,12 +220,16 @@ void MakeSquare(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint
     memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
 }
 
-void MakeCube(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, CubeParam* param, float color[4]){
+void MakeCube(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, CubeParam* param){
     *numVertices = 4;
     *numIndices = 6;
     if (vertices == nullptr || indices == nullptr){
         return;
     }
+
+    float color[4] = {};
+    for(int i = 0; i < 4; i++)
+        color[i] = param->color[i];
 
     Vertex verticesTemp[4] = {{{ param->position[0]               , param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {0.0f, 1.0f}},
                               {{ param->position[0] + param->width, param->position[1] - param->height, param->position[2]}, {0.0f,0.0f,1.0f}, {color[0], color[1], color[2], color[3]}, {1.0f, 1.0f}},
@@ -230,13 +242,17 @@ void MakeCube(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32
     memcpy(indices, indicesTemp, *numIndices * sizeof(uint32_t));
 }
 
-void MakeSphere(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SphereParam* param, float color[4]){
+void MakeSphere(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint32_t* numIndices, SphereParam* param){
 
     *numVertices = 12;
     *numIndices = 60;
     if (vertices == nullptr || indices == nullptr){
         return;
     }
+
+    float color[4] = {};
+    for(int i = 0; i < 4; i++)
+        color[i] = param->color[i];
 
     float phi = (1 + sqrt(5.0f)) / 2.0f;
     Vertex v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11;
@@ -294,6 +310,7 @@ void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indi
     renderableObject->normalTexture = nullptr;
     renderableObject->additionalTexture1 = nullptr;
     renderableObject->additionalTexture2 = nullptr;
+    renderableObject->isVisible = true;
     glm_mat4_identity(renderableObject->model);
 }
 
@@ -304,7 +321,7 @@ RenderableObject CreateRenderableObject(Vertex* vertices, uint32_t numVertices, 
     return object;
 }
 
-RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* primParam, float color[4]){
+RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* primParam){
     RenderableObject object = {};
     uint32_t numVertex = 0;
     uint32_t numIndices = 0;
@@ -312,28 +329,28 @@ RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* p
     uint32_t* indices = nullptr;
     switch (primType) {
         case TRIANGLE:
-            MakeTriangle(nullptr, &numVertex, nullptr, &numIndices, (TriangleParam*)primParam, color);
+            MakeTriangle(nullptr, &numVertex, nullptr, &numIndices, (TriangleParam*)primParam);
             vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
             indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
-            MakeTriangle(vertices, &numVertex, indices, &numIndices, (TriangleParam*)primParam, color);
+            MakeTriangle(vertices, &numVertex, indices, &numIndices, (TriangleParam*)primParam);
             break;
         case SQUARE:
-            MakeSquare(nullptr, &numVertex, nullptr, &numIndices, (SquareParam*)primParam, color);
+            MakeSquare(nullptr, &numVertex, nullptr, &numIndices, (SquareParam*)primParam);
             vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
             indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
-            MakeSquare(vertices, &numVertex, indices, &numIndices, (SquareParam*)primParam, color);
+            MakeSquare(vertices, &numVertex, indices, &numIndices, (SquareParam*)primParam);
             break;
         case CUBE:
-            MakeCube(nullptr, &numVertex, nullptr, &numIndices, (CubeParam*)primParam, color);
+            MakeCube(nullptr, &numVertex, nullptr, &numIndices, (CubeParam*)primParam);
             vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
             indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
-            MakeCube(vertices, &numVertex, indices, &numIndices, (CubeParam*)primParam, color);
+            MakeCube(vertices, &numVertex, indices, &numIndices, (CubeParam*)primParam);
             break;
         case SPHERE:
-            MakeSphere(nullptr, &numVertex, nullptr, &numIndices, (SphereParam*)primParam, color);
+            MakeSphere(nullptr, &numVertex, nullptr, &numIndices, (SphereParam*)primParam);
             vertices = (Vertex*)malloc(numVertex * sizeof(Vertex));
             indices = (uint32_t*)malloc(numIndices * sizeof(uint32_t));
-            MakeSphere(vertices, &numVertex, indices, &numIndices, (SphereParam*)primParam, color);
+            MakeSphere(vertices, &numVertex, indices, &numIndices, (SphereParam*)primParam);
             break;
         default:
             LOG_MSG(stderr, "Invalid primitive type\n");
@@ -343,7 +360,7 @@ RenderableObject CreateRenderableObjectFromPrimitive(Primitive primType, void* p
     return object;
 }
 
-RenderableObject CreateRenderableObjectFromFile(const char* fileName, float color[4]){
+RenderableObject CreateRenderableObjectFromFile(const char* fileName){
     RenderableObject object = {};
     return object;
 }
@@ -357,18 +374,26 @@ RenderableNode CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint
     return node;
 }
 
-RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam, float color[4]){
+RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam){
     RenderableNode node = {};
-    node.renderableObject = CreateRenderableObjectFromPrimitive(primType, primParam, color);
+    node.renderableObject = CreateRenderableObjectFromPrimitive(primType, primParam);
     node.NODE_ID = s_numNodes;
     node.numChild = 0;
     glm_mat4_identity(node.localModel);
     return node;
 }
 
-RenderableNode CreateRenderableNodeFromFile(const char* fileName, float color[4]){
+RenderableNode CreateRenderableNodeFromFile(const char* fileName){
     RenderableNode node = {};
-    node.renderableObject = CreateRenderableObjectFromFile(fileName, color);
+    node.renderableObject = CreateRenderableObjectFromFile(fileName);
+    node.NODE_ID = s_numNodes;
+    node.numChild = 0;
+    glm_mat4_identity(node.localModel);
+    return node;
+}
+
+RenderableNode CreateEmptyRenderableNode(){
+    RenderableNode node = {};
     node.NODE_ID = s_numNodes;
     node.numChild = 0;
     glm_mat4_identity(node.localModel);

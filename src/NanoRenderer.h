@@ -95,30 +95,6 @@ struct NanoRenderer {
     NanoVKContext* m_pNanoContext;
 };
 
-typedef struct {
-    vec3 position1;
-    vec3 position2;
-    vec3 position3;
-} TriangleParam;
-
-typedef struct {
-    vec3 position; //top left corner
-    float width;
-    float height;
-} SquareParam;
-
-typedef struct {
-    vec3 position; //center position
-    float width;
-    float height;
-    float depth;
-} CubeParam;
-
-typedef struct {
-    vec3 position;
-    float radius;
-} SphereParam;
-
 ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window);
 ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
 ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);

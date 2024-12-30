@@ -42,29 +42,27 @@ int main(int argc, char *argv[]) {
     RenderableScene scene;
     InitRenderableScene(&nanoEngine, &scene);
 
-    RenderableNode cubeRoot = {};
-    glm_mat4_identity(cubeRoot.localModel);
-
-    float color1[4] = {0.8f, 0.7f, 0.3f, 1.0f};
-    SquareParam param1 = {.width = 1.0f, .height = 1.0f, .position = {-0.5f,0.5f,0.5f}};
-
-    RenderableNode cube[6] = {};
-    /* cube[0] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1); */
-
+    RenderableNode cubeRoot = CreateEmptyRenderableNode();
+    SquareParam param1 = {.width = 1.0f,
+                          .height = 1.0f,
+                          .position = {-0.5f,0.5f,0.5f},
+                          .color = {0.8f, 0.7f, 0.3f, 1.0f}};
+    RenderableNode plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
+    RenderableNode cube[6] = {plane};
     // assembling the cube
     for(int i = 0; i < 4; i++){
-        cube[i] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1);
+        cube[i] = plane;
         float axis[3] = {0.0f, 1.0f, 0.0f};
         glm_rotate(cube[i].localModel, M_PI * 0.5f * (i), axis);
         AddChildRenderableNode(&cubeRoot, &cube[i]);
     }
 
     float axis[3] = {1.0f, 0.0f, 0.0f};
-    cube[4] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1);
+    cube[4] = plane;
     glm_rotate(cube[4].localModel, M_PI * 0.5f, axis);
     AddChildRenderableNode(&cubeRoot, &cube[4]);
 
-    cube[5] = CreateRenderableNodeFromPrimitive(SQUARE, &param1, color1);
+    cube[5] = plane;
     glm_rotate(cube[5].localModel, M_PI * -0.5f, axis);
     AddChildRenderableNode(&cubeRoot, &cube[5]);
 

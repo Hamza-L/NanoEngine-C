@@ -896,6 +896,8 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
 
             for(int i = 0; i < s_sceneToRender->numRenderableObjects ; i++){
                 RenderableObject* obj = s_sceneToRender->renderableObjects[i];
+                if(!obj->isVisible)
+                    continue;
 
                 MeshObjectPushConstant objectPushConstant;
                 objectPushConstant.albedoTextureID = obj->albedoTexture ? obj->albedoTexture->imageDescriptorID : -1;

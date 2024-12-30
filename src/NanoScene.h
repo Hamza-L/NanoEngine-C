@@ -33,6 +33,8 @@ struct RenderableObject {
     NanoImage* normalTexture;
     NanoImage* additionalTexture1;
     NanoImage* additionalTexture2;
+
+    bool isVisible;
 };
 
 struct RenderableScene {
@@ -61,6 +63,33 @@ struct RenderableNode{
     void (*Update)(void* objectToUpdate, void* frameData);
 };
 
+typedef struct {
+    vec3 position1;
+    vec3 position2;
+    vec3 position3;
+    vec4 color;
+} TriangleParam;
+
+typedef struct {
+    vec3 position; //top left corner
+    float width;
+    float height;
+    vec4 color;
+} SquareParam;
+
+typedef struct {
+    vec3 position; //center position
+    float width;
+    float height;
+    float depth;
+    vec4 color;
+} CubeParam;
+
+typedef struct {
+    vec3 position;
+    float radius;
+    vec4 color;
+} SphereParam;
 
 void InitRenderableScene(struct NanoEngine* nanoEngine, RenderableScene* renderableScene);
 void AddObjectToScene(RenderableObject* object, RenderableScene* renderableScene);
@@ -70,9 +99,10 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data);
 void CompileRenderableScene(RenderableScene* renderableScene);
 void CleanUpScene(RenderableScene* renderableScene);
 
+RenderableNode CreateEmptyRenderableNode();
 RenderableNode CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices);
-RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam, float color[4]);
-RenderableNode CreateRenderableNodeFromFile(const char* fileName, float color[4]);
+RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam);
+RenderableNode CreateRenderableNodeFromFile(const char* fileName);
 
 RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild);
 
