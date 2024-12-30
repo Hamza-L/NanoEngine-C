@@ -26,6 +26,7 @@ const char* desiredDeviceExtensions[MAX_ARRAY_OF_EXTENSIONS] = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 #ifdef __APPLE__
     "VK_KHR_portability_subset",
+    "VK_KHR_maintenance1",
 #endif
     NULL_STR // to allow for while loops without crash
 };

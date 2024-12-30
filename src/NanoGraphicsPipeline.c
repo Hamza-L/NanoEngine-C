@@ -281,14 +281,14 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
     UniformBufferObject* ubo = &graphicsPipeline->uniformBuffer;
 
     // View matrix
-    vec3 eye = {0.0f, 0.0f, 2.0f};
+    vec3 eye = {0.0f, 0.0f, 5.0f};
     vec3 center = {0.0f, 0.0f, 0.0f};
     vec3 up = {0.0f, 1.0f, 0.0f};
     glm_lookat(eye, center, up, ubo->view);
 
     // Projection matrix
-    glm_perspective(glm_rad(45.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 10.0f, ubo->proj);
-    ubo->proj[1][1] *= -1;
+    glm_perspective(glm_rad(50.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 10.0f, ubo->proj);
+    /* ubo->proj[1][1] *= -1; */
     /* vec3 axis = {0.0f, 1.0f, 0.0f}; */
     /* glm_mat4_identity(ubo.model); */
     /* glm_rotate(ubo.model, 45.0f, axis); */
@@ -399,9 +399,9 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
 
     VkViewport viewport = {};
     viewport.x = 0.0f;
-    viewport.y = 0.0f;
+    viewport.y = graphicsPipeline->m_extent.height;
     viewport.width = graphicsPipeline->m_extent.width;
-    viewport.height = graphicsPipeline->m_extent.height;
+    viewport.height = -graphicsPipeline->m_extent.height;
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
 
@@ -436,8 +436,8 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     // If rasterizerDiscardEnable is set to VK_TRUE, then geometry never passes through the rasterizer stage. This basically disables any output to the framebuffer.
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = graphicsPipeline->m_isWireFrame ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL; // using anything other than fill requires enabling a gpu feature (this can allow us to set line width and point size)
-    rasterizer.cullMode = VK_CULL_MODE_NONE;
-    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE; // sometimes used for shadow mapping
     rasterizer.depthBiasConstantFactor = 0.0f; // Optional
     rasterizer.depthBiasClamp = 0.0f; // Optional
