@@ -73,8 +73,8 @@ void CreateMeshObject(Vertex* vertex, uint32_t numVertices, uint32_t* indexData,
 void SendMeshObjectToGPUMemory(NanoRenderer* nanoRenderer, MeshObject* meshObject);
 void SendAllocatedMeshMemoryToGPUMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory);
 void CleanUpMeshObject(NanoRenderer* nanoRenderer, MeshObject* meshObject);
-void CleanUpMeshVkMemory(NanoRenderer* nanoRenderer, MeshVKMemory* meshMemory);
-void CleanUpMeshMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory);
+void CleanUpAllMeshVkMemory(NanoRenderer* nanoRenderer, MeshVKMemory* meshMemory);
+void CleanUpAllMeshMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory);
 
 
 #endif // NANOBUFFERS_H_

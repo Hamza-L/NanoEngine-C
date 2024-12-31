@@ -31,8 +31,8 @@ RenderableNode MakeCubeNode(NanoEngine* nanoEngine){
                           .height = 1.0f,
                           .position = {-0.5f,0.5f,0.5f},
                           .color = {0.8f, 0.7f, 0.3f, 1.0f}};
+    RenderableNode* cube = (RenderableNode*)calloc(6,sizeof(RenderableNode));
     RenderableNode plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
-    RenderableNode cube[6] = {plane};
     // assembling the cube
     for(int i = 0; i < 4; i++){
         cube[i] = plane;
@@ -51,15 +51,13 @@ RenderableNode MakeCubeNode(NanoEngine* nanoEngine){
     AddChildRenderableNode(&cubeRoot, &cube[5]);
 
     // texturize the cube
-    NanoImage textures[6] = {};
     const char* texts[6] = {"face 1","face 2","face 3","face 4","face 5","face 6"};
     float color[4] = {0.25f, 0.2f, 0.3f, 1.0f};
     float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
     int verticalTextSpacing = 10;
     for(int i = 0; i < 6; i++){
-        textures[i] = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
-        AddTextToImage(&textures[i], texts[i], 70, verticalTextSpacing, textColor);
-        cube[i].renderableObject.albedoTexture = &textures[i];
+        cube[i].renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        AddTextToImage(&cube[i].renderableObject.albedoTexture, texts[i], 70, verticalTextSpacing, textColor);
     }
 
     cubeRoot.Update = UpdateNode;

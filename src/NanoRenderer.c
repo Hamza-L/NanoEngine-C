@@ -135,7 +135,7 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
         vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
     }
 
-    CleanUpMeshVkMemory(nanoRenderer, &s_meshMemoryPtr->meshVKMemory);
+    CleanUpAllMeshVkMemory(nanoRenderer, &s_meshMemoryPtr->meshVKMemory);
 
     // clean commandPool and incidently the commandbuffers acquired from them
     // clean graphic pipelines
@@ -900,10 +900,10 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
                     continue;
 
                 MeshObjectPushConstant objectPushConstant;
-                objectPushConstant.albedoTextureID = obj->albedoTexture ? obj->albedoTexture->imageDescriptorID : -1;
-                objectPushConstant.normalTextureID = obj->normalTexture ? obj->normalTexture->imageDescriptorID : -1;
-                objectPushConstant.additionalTextureID = obj->additionalTexture1 ? obj->additionalTexture1->imageDescriptorID : -1;
-                objectPushConstant.additionalTextureID2 = obj->additionalTexture2 ? obj->additionalTexture2->imageDescriptorID : -1;
+                objectPushConstant.albedoTextureID = obj->albedoTexture.isSubmittedToGPUMemory ? obj->albedoTexture.imageDescriptorID : -1;
+                objectPushConstant.normalTextureID = obj->normalTexture.isSubmittedToGPUMemory ? obj->normalTexture.imageDescriptorID : -1;
+                objectPushConstant.additionalTextureID = obj->additionalTexture1.isSubmittedToGPUMemory ? obj->additionalTexture1.imageDescriptorID : -1;
+                objectPushConstant.additionalTextureID2 = obj->additionalTexture2.isSubmittedToGPUMemory ? obj->additionalTexture2.imageDescriptorID : -1;
 
                 // One dynamic offset per dynamic descriptor to offset into the ubo containing all model matrices
                 uint32_t dynamicOffset = i * graphicsPipeline->uniformBufferDynamicAllignment;

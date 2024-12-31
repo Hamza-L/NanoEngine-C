@@ -30,17 +30,17 @@ void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderab
     object->ID = renderableScene->numRenderableObjects;
     renderableScene->renderableObjects[renderableScene->numRenderableObjects++] = object;
 
-    if(object->albedoTexture)
-        renderableScene->textures[renderableScene->numTextures++] = object->albedoTexture;
+    if(object->albedoTexture.isInitialized)
+        renderableScene->textures[renderableScene->numTextures++] = &object->albedoTexture;
 
-    if(object->normalTexture)
-        renderableScene->textures[renderableScene->numTextures++] = object->normalTexture;
+    if(object->normalTexture.isInitialized)
+        renderableScene->textures[renderableScene->numTextures++] = &object->normalTexture;
 
-    if(object->additionalTexture1)
-        renderableScene->textures[renderableScene->numTextures++] = object->additionalTexture1;
+    if(object->additionalTexture1.isInitialized)
+        renderableScene->textures[renderableScene->numTextures++] = &object->additionalTexture1;
 
-    if(object->additionalTexture2)
-        renderableScene->textures[renderableScene->numTextures++] = object->additionalTexture2;
+    if(object->additionalTexture2.isInitialized)
+        renderableScene->textures[renderableScene->numTextures++] = &object->additionalTexture2;
 
 }
 
@@ -50,7 +50,7 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
         return;
     }
 
-    renderableScene->rootNode = rootNode;
+    renderableScene->rootNode = *rootNode;
     if(rootNode->renderableObject.meshObject.vertexMemSize > 0 && rootNode->renderableObject.meshObject.indexMemSize > 0){
         AddObjectToScene(&rootNode->renderableObject, renderableScene);
     }
@@ -78,7 +78,7 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data){
     int queueSize = 1; // we know the root node is not null so size is 1
     int currHead = 0;
     mat4 currTransform = {0};
-    RenderableNode* currNode = queue[currHead] = renderableScene->rootNode;
+    RenderableNode* currNode = queue[currHead] = &renderableScene->rootNode;
     if(currNode->Update) {
         currNode->Update(currNode, data);
     }
@@ -158,8 +158,55 @@ void CompileRenderableScene(RenderableScene* renderableScene){
     SendAllocatedMeshMemoryToGPUMemory(&s_NanoEngine->m_Renderer, &s_NanoEngine->m_meshMemory);
 }
 
+void CleanUpRendererableObject(RenderableObject* object){
+    object->ID = -1; //current meshObject index
+    CleanUpImage(&s_NanoEngine->m_Renderer, &object->albedoTexture);
+    CleanUpImage(&s_NanoEngine->m_Renderer, &object->normalTexture);
+    CleanUpImage(&s_NanoEngine->m_Renderer, &object->additionalTexture1);
+    CleanUpImage(&s_NanoEngine->m_Renderer, &object->additionalTexture2);
+    object->isVisible = true;
+    glm_mat4_identity(object->model);
+}
+
+void CleanUpRenderableNode(RenderableNode* node){
+    RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
+
+    if(node == nullptr){
+        LOG_MSG(stderr, "node to clean is null\n");
+        return;
+    }
+
+    int queueSize = 1; // we know the root node is not null so size is 1
+    int currHead = 0;
+    mat4 currTransform = {0};
+    RenderableNode* currNode = queue[currHead] = node;
+    CleanUpRendererableObject(&node->renderableObject);
+
+    while(currNode){
+        for(int i = 0; i < currNode->numChild; i++){
+            RenderableNode* currChildNode = currNode->childNodes[i];
+            CleanUpRendererableObject(&currChildNode->renderableObject);
+            currChildNode->NODE_ID = -1;
+            currChildNode->Update = nullptr;
+            glm_mat4_identity(currChildNode->localModel);
+            queue[queueSize++] = currChildNode;
+        }
+        currHead++;
+        currNode = queue[currHead];
+    }
+
+    int i = 0;
+    while(queue[i]){
+        queue[i++]->numChild = 0;
+    }
+}
+
 void CleanUpScene(RenderableScene* renderableScene){
+    CleanUpRenderableNode(&renderableScene->rootNode);
     CleanUpGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline);
+    for(int i = 0; i < renderableScene->numTextures; i++){
+        CleanUpImageVkMemory(&s_NanoEngine->m_Renderer, renderableScene->textures[i]);
+    }
 }
 
 RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild){
@@ -315,10 +362,10 @@ void MakeSphere(Vertex* vertices, uint32_t* numVertices, uint32_t* indices, uint
 void InitRenderableObject(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices, RenderableObject* renderableObject){
     AllocateMeshMemoryObject(&s_NanoEngine->m_meshMemory.meshHostMemory, vertices, numVertices, indices, numIndices, &renderableObject->meshObject);
     renderableObject->ID = -1; //current meshObject index
-    renderableObject->albedoTexture = nullptr;
-    renderableObject->normalTexture = nullptr;
-    renderableObject->additionalTexture1 = nullptr;
-    renderableObject->additionalTexture2 = nullptr;
+    CleanUpImage(&s_NanoEngine->m_Renderer, &renderableObject->albedoTexture);
+    CleanUpImage(&s_NanoEngine->m_Renderer, &renderableObject->normalTexture);
+    CleanUpImage(&s_NanoEngine->m_Renderer, &renderableObject->additionalTexture1);
+    CleanUpImage(&s_NanoEngine->m_Renderer, &renderableObject->additionalTexture2);
     renderableObject->isVisible = true;
     glm_mat4_identity(renderableObject->model);
 }

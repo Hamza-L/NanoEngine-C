@@ -25,8 +25,8 @@ struct NanoImage {
     NanoVkImageMemory nanoVkBuffer;
     VkImageView imageView;
 
-    _Bool isInitialized;
-    unsigned char padding[3];
+    bool isInitialized;
+    bool isSubmittedToGPUMemory;
 };
 
 typedef struct{
@@ -47,7 +47,8 @@ NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, co
 void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoImage* image);
 void InitImageFromFile(const char* fileName, NanoImage* image);
 void CleanUpImageVkMemory(NanoRenderer* nanoRenderer, NanoImage* nanoImage);
-void CleanUpImageMemory(NanoRenderer* nanoRenderer, ImageMemory* imageMemory);
+void CleanUpAllImageMemory(NanoRenderer* nanoRenderer, ImageMemory* imageMemory);
+void CleanUpImage(NanoRenderer* nanoRenderer, NanoImage* image);
 
 void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image);
 

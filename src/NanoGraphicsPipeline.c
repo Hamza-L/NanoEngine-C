@@ -140,7 +140,7 @@ void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
             if(graphicsPipeline->textures[j] ){
                 graphicsPipeline->textures[j]->imageDescriptorID = textureCount;
                 imageInfos[j].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-                imageInfos[j].imageView = graphicsPipeline->textures[j]->isInitialized ? graphicsPipeline->textures[j]->imageView : graphicsPipeline->defaultTexture.imageView; //For now we use the same image for all in flight frames. We also use only the first image
+                imageInfos[j].imageView = graphicsPipeline->textures[j]->isSubmittedToGPUMemory ? graphicsPipeline->textures[j]->imageView : graphicsPipeline->defaultTexture.imageView; //For now we use the same image for all in flight frames. We also use only the first image
                 imageInfos[j].sampler = graphicsPipeline->m_sampler;
                 textureCount++;
             } else {
@@ -548,12 +548,9 @@ void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* g
         vkFreeMemory(nanoRenderer->m_pNanoContext->device, graphicsPipeline->uniformBufferDynamicMemory[i].bufferMemory, nullptr);
     }
 
-    //free(graphicsPipeline->uniformBufferDynamic.model);
-
-    for(int i = 0; i < graphicsPipeline->numTextures; i++){
-        CleanUpImageVkMemory(nanoRenderer, graphicsPipeline->textures[i]);
-    }
+    CleanUpImage(nanoRenderer, &graphicsPipeline->defaultTexture);
     CleanUpImageVkMemory(nanoRenderer, &graphicsPipeline->defaultTexture);
+    CleanUpImage(nanoRenderer, &graphicsPipeline->emptyTexture);
     CleanUpImageVkMemory(nanoRenderer, &graphicsPipeline->emptyTexture);
 
     vkDestroyDescriptorPool(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_descriptorPool, nullptr);

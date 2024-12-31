@@ -326,7 +326,7 @@ void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoIm
 
 // file format default to RGBA for now
 NanoImage CreateHostPersistentImage(ImageHostMemory* imageHostMemory, int width, int height, int numChannels, float colour[4]){
-    NanoImage image;
+    NanoImage image = {};
     int imageSize = width * height * numChannels;
 
     image.imageMemory = GetAllocateImageMemoryObject(imageHostMemory, imageSize);
@@ -351,6 +351,8 @@ NanoImage CreateHostPersistentImage(ImageHostMemory* imageHostMemory, int width,
 
     if (!imageData) {
         LOG_MSG(stderr, "failed to allocate an image\n");
+    } else {
+        image.isInitialized = true;
     }
 
     return image;
@@ -382,6 +384,7 @@ NanoImage CreateHostPersistentImageFromFile(ImageHostMemory* imageHostMemory, co
 #endif
 
     stbi_image_free(imageData);
+    image.isInitialized = true;
     return image;
 }
 
@@ -443,7 +446,7 @@ void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image){
 
     //free(image->imageMemory->imageData);
 
-    if(!image->isInitialized){
+    if(!image->isSubmittedToGPUMemory){
         image->nanoVkBuffer = CreateImageBuffer(nanoRenderer,
                                                 image->width, image->height,
                                                 VK_FORMAT_R8G8B8A8_SRGB,
@@ -472,10 +475,10 @@ void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image){
     vkDestroyBuffer(nanoRenderer->m_pNanoContext->device, stagingBufferMem.buffer, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
-    if(!image->isInitialized)
+    if(!image->isSubmittedToGPUMemory)
         image->imageView = CreateImageView(nanoRenderer, image->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
 
-    image->isInitialized = true;
+    image->isSubmittedToGPUMemory = true;
 }
 
 VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat format){
@@ -501,8 +504,18 @@ void CleanUpImageVkMemory(NanoRenderer* nanoRenderer, NanoImage* nanoImage){
     vkDestroyImageView(nanoRenderer->m_pNanoContext->device, nanoImage->imageView, nullptr);
     vkDestroyImage(nanoRenderer->m_pNanoContext->device, nanoImage->nanoVkBuffer.textureImage, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, nanoImage->nanoVkBuffer.textureImageMemory, nullptr);
+    nanoImage->isSubmittedToGPUMemory = false;
 }
 
-void CleanUpImageMemory(NanoRenderer* nanoRenderer, ImageMemory* imageMemory){
+void CleanUpAllImageMemory(NanoRenderer* nanoRenderer, ImageMemory* imageMemory){
     CleanUpImageHostMemory(&imageMemory->imageHostMemory);
+}
+
+void CleanUpImage(NanoRenderer* nanoRenderer, NanoImage* image){
+    image->imageMemory.imageData = nullptr;
+    image->imageMemory.imageMemSize = 0;
+    image->imageDataSize = 0;
+    image->imageDescriptorID = -1;
+    image->height = image->width = image->numChannels = 0;
+    image->isInitialized = false;
 }

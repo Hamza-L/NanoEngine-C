@@ -29,25 +29,12 @@ struct RenderableObject {
     mat4 model;
 
     // Texture
-    NanoImage* albedoTexture;
-    NanoImage* normalTexture;
-    NanoImage* additionalTexture1;
-    NanoImage* additionalTexture2;
+    NanoImage albedoTexture;
+    NanoImage normalTexture;
+    NanoImage additionalTexture1;
+    NanoImage additionalTexture2;
 
     bool isVisible;
-};
-
-struct RenderableScene {
-    struct RenderableObject* renderableObjects[256];
-    uint32_t numRenderableObjects;
-
-    struct NanoImage* textures[256];
-    uint32_t numTextures;
-
-    RenderableNode* rootNode;
-
-    NanoGraphicsPipeline graphicsPipeline;
-    int32_t ID;
 };
 
 struct RenderableNode{
@@ -61,6 +48,19 @@ struct RenderableNode{
 
     //update function
     void (*Update)(void* objectToUpdate, void* frameData);
+};
+
+struct RenderableScene {
+    struct RenderableObject* renderableObjects[256];
+    uint32_t numRenderableObjects;
+
+    struct NanoImage* textures[256];
+    uint32_t numTextures;
+
+    RenderableNode rootNode;
+
+    NanoGraphicsPipeline graphicsPipeline;
+    int32_t ID;
 };
 
 typedef struct {
@@ -103,6 +103,9 @@ RenderableNode CreateEmptyRenderableNode();
 RenderableNode CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices);
 RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam);
 RenderableNode CreateRenderableNodeFromFile(const char* fileName);
+
+void CleanUpRendererableObject(RenderableObject* object);
+void CleanUpRenderableNode(RenderableNode* node);
 
 RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild);
 

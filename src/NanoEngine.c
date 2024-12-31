@@ -12,8 +12,8 @@ NanoEngine* s_nanoEngineSingleton;
 ERR CleanUpEngine(NanoEngine* nanoEngine){
     ERR err = OK;
     CleanUpWindow(&nanoEngine->m_Window);
-    CleanUpMeshMemory(&nanoEngine->m_Renderer, &nanoEngine->m_meshMemory);
-    CleanUpImageMemory(&nanoEngine->m_Renderer, &nanoEngine->m_ImageMemory);
+    CleanUpAllMeshMemory(&nanoEngine->m_Renderer, &nanoEngine->m_meshMemory);
+    CleanUpAllImageMemory(&nanoEngine->m_Renderer, &nanoEngine->m_ImageMemory);
     CleanUpRenderer(&nanoEngine->m_Renderer);
     nanoEngine->isInitialized = false;
     return err;

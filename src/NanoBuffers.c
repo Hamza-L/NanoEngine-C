@@ -228,15 +228,15 @@ void SendAllocatedMeshMemoryToGPUMemory(NanoRenderer* nanoRenderer, MeshMemory* 
 /*     CleanUpBuffer(nanoRenderer, &meshObject->indexMemory); */
 /* } */
 
-void CleanUpMeshVkMemory(NanoRenderer* nanoRenderer, MeshVKMemory* meshMemory){
+void CleanUpAllMeshVkMemory(NanoRenderer* nanoRenderer, MeshVKMemory* meshMemory){
     // have to wait until device is done executing it's buffered commands in case the buffers are in use
     vkDeviceWaitIdle(nanoRenderer->m_pNanoContext->device);
     CleanUpBuffer(nanoRenderer, &meshMemory->vertexMemory);
     CleanUpBuffer(nanoRenderer, &meshMemory->indexMemory);
 }
 
-void CleanUpMeshMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory){
+void CleanUpAllMeshMemory(NanoRenderer* nanoRenderer, MeshMemory* meshMemory){
     CleanUpMeshHostMemory(&meshMemory->meshHostMemory);
-    CleanUpMeshVkMemory(nanoRenderer, &meshMemory->meshVKMemory);
+    CleanUpAllMeshVkMemory(nanoRenderer, &meshMemory->meshVKMemory);
     meshMemory->isInitialized = false;
 }
