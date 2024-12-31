@@ -50,8 +50,9 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
         return;
     }
 
-    renderableScene->rootNode = *rootNode;
-    if(rootNode->renderableObject.meshObject.vertexMemSize > 0 && rootNode->renderableObject.meshObject.indexMemSize > 0){
+    renderableScene->rootNode = rootNode;
+    if(rootNode->renderableObject.meshObject.vertexMemSize > 0 &&
+        rootNode->renderableObject.meshObject.indexMemSize > 0){
         AddObjectToScene(&rootNode->renderableObject, renderableScene);
     }
 
@@ -73,12 +74,14 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
 }
 
 void UpdateScene(RenderableScene* renderableScene, FrameData* data){
+    if(renderableScene->rootNode == nullptr){ return;}
+
     RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
 
     int queueSize = 1; // we know the root node is not null so size is 1
     int currHead = 0;
     mat4 currTransform = {0};
-    RenderableNode* currNode = queue[currHead] = &renderableScene->rootNode;
+    RenderableNode* currNode = queue[currHead] = renderableScene->rootNode;
     if(currNode->Update) {
         currNode->Update(currNode, data);
     }
@@ -161,9 +164,13 @@ void CompileRenderableScene(RenderableScene* renderableScene){
 void CleanUpRendererableObject(RenderableObject* object){
     object->ID = -1; //current meshObject index
     CleanUpImage(&s_NanoEngine->m_Renderer, &object->albedoTexture);
+    CleanUpImageVkMemory(&s_NanoEngine->m_Renderer, &object->albedoTexture);
     CleanUpImage(&s_NanoEngine->m_Renderer, &object->normalTexture);
+    CleanUpImageVkMemory(&s_NanoEngine->m_Renderer, &object->normalTexture);
     CleanUpImage(&s_NanoEngine->m_Renderer, &object->additionalTexture1);
+    CleanUpImageVkMemory(&s_NanoEngine->m_Renderer, &object->additionalTexture1);
     CleanUpImage(&s_NanoEngine->m_Renderer, &object->additionalTexture2);
+    CleanUpImageVkMemory(&s_NanoEngine->m_Renderer, &object->additionalTexture2);
     object->isVisible = true;
     glm_mat4_identity(object->model);
 }
@@ -192,6 +199,7 @@ void CleanUpRenderableNode(RenderableNode* node){
             queue[queueSize++] = currChildNode;
         }
         currHead++;
+        free(currNode);
         currNode = queue[currHead];
     }
 
@@ -202,11 +210,8 @@ void CleanUpRenderableNode(RenderableNode* node){
 }
 
 void CleanUpScene(RenderableScene* renderableScene){
-    CleanUpRenderableNode(&renderableScene->rootNode);
+    CleanUpRenderableNode(renderableScene->rootNode);
     CleanUpGraphicsPipeline(&s_NanoEngine->m_Renderer, &renderableScene->graphicsPipeline);
-    for(int i = 0; i < renderableScene->numTextures; i++){
-        CleanUpImageVkMemory(&s_NanoEngine->m_Renderer, renderableScene->textures[i]);
-    }
 }
 
 RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild){
@@ -421,37 +426,41 @@ RenderableObject CreateRenderableObjectFromFile(const char* fileName){
     return object;
 }
 
-RenderableNode CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices){
-    RenderableNode node = {};
-    node.renderableObject = CreateRenderableObject(vertices, numVertices, indices, numIndices);
-    node.NODE_ID = s_numNodes;
-    node.numChild = 0;
-    glm_mat4_identity(node.localModel);
+RenderableNode* CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices){
+    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    node->renderableObject = CreateRenderableObject(vertices, numVertices, indices, numIndices);
+    node->NODE_ID = s_numNodes;
+    node->numChild = 0;
+    glm_mat4_identity(node->localModel);
+    node->Update = nullptr;
     return node;
 }
 
-RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam){
-    RenderableNode node = {};
-    node.renderableObject = CreateRenderableObjectFromPrimitive(primType, primParam);
-    node.NODE_ID = s_numNodes;
-    node.numChild = 0;
-    glm_mat4_identity(node.localModel);
+RenderableNode* CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam){
+    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    node->renderableObject = CreateRenderableObjectFromPrimitive(primType, primParam);
+    node->NODE_ID = s_numNodes;
+    node->numChild = 0;
+    glm_mat4_identity(node->localModel);
+    node->Update = nullptr;
     return node;
 }
 
-RenderableNode CreateRenderableNodeFromFile(const char* fileName){
-    RenderableNode node = {};
-    node.renderableObject = CreateRenderableObjectFromFile(fileName);
-    node.NODE_ID = s_numNodes;
-    node.numChild = 0;
-    glm_mat4_identity(node.localModel);
+RenderableNode* CreateRenderableNodeFromFile(const char* fileName){
+    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    node->renderableObject = CreateRenderableObjectFromFile(fileName);
+    node->NODE_ID = s_numNodes;
+    node->numChild = 0;
+    glm_mat4_identity(node->localModel);
+    node->Update = nullptr;
     return node;
 }
 
-RenderableNode CreateEmptyRenderableNode(){
-    RenderableNode node = {};
-    node.NODE_ID = s_numNodes;
-    node.numChild = 0;
-    glm_mat4_identity(node.localModel);
+RenderableNode* CreateEmptyRenderableNode(){
+    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    node->NODE_ID = s_numNodes;
+    node->numChild = 0;
+    glm_mat4_identity(node->localModel);
+    node->Update = nullptr;
     return node;
 }

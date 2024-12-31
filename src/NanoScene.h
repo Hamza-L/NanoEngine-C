@@ -57,7 +57,7 @@ struct RenderableScene {
     struct NanoImage* textures[256];
     uint32_t numTextures;
 
-    RenderableNode rootNode;
+    RenderableNode* rootNode;
 
     NanoGraphicsPipeline graphicsPipeline;
     int32_t ID;
@@ -99,10 +99,10 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data);
 void CompileRenderableScene(RenderableScene* renderableScene);
 void CleanUpScene(RenderableScene* renderableScene);
 
-RenderableNode CreateEmptyRenderableNode();
-RenderableNode CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices);
-RenderableNode CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam);
-RenderableNode CreateRenderableNodeFromFile(const char* fileName);
+RenderableNode* CreateEmptyRenderableNode();
+RenderableNode* CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices);
+RenderableNode* CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam);
+RenderableNode* CreateRenderableNodeFromFile(const char* fileName);
 
 void CleanUpRendererableObject(RenderableObject* object);
 void CleanUpRenderableNode(RenderableNode* node);

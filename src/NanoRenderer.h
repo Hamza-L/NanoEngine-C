@@ -95,10 +95,10 @@ struct NanoRenderer {
     NanoVKContext* m_pNanoContext;
 };
 
-ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window);
-ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
-ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
-ERR CleanUpRenderer(NanoRenderer* nanoRenderer);
+void InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window);
+void PreDrawFrame(NanoRenderer* renderer, NanoWindow* window);
+void DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow);
+void CleanUpRenderer(NanoRenderer* nanoRenderer);
 
 void RenderScene(struct RenderableScene* scene);
 

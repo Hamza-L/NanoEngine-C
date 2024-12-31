@@ -44,10 +44,10 @@ void AddGraphicsPipelineToNanoContext(NanoRenderer* nanoRenderer, const NanoGrap
 VkDebugUtilsMessengerEXT gDebugMessenger;
 
 // We have to look up the address of the debug callback create function ourselves using vkGetInstanceProcAddr
-VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
-                                      const VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger) {
+VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT *pCreateInfo,
+                                      VkAllocationCallbacks *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger) {
     PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != NULL) {
+    if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
         return VK_ERROR_EXTENSION_NOT_PRESENT;
@@ -55,9 +55,9 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
 }
 
 // We have to look up the address of the debug callback destroy function ourselves using vkGetInstanceProcAddr
-void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks *pAllocator) {
+void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, VkAllocationCallbacks *pAllocator) {
     PFN_vkDestroyDebugUtilsMessengerEXT func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != NULL) {
+    if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
     }
 }
@@ -66,7 +66,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
                                                     VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData, void *pUserData) {
 
-    char message[1024];
     ERRLevel messageLevel;
 
     switch (messageSeverity) {
@@ -110,29 +109,28 @@ static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT*
     createInfo->messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
                              VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo->pfnUserCallback = debugCallback;
-    createInfo->pUserData = NULL;
-    createInfo->pNext = NULL;
+    createInfo->pUserData = nullptr;
+    createInfo->pNext = nullptr;
 }
 
-void cleanupSwapChainContext(const VkDevice device, SwapchainContext* swapchainContext) {
+void cleanupSwapChainContext(VkDevice device, SwapchainContext* swapchainContext) {
     for (int i = 0 ; i < swapchainContext->info.imageCount; i++) {
         // clean swapchain framebuffers
-        vkDestroyFramebuffer(device, swapchainContext->framebuffers[i], NULL);
+        vkDestroyFramebuffer(device, swapchainContext->framebuffers[i], nullptr);
         // clean swapchain imageviews
-        vkDestroyImageView(device, swapchainContext->imageViews[i], NULL);
+        vkDestroyImageView(device, swapchainContext->imageViews[i], nullptr);
     }
-    vkDestroySwapchainKHR(device, swapchainContext->swapchain, NULL);
+    vkDestroySwapchainKHR(device, swapchainContext->swapchain, nullptr);
 }
 
-ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
-    ERR err = OK;
+void CleanUpRenderer(NanoRenderer* nanoRenderer){
 
     // wait in case there are any pending tasks
     vkDeviceWaitIdle(nanoRenderer->m_pNanoContext->device);
     for(int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++){
-        vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].imageAvailableSemaphore, NULL);
-        vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, NULL);
-        vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, NULL);
+        vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].imageAvailableSemaphore, nullptr);
+        vkDestroySemaphore(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].renderFinishedSemaphore, nullptr);
+        vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, nullptr);
     }
 
     CleanUpAllMeshVkMemory(nanoRenderer, &s_meshMemoryPtr->meshVKMemory);
@@ -140,30 +138,30 @@ ERR CleanUpRenderer(NanoRenderer* nanoRenderer){
     // clean commandPool and incidently the commandbuffers acquired from them
     // clean graphic pipelines
 
-    vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, NULL);
+    vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, nullptr);
 
     cleanupSwapChainContext(nanoRenderer->m_pNanoContext->device, &nanoRenderer->m_pNanoContext->swapchainContext);
 
 
     // clean renderpass
-    vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->defaultRenderpass, NULL);
+    vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->defaultRenderpass, nullptr);
 
-    vkDestroySurfaceKHR(nanoRenderer->m_pNanoContext->instance, nanoRenderer->m_pNanoContext->surface, NULL);
+    vkDestroySurfaceKHR(nanoRenderer->m_pNanoContext->instance, nanoRenderer->m_pNanoContext->surface, nullptr);
 
-    vkDestroyDevice(nanoRenderer->m_pNanoContext->device, NULL);
+    vkDestroyDevice(nanoRenderer->m_pNanoContext->device, nullptr);
 
     if (enableValidationLayers) {
-        DestroyDebugUtilsMessengerEXT(nanoRenderer->m_pNanoContext->instance, gDebugMessenger, NULL);
+        DestroyDebugUtilsMessengerEXT(nanoRenderer->m_pNanoContext->instance, gDebugMessenger, nullptr);
     }
 
-    vkDestroyInstance(nanoRenderer->m_pNanoContext->instance, NULL);
+    vkDestroyInstance(nanoRenderer->m_pNanoContext->instance, nullptr);
 
-    return err;
+
 }
 
 static bool checkValidationLayerSupport(const char* validationLayers[]) {
     uint32_t layerCount;
-    vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
     VkLayerProperties availableLayers[layerCount];
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers);
@@ -188,11 +186,11 @@ static bool checkValidationLayerSupport(const char* validationLayers[]) {
 }
 
 SwapchainDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
-    SwapchainDetails details;
+    SwapchainDetails details = {};
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
 
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, NULL);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
 
     if (formatCount != 0) {
         details.formats = (VkSurfaceFormatKHR*)calloc(formatCount, sizeof(VkSurfaceFormatKHR));
@@ -201,7 +199,7 @@ SwapchainDetails querySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR sur
     }
 
     uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, NULL);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
 
     if (presentModeCount != 0) {
         details.presentModes = (VkPresentModeKHR*)calloc(presentModeCount, sizeof(VkPresentModeKHR));
@@ -244,14 +242,13 @@ void getRequiredInstanceExtensions(char* requiredInstanceExtensions[], uint32_t*
 //WARNING: Need to clean the extensions allocated array
 static void getSupportedInstanceExtensions(VkExtensionProperties* extensions, uint32_t* extensionCount) {
     *extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(NULL, extensionCount, NULL);
+    vkEnumerateInstanceExtensionProperties(nullptr, extensionCount, nullptr);
 
     extensions = (VkExtensionProperties*)calloc(*extensionCount, sizeof(VkExtensionProperties));
     vkEnumerateInstanceExtensionProperties(nullptr, extensionCount, extensions);
 }
 
-static ERR createInstance(const char *applicationName, const char *engineName, VkInstance* instance) {
-    ERR err = OK;
+static void createInstance(const char *applicationName, const char *engineName, VkInstance* instance) {
 
     if (enableValidationLayers && !checkValidationLayerSupport(desiredValidationLayers)) {
         LOG_MSG(stderr, "Number of Desired Layers %zu\n", SizeOf(desiredValidationLayers));
@@ -274,9 +271,6 @@ static ERR createInstance(const char *applicationName, const char *engineName, V
     createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 #endif
 
-    //std::vector<VkExtensionProperties> test = {};
-    //getSupportedInstanceExtensions(test);
-
     const char* instanceExtensions[MAX_ARRAY_OF_EXTENSIONS] = {};
     uint32_t numInstanceExtensions = 0;
     getRequiredInstanceExtensions((char **)instanceExtensions, &numInstanceExtensions);
@@ -297,13 +291,13 @@ static ERR createInstance(const char *applicationName, const char *engineName, V
     }
 
     if (vkCreateInstance(&createInfo, nullptr, instance) != VK_SUCCESS) {
-        return UNDEFINED;
+        LOG_MSG(stderr, "Failed to create an instance\n");
+        abort();
     }
-    return err;
+
 }
 
 static ERR setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* debugMessenger) {
-    ERR err = OK;
 
     if (!enableValidationLayers) {
         return OK;
@@ -311,6 +305,7 @@ static ERR setupDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT* de
     VkDebugUtilsMessengerCreateInfoEXT createInfo = {};
     populateDebugMessengerCreateInfo(&createInfo);
 
+    //TODO: use VK_CHECK_THROW
     VK_CHECK_THROW(CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, debugMessenger), "Failed to create Debug Messenger\n");
     return OK; // this is never reached if we use try/catch.
 }
@@ -335,16 +330,14 @@ ERR findQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface, QueueFamily
         }
 
         if (IsQueueFamilyIndicesValid(*indices)) {
-            err = OK;
-            return err;
+            return OK;
         }
     }
-
     return err;
 }
 
 ERR checkDeviceExtensionSupport(VkPhysicalDevice device) {
-    ERR err = OK;
+
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
@@ -374,7 +367,7 @@ ERR checkDeviceExtensionSupport(VkPhysicalDevice device) {
     return NOT_FOUND;
 }
 
-int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surface, QueueFamilyIndices* queueIndices) {
+int rateDeviceSuitability(VkPhysicalDevice device, VkSurfaceKHR surface, QueueFamilyIndices* queueIndices) {
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
@@ -429,9 +422,9 @@ int rateDeviceSuitability(const VkPhysicalDevice device, const VkSurfaceKHR surf
     return score;
 }
 
-static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surface, QueueFamilyIndices* queueIndices,
+static void pickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, QueueFamilyIndices* queueIndices,
                               VkPhysicalDevice* physicalDevice, VkPhysicalDeviceProperties* physicalDeviceProperties) {
-    ERR err = OK;
+
     *physicalDevice = VK_NULL_HANDLE;
 
     uint32_t deviceCount = 0;
@@ -445,9 +438,6 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
     VkPhysicalDevice devices[deviceCount];
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices);
 
-    // Use an ordered map to automatically sort candidates by increasing score
-    VkPhysicalDevice candidates[deviceCount];
-
     // Check if the best candidate is suitable at all
     int bestScore = 0;
     for (int i = 0 ; i < deviceCount ; i++) {
@@ -459,7 +449,6 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
     }
 
     if (*physicalDevice == VK_NULL_HANDLE) {
-        err = NOT_FOUND;
         LOG_MSG(stderr, "failed to find a suitable GPU!\n");
         abort();
     } else {
@@ -487,15 +476,13 @@ static ERR pickPhysicalDevice(const VkInstance instance, const VkSurfaceKHR surf
         }
         LOG_MSG(stderr, "Physical device selected: %s [%s]\n", physicalDeviceProperties->deviceName, deviceType);
     }
-
-    return OK; // this is never reached if we use try/catch.
 }
 
-ERR createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
+void createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface,
                         QueueFamilyIndices indices,
                         VkQueue* graphicsQueue, VkQueue *presentQueue,
                         VkDevice* device) {
-    ERR err = OK;
+
 
     if (!IsQueueFamilyIndicesValid(indices) && NOT_FOUND == findQueueFamilies(physicalDevice, surface, &indices)) {
         LOG_MSG(stderr, "failed to find a graphics familiy queue!");
@@ -558,21 +545,20 @@ ERR createLogicalDeviceAndGetQueues(VkPhysicalDevice physicalDevice, VkSurfaceKH
                                                                            // logical device. This is only to retrieve the handle
     }
 
-    return err;
+
 }
 
-ERR createSurface(VkInstance instance, GLFWwindow *window, VkSurfaceKHR* surface) {
-    ERR err = OK;
+void createSurface(VkInstance instance, GLFWwindow *window, VkSurfaceKHR* surface) {
+
 
     if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS) {
-        err = INVALID;
         LOG_MSG(stderr, "failed to create window surface!");
         abort();
     }
-    return err;
+
 }
 
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* availableFormats, uint32_t formatCount) {
+VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR* availableFormats, uint32_t formatCount) {
 
     for(int i = 0; i < formatCount ; i++) {
         if (availableFormats[i].format == VK_FORMAT_B8G8R8A8_SRGB && availableFormats[i].colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -584,7 +570,7 @@ VkSurfaceFormatKHR chooseSwapSurfaceFormat(const VkSurfaceFormatKHR* availableFo
     return availableFormats[0]; // pick the first available format if we do not find the format desired
 }
 
-VkPresentModeKHR chooseSwapPresentMode(const VkPresentModeKHR* availablePresentModes, uint32_t presentModeCount) {
+VkPresentModeKHR chooseSwapPresentMode(VkPresentModeKHR* availablePresentModes, uint32_t presentModeCount) {
     for(int i = 0; i < presentModeCount; i++) {
         if (availablePresentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
             /* LOG_MSG(stderr, "swapchain present mode used: VK_PRESENT_MODE_MAILBOX_KHR\n"); */
@@ -594,7 +580,7 @@ VkPresentModeKHR chooseSwapPresentMode(const VkPresentModeKHR* availablePresentM
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D chooseSwapExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR capabilities) {
+VkExtent2D chooseSwapExtent(GLFWwindow *window, VkSurfaceCapabilitiesKHR capabilities) {
     if (capabilities.currentExtent.width != UINT32_MAX) {
         /* LOG_MSG(stderr, "swapchain extent mode used: {%d,%d}\n", capabilities.currentExtent.width, capabilities.currentExtent.height); */
         return capabilities.currentExtent;
@@ -611,18 +597,18 @@ VkExtent2D chooseSwapExtent(GLFWwindow *window, const VkSurfaceCapabilitiesKHR c
     }
 }
 
-ERR createSCImageViews(NanoRenderer* nanoRenderer, SwapchainContext* swapchainContext) {
-    ERR err = OK;
+void createSCImageViews(NanoRenderer* nanoRenderer, SwapchainContext* swapchainContext) {
+
     swapchainContext->imageViews = (VkImageView*)calloc(swapchainContext->info.imageCount, sizeof(VkImageView));
     for (size_t i = 0; i < swapchainContext->info.imageCount ; i++){
         swapchainContext->imageViews[i] = CreateImageView(nanoRenderer, swapchainContext->images[i], swapchainContext->info.selectedFormat.format);
     }
 
-    return err;
+
 }
 
-ERR createFramebuffer(const VkDevice device, const VkRenderPass renderpass, SwapchainContext* swapchainContext){
-    ERR err = OK;
+void createFramebuffer(VkDevice device, VkRenderPass renderpass, SwapchainContext* swapchainContext){
+
     swapchainContext->framebuffers = (VkFramebuffer*)calloc(swapchainContext->info.imageCount, sizeof(VkFramebuffer));
 
     for (size_t i = 0; i < swapchainContext->info.imageCount; i++) {
@@ -642,11 +628,11 @@ ERR createFramebuffer(const VkDevice device, const VkRenderPass renderpass, Swap
             abort();
         }
     }
-    return err;
+
 }
 
-ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device, GLFWwindow *window, const VkSurfaceKHR surface, SwapchainContext* swapchainContext) {
-    ERR err = OK;
+void createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, GLFWwindow *window, VkSurfaceKHR surface, SwapchainContext* swapchainContext) {
+
     swapchainContext->info = querySwapChainSupport(physicalDevice, surface);
 
     swapchainContext->info.selectedFormat = chooseSwapSurfaceFormat(swapchainContext->info.formats, swapchainContext->info.formats_size);
@@ -671,7 +657,7 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     QueueFamilyIndices indices = {};
-    err = findQueueFamilies(physicalDevice, surface, &indices);
+    findQueueFamilies(physicalDevice, surface, &indices);
     uint32_t queueFamilyIndices[2] = {};
     if (IsQueueFamilyIndicesValid(indices)) {
         queueFamilyIndices[0] = indices.graphicsFamily;
@@ -692,11 +678,11 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
     }
     createInfo.preTransform = swapchainContext->info.capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // TODO: If transparency is to be enabled, change this
-    if (createInfo.compositeAlpha != VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
-        LOG_MSG(stderr, "swapchain images not set to OPAQUE_BIT_KHR. Transparent window might be enabled");
-    }
+    // if (createInfo.compositeAlpha != VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
+    //     LOG_MSG(stderr, "swapChain images not set to OPAQUE_BIT_KHR. Transparent window might be enabled");
+    // }
     createInfo.presentMode = swapchainContext->info.selectedPresentMode;
-    createInfo.clipped = VK_TRUE; // This deals with obstructed pixels when, for example, another window is ontop.
+    createInfo.clipped = VK_TRUE; // This deals with obstructed pixels when, for example, another window is on top.
     createInfo.oldSwapchain = VK_NULL_HANDLE;
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchainContext->swapchain) != VK_SUCCESS) {
@@ -707,11 +693,11 @@ ERR createSwapchain(const VkPhysicalDevice physicalDevice, const VkDevice device
     swapchainContext->images = (VkImage*)calloc(swapchainContext->info.imageCount, sizeof(VkImage));
     vkGetSwapchainImagesKHR(device, swapchainContext->swapchain, &swapchainContext->info.imageCount, swapchainContext->images);
 
-    return err;
+
 }
 
-ERR recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
-    ERR err = OK;
+void recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
+
     VkDevice device = nanoRenderer->m_pNanoContext->device;
     VkPhysicalDevice physicalDevice = nanoRenderer->m_pNanoContext->physicalDevice;
     SwapchainContext* swapChainContext = &nanoRenderer->m_pNanoContext->swapchainContext;
@@ -731,28 +717,28 @@ ERR recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
     cleanupSwapChainContext(device, swapChainContext);
 
     // we query the new extent when re-creating the swapchain
-    err = createSwapchain(physicalDevice,
+    createSwapchain(physicalDevice,
                           device,
                           window,
                           surface,
                           swapChainContext);
 
-    err = createSCImageViews(nanoRenderer,
+    createSCImageViews(nanoRenderer,
                              swapChainContext);
 
-    err = createFramebuffer(device,
+    createFramebuffer(device,
                             renderpass,
                             swapChainContext);
 
     // update the extent of all graphics pipeines to reflect the framebuffer change due to window resize
     s_sceneToRender->graphicsPipeline.m_extent = swapChainContext->info.currentExtent;
 
-    return err;
+
 }
 
 // renderpass with at least one color attachment
-ERR createRenderPass(VkDevice device, const SwapchainDetails swapchainDetails, VkRenderPass* renderpass){
-    ERR err = OK;
+void createRenderPass(VkDevice device, const SwapchainDetails swapchainDetails, VkRenderPass* renderpass){
+
 
     VkAttachmentDescription colorAttachment = {};
     colorAttachment.format = swapchainDetails.selectedFormat.format;
@@ -802,11 +788,11 @@ ERR createRenderPass(VkDevice device, const SwapchainDetails swapchainDetails, V
         abort();
     }
 
-    return err;
+
 }
 
-ERR createCommandPool(VkDevice device, const QueueFamilyIndices queueFamilyIndices, VkCommandPool* commandPool){
-    ERR err = OK;
+void createCommandPool(VkDevice device, const QueueFamilyIndices queueFamilyIndices, VkCommandPool* commandPool){
+
 
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -819,11 +805,11 @@ ERR createCommandPool(VkDevice device, const QueueFamilyIndices queueFamilyIndic
         abort();
     }
 
-    return err;
+
 }
 
-ERR createCommandBuffers(VkDevice device, const VkCommandPool commandPool, VkCommandBuffer* commandBuffer, uint32_t size){
-    ERR err = OK;
+void createCommandBuffers(VkDevice device, VkCommandPool commandPool, VkCommandBuffer* commandBuffer, uint32_t size){
+
 
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -838,11 +824,11 @@ ERR createCommandBuffers(VkDevice device, const VkCommandPool commandPool, VkCom
         }
     }
 
-    return err;
+
 }
 
-ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuffer* swapchainFrameBufferToWriteTo, VkCommandBuffer* commandBuffer, uint32_t currentFrame) {
-    ERR err = OK;
+void recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuffer* swapchainFrameBufferToWriteTo, VkCommandBuffer* commandBuffer, uint32_t currentFrame) {
+
 
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -887,7 +873,9 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         scissor.extent = graphicsPipeline->m_extent;
         vkCmdSetScissor(*commandBuffer, 0, 1, &scissor);
 
-        if(s_meshMemoryPtr->isInitialized){
+        if(s_meshMemoryPtr->isInitialized &&
+            s_meshMemoryPtr->meshVKMemory.vertexMemory.buffer != VK_NULL_HANDLE &&
+            s_meshMemoryPtr->meshVKMemory.indexMemory.buffer != VK_NULL_HANDLE){
 
             VkBuffer vertexBuffers[] = {s_meshMemoryPtr->meshVKMemory.vertexMemory.buffer};
             VkDeviceSize offsets[] = {0};
@@ -927,11 +915,11 @@ ERR recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebuf
         abort();
     }
 
-    return err;
+
 }
 
-ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObjects, uint32_t size){
-    ERR err = OK;
+void createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObjects, uint32_t size){
+
 
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -951,11 +939,11 @@ ERR createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObject
         }
     }
 
-    return err;
+
 }
 
-ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
-    ERR err = OK;
+void PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
+
     //CreateImageData(renderer, &texture);
     double newTime = glfwGetTime();
     renderer->m_pNanoContext->m_frameData.deltaTime = newTime - renderer->m_pNanoContext->m_frameData.time;
@@ -963,22 +951,23 @@ ERR PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
     renderer->m_pNanoContext->m_frameData.currentFrame = renderer->m_pNanoContext->swapchainContext.currentFrame;
 
     UpdateScene(s_sceneToRender, &renderer->m_pNanoContext->m_frameData);
-    return err;
+
 }
 
-ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
-    ERR err = OK;
+void DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 
-    int currentFrame = nanoRenderer->m_pNanoContext->swapchainContext.currentFrame;
+
+    uint32_t currentFrame = nanoRenderer->m_pNanoContext->swapchainContext.currentFrame;
     vkWaitForFences(nanoRenderer->m_pNanoContext->device, 1, &nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.swapchain,
                                             UINT64_MAX, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
+
     if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
         recreateSwapchain(nanoRenderer, nanoWindow->_window);
-        return OK;
+        return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         LOG_MSG(stderr, "failed to acquire swap chain image!\n");
         abort();
@@ -1042,11 +1031,10 @@ ERR DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 
     nanoRenderer->m_pNanoContext->isInitialized = true;
 
-    return err;
 }
 
-ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window){
-    ERR err = OK;
+void InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory* imageMemory, NanoWindow* window){
+
 
     if(!meshMemory->meshHostMemory.isInitialized){
        LOG_MSG(stderr, "Mesh Host Memory is not yet initialized. Renderer needs an initialized Mesh Host Memory\n");
@@ -1122,7 +1110,7 @@ ERR InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemory
     /* InitImage(&s_imageMemoryPtr->imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, &texture); */
     /* InitText(nanoRenderer, &texture, "                    "); */
 
-    return err;
+
 }
 
 void RenderScene(RenderableScene* scene){

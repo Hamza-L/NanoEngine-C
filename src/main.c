@@ -25,42 +25,69 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     /* glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z); */
 };
 
-RenderableNode MakeCubeNode(NanoEngine* nanoEngine){
-    RenderableNode cubeRoot = CreateEmptyRenderableNode();
+RenderableNode* testRenderableNode(NanoEngine* nanoEngine){
+    RenderableNode* rootNode = CreateEmptyRenderableNode();
+
     SquareParam param1 = {.width = 1.0f,
                           .height = 1.0f,
                           .position = {-0.5f,0.5f,0.5f},
                           .color = {0.8f, 0.7f, 0.3f, 1.0f}};
-    RenderableNode* cube = (RenderableNode*)calloc(6,sizeof(RenderableNode));
-    RenderableNode plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
-    // assembling the cube
-    for(int i = 0; i < 4; i++){
-        cube[i] = plane;
-        float axis[3] = {0.0f, 1.0f, 0.0f};
-        glm_rotate(cube[i].localModel, M_PI * 0.5f * (i), axis);
-        AddChildRenderableNode(&cubeRoot, &cube[i]);
-    }
+    RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
+    AddChildRenderableNode(rootNode, plane);
 
-    float axis[3] = {1.0f, 0.0f, 0.0f};
-    cube[4] = plane;
-    glm_rotate(cube[4].localModel, M_PI * 0.5f, axis);
-    AddChildRenderableNode(&cubeRoot, &cube[4]);
+    return rootNode;
+}
 
-    cube[5] = plane;
-    glm_rotate(cube[5].localModel, M_PI * -0.5f, axis);
-    AddChildRenderableNode(&cubeRoot, &cube[5]);
+RenderableNode* MakeCubeNode(NanoEngine* nanoEngine){
+    RenderableNode* cubeRoot = CreateEmptyRenderableNode();
 
-    // texturize the cube
     const char* texts[6] = {"face 1","face 2","face 3","face 4","face 5","face 6"};
     float color[4] = {0.25f, 0.2f, 0.3f, 1.0f};
     float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
     int verticalTextSpacing = 10;
-    for(int i = 0; i < 6; i++){
-        cube[i].renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
-        AddTextToImage(&cube[i].renderableObject.albedoTexture, texts[i], 70, verticalTextSpacing, textColor);
+
+    SquareParam param1 = {.width = 1.0f,
+                          .height = 1.0f,
+                          .position = {-0.5f,0.5f,0.5f},
+                          .color = {0.8f, 0.7f, 0.3f, 1.0f}};
+
+    /* RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1); */
+    // assembling the cube
+    for(int i = 0; i < 4; i++){
+        float axis[3] = {0.0f, 1.0f, 0.0f};
+
+        RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
+        glm_rotate(plane->localModel, M_PI * 0.5f * (i), axis);
+
+        //plane->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        //AddTextToImage(&plane->renderableObject.albedoTexture, texts[i], 70, verticalTextSpacing, textColor);
+
+        AddChildRenderableNode(cubeRoot, plane);
     }
 
-    cubeRoot.Update = UpdateNode;
+    float axis[3] = {1.0f, 0.0f, 0.0f};
+    {
+        RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
+        glm_rotate(plane->localModel, M_PI * 0.5f, axis);
+
+        //plane->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        //AddTextToImage(&plane->renderableObject.albedoTexture, texts[4], 70, verticalTextSpacing, textColor);
+
+        AddChildRenderableNode(cubeRoot, plane);
+    }
+
+    {
+        RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
+        glm_rotate(plane->localModel, M_PI * -0.5f, axis);
+
+        plane->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        AddTextToImage(&plane->renderableObject.albedoTexture, texts[5], 70, verticalTextSpacing, textColor);
+
+        AddChildRenderableNode(cubeRoot, plane);
+    }
+
+    cubeRoot->Update = UpdateNode;
+
     return cubeRoot;
 }
 
@@ -82,9 +109,9 @@ int main(int argc, char *argv[]) {
     RenderableScene scene;
     InitRenderableScene(&nanoEngine, &scene);
 
-    RenderableNode cubeRoot = MakeCubeNode(&nanoEngine);
+    RenderableNode* cubeRoot = MakeCubeNode(&nanoEngine);
 
-    AddRootNodeToScene(&cubeRoot, &scene);
+    AddRootNodeToScene(cubeRoot, &scene);
 
     CompileRenderableScene(&scene);
     RenderScene(&scene);

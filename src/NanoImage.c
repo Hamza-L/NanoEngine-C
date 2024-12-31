@@ -501,9 +501,14 @@ VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat 
 }
 
 void CleanUpImageVkMemory(NanoRenderer* nanoRenderer, NanoImage* nanoImage){
+
+    vkDeviceWaitIdle(nanoRenderer->m_pNanoContext->device);
     vkDestroyImageView(nanoRenderer->m_pNanoContext->device, nanoImage->imageView, nullptr);
     vkDestroyImage(nanoRenderer->m_pNanoContext->device, nanoImage->nanoVkBuffer.textureImage, nullptr);
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, nanoImage->nanoVkBuffer.textureImageMemory, nullptr);
+    nanoImage->nanoVkBuffer.textureImage = VK_NULL_HANDLE;
+    nanoImage->nanoVkBuffer.textureImageMemory = VK_NULL_HANDLE;
+    nanoImage->nanoVkBuffer.imageMemoryMapped = nullptr;
     nanoImage->isSubmittedToGPUMemory = false;
 }
 

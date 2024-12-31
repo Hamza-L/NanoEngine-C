@@ -159,7 +159,10 @@ void CopyBufferToImage(NanoRenderer* nanoRenderer, VkBuffer srcBuffer, VkImage d
 }
 
 NanoVkBufferMemory CreateVertexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
-    NanoVkBufferMemory vertexMem;
+    NanoVkBufferMemory vertexMem ={};
+    if(dataSize <= 0) {
+        return vertexMem;
+    }
     vertexMem = CreateBuffer(nanoRenderer, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
 
     NanoVkBufferMemory stagingBufferMem;
@@ -179,7 +182,10 @@ NanoVkBufferMemory CreateVertexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageF
 }
 
 NanoVkBufferMemory CreateIndexBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, void* pData, uint32_t dataSize) {
-    NanoVkBufferMemory indexMem;
+    NanoVkBufferMemory indexMem = {};
+    if(dataSize <= 0) {
+        return indexMem;
+    }
     indexMem = CreateBuffer(nanoRenderer, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT , memProperties, dataSize);
 
     NanoVkBufferMemory stagingBufferMem;
