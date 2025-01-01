@@ -20,8 +20,11 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     float axis_x[3] = {1.0f, 0.0f, 0.0f};
     float axis_y[3] = {0.0f, 1.0f, 0.0f};
     float axis_z[3] = {0.0f, 0.0f, 1.0f};
-    glm_spin(object->localModel, fData->deltaTime * 0.5f, axis_x);
-    glm_spin(object->localModel, fData->deltaTime * -0.8f, axis_y);
+    float pivot[3] = {0.0f, 0.0f, 0.0f};
+    glm_rotate_at(object->localModel, pivot, fData->deltaTime * 0.5f, axis_x);
+    glm_rotate_at(object->localModel, pivot, fData->deltaTime * -0.8f, axis_y);
+    /* glm_rotate_at(object->localModel, pivot, fData->deltaTime * 1.0f, axis_z); */
+    /* glm_spin(object->localModel, fData->deltaTime * 1.0f, axis_y); */
     /* glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z); */
 };
 
@@ -109,9 +112,35 @@ int main(int argc, char *argv[]) {
     RenderableScene scene = {};
     InitRenderableScene(&nanoEngine, &scene);
 
-    RenderableNode* cubeRoot = MakeCubeNode(&nanoEngine);
+    RenderableNode* rootNode = CreateEmptyRenderableNode();
+    float planeSize = 20.0f;
+    SquareParam floorParam = {.width = planeSize,
+                              .height = planeSize,
+                              .position = {-planeSize/2 ,planeSize/2 ,0.0f},
+                              .color = {0.2f, 0.2f, 0.2f, 1.0f}};
 
-    AddRootNodeToScene(cubeRoot, &scene);
+    RenderableNode* floor = CreateRenderableNodeFromPrimitive(SQUARE, &floorParam);
+    floor->renderableObject.albedoTexture = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./Textures/Vulkan texture.jpg");
+    float axis[3] = {1.0f,0.0f,0.0f};
+    glm_rotate(floor->localModel, M_PI * -0.5f, axis);
+
+    RenderableNode* cube= MakeCubeNode(&nanoEngine);
+    float translation[3] = {0.0f,3.0f,0.0f};
+    glm_translate(cube->localModel, translation);
+
+    SquareParam fpsParam = {.width = 0.25f,
+                            .height = 0.25f,
+                            .position = {0.0f ,0.0f ,0.0f},
+                            .color = {1.0f, 0.0f, 1.0f, 1.0f}};
+    RenderableNode* fpsCounter = CreateRenderableNodeFromPrimitive(SQUARE, &fpsParam);
+    float color[4] = {1.0f,1.0f,1.0f,1.0f};
+    fpsCounter->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, color);
+
+    /* AddChildRenderableNode(rootNode, floor); */
+    AddChildRenderableNode(rootNode, cube);
+    AddChildRenderableNode(rootNode, fpsCounter);
+
+    AddRootNodeToScene(rootNode, &scene);
 
     CompileRenderableScene(&scene);
     RenderScene(&scene);
