@@ -283,13 +283,13 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
     UniformBufferObject* ubo = &graphicsPipeline->uniformBuffer;
 
     // View matrix
-    vec3 eye = {0.0f, 0.0f, 5.0f};
-    vec3 center = {0.0f, 0.0f, 0.0f};
+    vec3 eye = {0.0f, 5.0f, 8.0f};
+    vec3 center = {0.0f, 3.0f, 0.0f};
     vec3 up = {0.0f, 1.0f, 0.0f};
     glm_lookat_rh_zo(eye, center, up, ubo->view);
 
     // Projection matrix
-    glm_perspective_rh_zo(glm_rad(50.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 10.0f, ubo->proj);
+    glm_perspective_rh_zo(glm_rad(50.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 100.0f, ubo->proj);
     /* ubo->proj[1][1] *= -1; */
     /* vec3 axis = {0.0f, 1.0f, 0.0f}; */
     /* glm_mat4_identity(ubo.model); */
