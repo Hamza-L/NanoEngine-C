@@ -1008,18 +1008,11 @@ void createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObjec
 
 void PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
 
-    //CreateImageData(renderer, &texture);
-    double newTime = glfwGetTime();
-    renderer->m_pNanoContext->m_frameData.deltaTime = newTime - renderer->m_pNanoContext->m_frameData.time;
-    renderer->m_pNanoContext->m_frameData.time = newTime;
-    renderer->m_pNanoContext->m_frameData.currentFrame = renderer->m_pNanoContext->swapchainContext.currentFrame;
-
     UpdateScene(s_sceneToRender, &renderer->m_pNanoContext->m_frameData);
 
 }
 
 void DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
-
 
     uint32_t currentFrame = nanoRenderer->m_pNanoContext->swapchainContext.currentFrame;
     vkWaitForFences(nanoRenderer->m_pNanoContext->device, 1, &nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[currentFrame].inFlightFence, VK_TRUE, UINT64_MAX);

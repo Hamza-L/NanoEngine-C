@@ -41,6 +41,12 @@ ERR InitEngine(NanoEngine* nanoEngine){
 
 ERR MainLoop(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
     ERR err = OK;
+    //CreateImageData(renderer, &texture);
+    double newTime = glfwGetTime();
+    nanoRenderer->m_pNanoContext->m_frameData.deltaTime = newTime - nanoRenderer->m_pNanoContext->m_frameData.time;
+    nanoRenderer->m_pNanoContext->m_frameData.time = newTime;
+    nanoRenderer->m_pNanoContext->m_frameData.currentFrame = nanoRenderer->m_pNanoContext->swapchainContext.currentFrame;
+
     PreDrawFrame(nanoRenderer, nanoWindow);
     DrawFrame(nanoRenderer, nanoWindow);
     return err;
