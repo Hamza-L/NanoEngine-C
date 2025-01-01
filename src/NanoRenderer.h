@@ -4,6 +4,7 @@
 #include "NanoConfig.h"
 #include "NanoScene.h"
 #include "NanoWindow.h"
+#include "vulkan/vulkan_core.h"
 #include <stdint.h>
 
 typedef struct NanoRenderer NanoRenderer;
@@ -52,9 +53,11 @@ struct SwapchainContext{
     VkSwapchainKHR swapchain;
 
     struct SwapchainDetails info;
-    VkImage* images;
-    VkImageView* imageViews;
-    VkFramebuffer* framebuffers;
+    VkImage* images; //array
+    VkImageView* imageViews; //array
+    VkFramebuffer* framebuffers; //array
+
+    NanoImage depthImage;
 
     uint32_t currentFrame;
     VkCommandBuffer commandBuffer[MAX_FRAMES_IN_FLIGHT];

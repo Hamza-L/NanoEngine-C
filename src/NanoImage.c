@@ -124,60 +124,6 @@ TextDimensions GetTextDimensions(const char* text, int pixelFontSize){
     return dimensions;
 }
 
-//TODO: Append the commands to the mainloop's recorded command buffers as an optimized pipeline transfer since this command only runs when the device Queue idles
-void TransitionImageLayout(NanoRenderer* nanoRenderer, VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-    VkCommandBuffer commandBuffer = BeginSingleTimeCommands(nanoRenderer);
-    {
-        VkImageMemoryBarrier barrier = {};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = oldLayout;
-        barrier.newLayout = newLayout;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // used to transfer queue ownership. Is not ignored by default so must be set manually!
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = image;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-
-        VkPipelineStageFlags sourceStage;
-        VkPipelineStageFlags destinationStage;
-
-        /**
-         * There is actually a special type of image layout that supports all operations, VK_IMAGE_LAYOUT_GENERAL.
-         * The problem with it, of course, is that it doesn’t necessarily offer the best performance for any operation.
-         * It is required for some special cases, like using an image as both input and output,
-         * or for reading an image after it has left the preinitialized layout.
-         * **/
-
-        if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-            barrier.srcAccessMask = 0;
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-        } else {
-            LOG_MSG(stderr, "unsupported layout transition!\n");
-        }
-
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            sourceStage, destinationStage,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier);
-    }
-    EndAndSubmitSingleTimeCommands(nanoRenderer, commandBuffer);
-}
-
 void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int verticalSpacing, float color[4]){
 
     if(nanoImage->imageMemory.imageData == nullptr)
@@ -476,19 +422,19 @@ void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image){
     vkFreeMemory(nanoRenderer->m_pNanoContext->device, stagingBufferMem.bufferMemory, nullptr);
 
     if(!image->isSubmittedToGPUMemory)
-        image->imageView = CreateImageView(nanoRenderer, image->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+        image->imageView = CreateImageView(nanoRenderer, image->nanoVkBuffer.textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 
     image->isSubmittedToGPUMemory = true;
 }
 
-VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat format){
+VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags){
     VkImageView imageView;
     VkImageViewCreateInfo viewInfo = {};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     viewInfo.image = image;
     viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
     viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    viewInfo.subresourceRange.aspectMask = aspectFlags;
     viewInfo.subresourceRange.baseMipLevel = 0;
     viewInfo.subresourceRange.levelCount = 1;
     viewInfo.subresourceRange.baseArrayLayer = 0;

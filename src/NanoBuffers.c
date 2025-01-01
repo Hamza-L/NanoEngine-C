@@ -83,7 +83,7 @@ NanoVkImageMemory CreateImageBuffer(NanoRenderer* nanoRenderer, uint32_t width, 
     imageInfo.extent.depth = 1;
     imageInfo.mipLevels = 1;
     imageInfo.arrayLayers = 1;
-    imageInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
+    imageInfo.format = format;
     imageInfo.tiling = tiling;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = usage; // will be the object of a copy. will also be used for sampling in-shader

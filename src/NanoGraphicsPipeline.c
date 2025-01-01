@@ -5,6 +5,8 @@
 #include "NanoBuffers.h"
 #include "NanoRenderer.h"
 #include "cglm/cam.h"
+#include "cglm/clipspace/persp_rh_zo.h"
+#include "cglm/clipspace/view_rh_zo.h"
 #include "cglm/mat4.h"
 #include "vulkan/vulkan_core.h"
 
@@ -284,10 +286,10 @@ void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipel
     vec3 eye = {0.0f, 0.0f, 5.0f};
     vec3 center = {0.0f, 0.0f, 0.0f};
     vec3 up = {0.0f, 1.0f, 0.0f};
-    glm_lookat(eye, center, up, ubo->view);
+    glm_lookat_rh_zo(eye, center, up, ubo->view);
 
     // Projection matrix
-    glm_perspective(glm_rad(50.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 10.0f, ubo->proj);
+    glm_perspective_rh_zo(glm_rad(50.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 10.0f, ubo->proj);
     /* ubo->proj[1][1] *= -1; */
     /* vec3 axis = {0.0f, 1.0f, 0.0f}; */
     /* glm_mat4_identity(ubo.model); */
@@ -455,11 +457,21 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
     multisampling.minSampleShading = 1.0f; // Optional
-    multisampling.pSampleMask = NULL; // Optional
+    multisampling.pSampleMask = nullptr; // Optional
     multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
     multisampling.alphaToOneEnable = VK_FALSE; // Optional
 
     VkPipelineDepthStencilStateCreateInfo depthStencil = {}; // optional.
+    depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depthStencil.depthTestEnable = VK_TRUE;
+    depthStencil.depthWriteEnable = VK_TRUE;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+    depthStencil.depthBoundsTestEnable = VK_FALSE;
+    depthStencil.minDepthBounds = 0.0f; // Optional
+    depthStencil.maxDepthBounds = 1.0f; // Optional
+    depthStencil.stencilTestEnable = VK_FALSE;
+    /* depthStencil.front = {}; // Optional */
+    /* depthStencil.back = {}; // Optional */
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Color blending ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -502,7 +514,7 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantInfo; // Optional
 
-    if (vkCreatePipelineLayout(nanoRenderer->m_pNanoContext->device, &pipelineLayoutInfo, NULL, &graphicsPipeline->m_pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(nanoRenderer->m_pNanoContext->device, &pipelineLayoutInfo, nullptr, &graphicsPipeline->m_pipelineLayout) != VK_SUCCESS) {
         LOG_MSG(stderr, "failed to create pipeline layout!");
         exit(1);
     }
@@ -516,7 +528,7 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     pipelineInfo.pViewportState = &viewportState;
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
-    pipelineInfo.pDepthStencilState = NULL; // Optional
+    pipelineInfo.pDepthStencilState = &depthStencil; // Optional
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = graphicsPipeline->m_pipelineLayout;
@@ -525,7 +537,7 @@ ERR CompileGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* gr
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
     pipelineInfo.basePipelineIndex = -1; // Optional
 
-    if (vkCreateGraphicsPipelines(nanoRenderer->m_pNanoContext->device, VK_NULL_HANDLE, 1, &pipelineInfo, NULL, &graphicsPipeline->m_pipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(nanoRenderer->m_pNanoContext->device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline->m_pipeline) != VK_SUCCESS) {
         err = INVALID;
         LOG_MSG(stderr, "failed to create graphics pipeline!");
         exit(0);
@@ -555,8 +567,8 @@ void CleanUpGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* g
 
     vkDestroyDescriptorPool(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_descriptorSetLayout, nullptr);
-    vkDestroyPipeline(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_pipeline, NULL);
-    vkDestroyPipelineLayout(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_pipelineLayout, NULL);
+    vkDestroyPipeline(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_pipeline, nullptr);
+    vkDestroyPipelineLayout(nanoRenderer->m_pNanoContext->device, graphicsPipeline->m_pipelineLayout, nullptr);
     CleanUpShader(nanoRenderer, &graphicsPipeline->m_vertShader);
     CleanUpShader(nanoRenderer, &graphicsPipeline->m_fragShader);
 }

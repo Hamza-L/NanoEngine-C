@@ -91,6 +91,7 @@ RenderableNode* MakeCubeNode(NanoEngine* nanoEngine){
 }
 
 int main(int argc, char *argv[]) {
+
     String cwd = CreateString(argv[0]);
     SubString(&cwd, 0, strlen(argv[0]) - strlen("NanoEngine"));
     SetArg0(cwd.m_data);
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]) {
     InitEngine(&nanoEngine);
 
     // create scene
-    RenderableScene scene;
+    RenderableScene scene = {};
     InitRenderableScene(&nanoEngine, &scene);
 
     RenderableNode* cubeRoot = MakeCubeNode(&nanoEngine);

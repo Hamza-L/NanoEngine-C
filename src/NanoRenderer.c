@@ -1,8 +1,9 @@
 #include "NanoRenderer.h"
-#include "MemManager.h"
-#include "NanoUtility.h"
+#include "NanoError.h"
 #include "NanoScene.h"
 #include "NanoInput.h"
+#include "NanoUtility.h"
+#include "NanoVkUtility.h"
 #include "Str.h"
 
 #include "cglm/mat4.h"
@@ -133,6 +134,8 @@ void CleanUpRenderer(NanoRenderer* nanoRenderer){
         vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, nullptr);
     }
 
+    CleanUpImageVkMemory(nanoRenderer, &nanoRenderer->m_pNanoContext->swapchainContext.depthImage);
+
     CleanUpAllMeshVkMemory(nanoRenderer, &s_meshMemoryPtr->meshVKMemory);
 
     // clean commandPool and incidently the commandbuffers acquired from them
@@ -155,7 +158,6 @@ void CleanUpRenderer(NanoRenderer* nanoRenderer){
     }
 
     vkDestroyInstance(nanoRenderer->m_pNanoContext->instance, nullptr);
-
 
 }
 
@@ -601,7 +603,7 @@ void createSCImageViews(NanoRenderer* nanoRenderer, SwapchainContext* swapchainC
 
     swapchainContext->imageViews = (VkImageView*)calloc(swapchainContext->info.imageCount, sizeof(VkImageView));
     for (size_t i = 0; i < swapchainContext->info.imageCount ; i++){
-        swapchainContext->imageViews[i] = CreateImageView(nanoRenderer, swapchainContext->images[i], swapchainContext->info.selectedFormat.format);
+        swapchainContext->imageViews[i] = CreateImageView(nanoRenderer, swapchainContext->images[i], swapchainContext->info.selectedFormat.format, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
 
@@ -612,12 +614,12 @@ void createFramebuffer(VkDevice device, VkRenderPass renderpass, SwapchainContex
     swapchainContext->framebuffers = (VkFramebuffer*)calloc(swapchainContext->info.imageCount, sizeof(VkFramebuffer));
 
     for (size_t i = 0; i < swapchainContext->info.imageCount; i++) {
-        VkImageView attachments[] = {swapchainContext->imageViews[i]};
+        VkImageView attachments[] = {swapchainContext->imageViews[i], swapchainContext->depthImage.imageView};
 
         VkFramebufferCreateInfo framebufferInfo = {};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = renderpass;
-        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.attachmentCount = 2;
         framebufferInfo.pAttachments = attachments;
         framebufferInfo.width = swapchainContext->info.currentExtent.width;
         framebufferInfo.height = swapchainContext->info.currentExtent.height;
@@ -696,6 +698,46 @@ void createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, GLFWwindo
 
 }
 
+VkFormat findSupportedFormat(NanoRenderer* nanoRenderer, VkFormat candidates[], int numFormatCandidates, VkImageTiling tiling, VkFormatFeatureFlags features) {
+    VkFormat format = {};
+    for (int i = 0; i < numFormatCandidates; i++) {
+        VkFormatProperties props;
+        vkGetPhysicalDeviceFormatProperties(nanoRenderer->m_pNanoContext->physicalDevice, candidates[i], &props);
+        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) {
+            return candidates[i];
+        } else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features) {
+            return candidates[i];
+        }
+    }
+    LOG_MSG(stderr, "failed to find suitable Vkformat");
+    return format;
+}
+
+VkFormat findDepthFormat(NanoRenderer* nanoRenderer) {
+    VkFormat formatCandidates[3] = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT};
+    return findSupportedFormat(
+        nanoRenderer,
+        formatCandidates,
+        3,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+}
+
+void createDepthResources(NanoRenderer* nanoRenderer, SwapchainContext* swapchainContext) {
+    VkFormat depthFormat = findDepthFormat(nanoRenderer);
+    NanoImage* depthImgPtr = &nanoRenderer->m_pNanoContext->swapchainContext.depthImage;
+    depthImgPtr->width = swapchainContext->info.currentExtent.width;
+    depthImgPtr->height = swapchainContext->info.currentExtent.height;
+    depthImgPtr->nanoVkBuffer = CreateImageBuffer(nanoRenderer, depthImgPtr->width, depthImgPtr->width, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImgPtr->imageView = CreateImageView(nanoRenderer, depthImgPtr->nanoVkBuffer.textureImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    depthImgPtr->isInitialized = false;
+    depthImgPtr->isSubmittedToGPUMemory = false;
+
+    TransitionImageLayout(nanoRenderer, depthImgPtr->nanoVkBuffer.textureImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+}
+
 void recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
 
     VkDevice device = nanoRenderer->m_pNanoContext->device;
@@ -726,6 +768,8 @@ void recreateSwapchain(NanoRenderer* nanoRenderer, GLFWwindow* window){
     createSCImageViews(nanoRenderer,
                              swapChainContext);
 
+    createDepthResources(nanoRenderer, swapChainContext);
+
     createFramebuffer(device,
                             renderpass,
                             swapChainContext);
@@ -750,9 +794,24 @@ void createRenderPass(VkDevice device, const SwapchainDetails swapchainDetails, 
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+    VkAttachmentDescription depthAttachment = {};
+    depthAttachment.format = findDepthFormat(s_nanoRenderer);//TODO: could do better by avoiding call to global function
+    depthAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;//TODO: if we want to save the depth image, we need to change this
+    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+
     VkAttachmentReference colorAttachmentRef = {};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthAttachmentRef = {};
+    depthAttachmentRef.attachment = 1;
+    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     // The following other types of attachments can be referenced by a subpass:
     // pInputAttachments: Attachments that are read from a shader
@@ -763,21 +822,23 @@ void createRenderPass(VkDevice device, const SwapchainDetails swapchainDetails, 
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef; // always add the reference to the attachment and never the attachment itself
+    subpass.pDepthStencilAttachment = &depthAttachmentRef;
     // The index of the attachment in this array is directly referenced from the fragment shader with the layout(location = 0) out vec4 outColor directive!
 
     // subpass synchronization with swapchain images state
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0; //The dstSubpass is our one and only subpass (for now). it must always be higher than srcSubpass to prevent cycles in the dependency graph (unless one of the subpasses is VK_SUBPASS_EXTERNAL)
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    dependency.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+    const VkAttachmentDescription attachments[2] = {colorAttachment, depthAttachment};
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassInfo.attachmentCount = 1;
-    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.attachmentCount = 2;
+    renderPassInfo.pAttachments = attachments;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
     renderPassInfo.dependencyCount = 1;
@@ -849,9 +910,11 @@ void recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebu
     renderPassInfo.renderArea.offset.y = 0;
     renderPassInfo.renderArea.extent = graphicsPipeline->m_extent;
 
-    VkClearValue clearColor = {{{0.02f, 0.02f, 0.02f, 1.0f}}};
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColor;
+    VkClearValue clearColor[2] = {{.color = {0.02f, 0.02f, 0.02f, 1.0f}},
+                                  {.depthStencil = {1.0f, 0.0f}}};
+
+    renderPassInfo.clearValueCount = 2;
+    renderPassInfo.pClearValues = clearColor;
 
         vkCmdBeginRenderPass(*commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
@@ -1074,6 +1137,10 @@ void InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemor
                                     &nanoRenderer->m_pNanoContext->presentQueue,
                                     &nanoRenderer->m_pNanoContext->device); // Logical device *is* created and therefore has to be destroyed
 
+    createCommandPool(nanoRenderer->m_pNanoContext->device,
+                      nanoRenderer->m_pNanoContext->queueIndices,
+                      &nanoRenderer->m_pNanoContext->commandPool);
+
     createSwapchain(nanoRenderer->m_pNanoContext->physicalDevice,
                     nanoRenderer->m_pNanoContext->device,
                     window->_window,
@@ -1083,6 +1150,9 @@ void InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemor
     createSCImageViews(nanoRenderer,
                        &nanoRenderer->m_pNanoContext->swapchainContext);
 
+    createDepthResources(nanoRenderer,
+                         &nanoRenderer->m_pNanoContext->swapchainContext);
+
     createRenderPass(nanoRenderer->m_pNanoContext->device,
                      nanoRenderer->m_pNanoContext->swapchainContext.info,
                      &nanoRenderer->m_pNanoContext->defaultRenderpass);
@@ -1090,10 +1160,6 @@ void InitRenderer(NanoRenderer* nanoRenderer, MeshMemory* meshMemory, ImageMemor
     createFramebuffer(nanoRenderer->m_pNanoContext->device,
                       nanoRenderer->m_pNanoContext->defaultRenderpass,
                       &nanoRenderer->m_pNanoContext->swapchainContext);
-
-    createCommandPool(nanoRenderer->m_pNanoContext->device,
-                      nanoRenderer->m_pNanoContext->queueIndices,
-                      &nanoRenderer->m_pNanoContext->commandPool);
 
     createCommandBuffers(nanoRenderer->m_pNanoContext->device,
                         nanoRenderer->m_pNanoContext->commandPool,

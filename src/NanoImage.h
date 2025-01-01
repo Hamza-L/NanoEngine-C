@@ -53,7 +53,7 @@ void CleanUpImage(NanoRenderer* nanoRenderer, NanoImage* image);
 void SubmitImageToGPUMemory(NanoRenderer* nanoRenderer, NanoImage* image);
 
 //utility function
-VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat format);
+VkImageView CreateImageView(NanoRenderer* nanoRenderer, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
 void WrapText(HeapString text, uint32_t width, uint32_t fontSize);
 
