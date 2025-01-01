@@ -21,7 +21,7 @@ void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScen
     memset(renderableScene->textures, 0, sizeof(struct NanoImage*)*256);
 }
 
-void AddObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene){
+void AddRenderableObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene){
     //if the object contains no geometry, we do not add it to the scene
     if(object->meshObject.vertexMemSize == 0 || object->meshObject.indexMemSize == 0){
         return;
@@ -53,7 +53,7 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
     renderableScene->rootNode = rootNode;
     if(rootNode->renderableObject.meshObject.vertexMemSize > 0 &&
         rootNode->renderableObject.meshObject.indexMemSize > 0){
-        AddObjectToScene(&rootNode->renderableObject, renderableScene);
+        AddRenderableObjectToScene(&rootNode->renderableObject, renderableScene);
     }
 
     RenderableNode* queue[MAX_OBJECT_PER_SCENE] = {nullptr};
@@ -65,7 +65,10 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
     while(currNode){
         for(int i = 0; i < currNode->numChild; i++){
             RenderableNode* currChildNode = currNode->childNodes[i];
-            AddObjectToScene(&currChildNode->renderableObject, renderableScene);
+            if(currChildNode->renderableObject.meshObject.vertexMemSize > 0 &&
+            currChildNode->renderableObject.meshObject.indexMemSize > 0){
+                    AddRenderableObjectToScene(&currChildNode->renderableObject, renderableScene);
+            }
             queue[queueSize++] = currNode->childNodes[i];
         }
         currHead++;
@@ -87,9 +90,12 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data){
     }
 
     glm_mat4_copy(currNode->localModel, currNode->renderableObject.model);
-    uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
-    mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (currNode->renderableObject.ID * memOffset));
-    memcpy(modelMemDest, &currNode->renderableObject.model, sizeof(mat4));
+
+    if(currNode->renderableObject.ID >= 0) { //TODO: Generalize this function
+        uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
+        mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (currNode->renderableObject.ID * memOffset));
+        memcpy(modelMemDest, &currNode->renderableObject.model, sizeof(mat4));
+    }
 
     while(currNode){
         glm_mat4_copy(currNode->renderableObject.model, currTransform);
@@ -104,10 +110,13 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data){
             glm_mat4_copy(currChildNode->localModel, obj->model);
             glm_mat4_mul(currTransform, obj->model, obj->model);
 
-            uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
-            mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (obj->ID * memOffset));
-            memcpy(modelMemDest, &obj->model, sizeof(mat4));
+            if(obj->ID >= 0) {
+                uint32_t memOffset = renderableScene->graphicsPipeline.uniformBufferDynamicAllignment;
+                mat4* modelMemDest = (mat4*)(renderableScene->graphicsPipeline.uniformBufferDynamicMemory[data->currentFrame].bufferMemoryMapped + (obj->ID * memOffset));
+                memcpy(modelMemDest, &obj->model, sizeof(mat4));
+            }
 
+            queue[queueSize++] = currNode->childNodes[i];
         }
         currHead++;
         currNode = queue[currHead];
@@ -460,6 +469,7 @@ RenderableNode* CreateEmptyRenderableNode(){
     RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
     node->NODE_ID = s_numNodes;
     node->numChild = 0;
+    node->renderableObject.ID = -1;
     glm_mat4_identity(node->localModel);
     node->Update = nullptr;
     return node;
