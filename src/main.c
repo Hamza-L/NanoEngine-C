@@ -51,7 +51,6 @@ RenderableNode* MakeCubeNode(NanoEngine* nanoEngine){
                           .position = {-0.5f,0.5f,0.5f},
                           .color = {0.8f, 0.7f, 0.3f, 1.0f}};
 
-    /* RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1); */
     // assembling the cube
     for(int i = 0; i < 4; i++){
         float axis[3] = {0.0f, 1.0f, 0.0f};
@@ -59,8 +58,8 @@ RenderableNode* MakeCubeNode(NanoEngine* nanoEngine){
         RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
         glm_rotate(plane->localModel, M_PI * 0.5f * (i), axis);
 
-        //plane->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
-        //AddTextToImage(&plane->renderableObject.albedoTexture, texts[i], 70, verticalTextSpacing, textColor);
+        plane->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        AddTextToImage(&plane->renderableObject.albedoTexture, texts[i], 70, verticalTextSpacing, textColor);
 
         AddChildRenderableNode(cubeRoot, plane);
     }
@@ -70,8 +69,8 @@ RenderableNode* MakeCubeNode(NanoEngine* nanoEngine){
         RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
         glm_rotate(plane->localModel, M_PI * 0.5f, axis);
 
-        //plane->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
-        //AddTextToImage(&plane->renderableObject.albedoTexture, texts[4], 70, verticalTextSpacing, textColor);
+        plane->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine->m_ImageMemory.imageHostMemory, 512, 512, IMAGE_FORMAT_RGBA, color);
+        AddTextToImage(&plane->renderableObject.albedoTexture, texts[4], 70, verticalTextSpacing, textColor);
 
         AddChildRenderableNode(cubeRoot, plane);
     }
