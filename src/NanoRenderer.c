@@ -121,6 +121,10 @@ void cleanupSwapChainContext(VkDevice device, SwapchainContext* swapchainContext
         // clean swapchain imageviews
         vkDestroyImageView(device, swapchainContext->imageViews[i], nullptr);
     }
+
+    //cleanup depth buffer
+    CleanUpImageVkMemory(s_nanoRenderer, &s_nanoRenderer->m_pNanoContext->swapchainContext.depthImage);
+
     vkDestroySwapchainKHR(device, swapchainContext->swapchain, nullptr);
 }
 
@@ -134,8 +138,6 @@ void CleanUpRenderer(NanoRenderer* nanoRenderer){
         vkDestroyFence(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->swapchainContext.syncObjects[i].inFlightFence, nullptr);
     }
 
-    CleanUpImageVkMemory(nanoRenderer, &nanoRenderer->m_pNanoContext->swapchainContext.depthImage);
-
     CleanUpAllMeshVkMemory(nanoRenderer, &s_meshMemoryPtr->meshVKMemory);
 
     // clean commandPool and incidently the commandbuffers acquired from them
@@ -144,7 +146,6 @@ void CleanUpRenderer(NanoRenderer* nanoRenderer){
     vkDestroyCommandPool(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->commandPool, nullptr);
 
     cleanupSwapChainContext(nanoRenderer->m_pNanoContext->device, &nanoRenderer->m_pNanoContext->swapchainContext);
-
 
     // clean renderpass
     vkDestroyRenderPass(nanoRenderer->m_pNanoContext->device, nanoRenderer->m_pNanoContext->defaultRenderpass, nullptr);
@@ -729,7 +730,7 @@ void createDepthResources(NanoRenderer* nanoRenderer, SwapchainContext* swapchai
     NanoImage* depthImgPtr = &nanoRenderer->m_pNanoContext->swapchainContext.depthImage;
     depthImgPtr->width = swapchainContext->info.currentExtent.width;
     depthImgPtr->height = swapchainContext->info.currentExtent.height;
-    depthImgPtr->nanoVkBuffer = CreateImageBuffer(nanoRenderer, depthImgPtr->width, depthImgPtr->width, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImgPtr->nanoVkBuffer = CreateImageBuffer(nanoRenderer, swapchainContext->info.currentExtent.width, swapchainContext->info.currentExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     depthImgPtr->imageView = CreateImageView(nanoRenderer, depthImgPtr->nanoVkBuffer.textureImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     depthImgPtr->isInitialized = false;
     depthImgPtr->isSubmittedToGPUMemory = false;
