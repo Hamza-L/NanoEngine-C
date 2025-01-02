@@ -911,7 +911,7 @@ void recordCommandBuffer(const NanoGraphicsPipeline* graphicsPipeline, VkFramebu
     renderPassInfo.renderArea.offset.y = 0;
     renderPassInfo.renderArea.extent = graphicsPipeline->m_extent;
 
-    VkClearValue clearColor[2] = {{.color = {0.02f, 0.02f, 0.02f, 1.0f}},
+    VkClearValue clearColor[2] = {{.color = {0.00f, 0.00f, 0.00f, 1.0f}},
                                   {.depthStencil = {1.0f, 0.0f}}};
 
     renderPassInfo.clearValueCount = 2;

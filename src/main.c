@@ -12,20 +12,27 @@
 
 #include <string.h>
 
+
+    /* float planeSize = 20.0f; */
+    /* SquareParam floorParam = {.width = planeSize, */
+    /*                           .height = planeSize, */
+    /*                           .position = {-planeSize/2 ,planeSize/2 ,0.0f}, */
+    /*                           .color = {0.2f, 0.2f, 0.2f, 1.0f}}; */
+
+    /* RenderableNode* floor = CreateRenderableNodeFromPrimitive(SQUARE, &floorParam); */
+    /* floor->renderableObject.albedoTexture = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./Textures/Vulkan texture.jpg"); */
+    /* float axis[3] = {1.0f,0.0f,0.0f}; */
+    /* glm_rotate(floor->localModel, M_PI * -0.5f, axis); */
+
 void UpdateNode(void* objectToUpdate, void* frameData){
     RenderableNode* object = (RenderableNode*)objectToUpdate;
     FrameData* fData = (FrameData*)frameData;
 
-    /* glm_mat4_identity(object->localModel); */
     float axis_x[3] = {1.0f, 0.0f, 0.0f};
     float axis_y[3] = {0.0f, 1.0f, 0.0f};
-    float axis_z[3] = {0.0f, 0.0f, 1.0f};
     float pivot[3] = {0.0f, 0.0f, 0.0f};
     glm_rotate_at(object->localModel, pivot, fData->deltaTime * 0.5f, axis_x);
     glm_rotate_at(object->localModel, pivot, fData->deltaTime * -0.8f, axis_y);
-    /* glm_rotate_at(object->localModel, pivot, fData->deltaTime * 1.0f, axis_z); */
-    /* glm_spin(object->localModel, fData->deltaTime * 1.0f, axis_y); */
-    /* glm_spin(object->localModel, fData->deltaTime * -1.0f, axis_z); */
 };
 
 RenderableNode* testRenderableNode(NanoEngine* nanoEngine){
@@ -113,32 +120,34 @@ int main(int argc, char *argv[]) {
     InitRenderableScene(&nanoEngine, &scene);
 
     RenderableNode* rootNode = CreateEmptyRenderableNode();
-    float planeSize = 20.0f;
-    SquareParam floorParam = {.width = planeSize,
-                              .height = planeSize,
-                              .position = {-planeSize/2 ,planeSize/2 ,0.0f},
-                              .color = {0.2f, 0.2f, 0.2f, 1.0f}};
+    RenderableNode* cube = nullptr;
+    RenderableNode* fpsCounter = nullptr;
+    {
+        cube= MakeCubeNode(&nanoEngine);
+        float translation[3] = {0.0f,3.0f,0.0f};
+        glm_translate(cube->localModel, translation);
+        AddChildRenderableNode(rootNode, cube);
+    }
 
-    RenderableNode* floor = CreateRenderableNodeFromPrimitive(SQUARE, &floorParam);
-    floor->renderableObject.albedoTexture = CreateHostPersistentImageFromFile(&nanoEngine.m_ImageMemory.imageHostMemory, "./Textures/Vulkan texture.jpg");
-    float axis[3] = {1.0f,0.0f,0.0f};
-    glm_rotate(floor->localModel, M_PI * -0.5f, axis);
+    {
+        SquareParam fpsParam = {.width = 0.25f,
+                                .height = 0.25f,
+                                .position = {0.0f ,0.0f ,0.0f},
+                                .color = {1.0f, 0.0f, 1.0f, 1.0f}};
+        fpsCounter = CreateRenderableNodeFromPrimitive(SQUARE, &fpsParam);
+        float color[4] = {1.0f,1.0f,1.0f,1.0f};
+        fpsCounter->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, color);
+        AddChildRenderableNode(rootNode, fpsCounter);
+    }
 
-    RenderableNode* cube= MakeCubeNode(&nanoEngine);
-    float translation[3] = {0.0f,3.0f,0.0f};
-    glm_translate(cube->localModel, translation);
-
-    SquareParam fpsParam = {.width = 0.25f,
-                            .height = 0.25f,
-                            .position = {0.0f ,0.0f ,0.0f},
-                            .color = {1.0f, 0.0f, 1.0f, 1.0f}};
-    RenderableNode* fpsCounter = CreateRenderableNodeFromPrimitive(SQUARE, &fpsParam);
-    float color[4] = {1.0f,1.0f,1.0f,1.0f};
-    fpsCounter->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, color);
-
-    /* AddChildRenderableNode(rootNode, floor); */
-    AddChildRenderableNode(rootNode, cube);
-    AddChildRenderableNode(rootNode, fpsCounter);
+    {
+        CameraParam param = {.fov = 30,
+                             .lookAt = {0,0,0},
+                             .position = {0,5,5}};
+        NanoCamera camera = CreateCamera(param);
+        camera.objectTracked = cube;
+        AddCameraToScene(&scene, camera);
+    }
 
     AddRootNodeToScene(rootNode, &scene);
 

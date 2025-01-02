@@ -18,9 +18,6 @@
 
 #include <cglm/cglm.h>
 
-double startTime = 0;
-bool timeStarted = false;
-
 void CreateTextureSampler(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline){
     VkSamplerCreateInfo samplerInfo = {};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -280,30 +277,7 @@ void AddFragShaderToGraphicsPipeline(NanoRenderer* nanoRenderer, NanoGraphicsPip
 }
 
 void UpdateGraphicsPipelineAtFrame(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* graphicsPipeline, uint32_t currentFrame){
-    UniformBufferObject* ubo = &graphicsPipeline->uniformBuffer;
-
-    // View matrix
-    vec3 eye = {0.0f, 5.0f, 8.0f};
-    vec3 center = {0.0f, 3.0f, 0.0f};
-    vec3 up = {0.0f, 1.0f, 0.0f};
-    glm_lookat_rh_zo(eye, center, up, ubo->view);
-
-    // Projection matrix
-    glm_perspective_rh_zo(glm_rad(50.0f), graphicsPipeline->m_extent.width / (float)graphicsPipeline->m_extent.height, 0.1f, 100.0f, ubo->proj);
-    /* ubo->proj[1][1] *= -1; */
-    /* vec3 axis = {0.0f, 1.0f, 0.0f}; */
-    /* glm_mat4_identity(ubo.model); */
-    /* glm_rotate(ubo.model, 45.0f, axis); */
-
-    if(!timeStarted){
-        startTime = (double)clock()/CLOCKS_PER_SEC;
-        timeStarted = true;
-    }
-    /* double currentTime = (double)clock()/CLOCKS_PER_SEC - startTime; */
-
-    /* LOG_MSG(stderr, "currentTime: %f\n", currentTime); */
-    memcpy(graphicsPipeline->UniformBufferMemory[currentFrame].bufferMemoryMapped, ubo, sizeof(UniformBufferObject));
-
+    memcpy(graphicsPipeline->UniformBufferMemory[currentFrame].bufferMemoryMapped, &graphicsPipeline->uniformBuffer, sizeof(UniformBufferObject));
     UpdateDynamicUniformBufferMemory(nanoRenderer, graphicsPipeline, graphicsPipeline->uniformBufferDynamicMemory[currentFrame]);
 }
 

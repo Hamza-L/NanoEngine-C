@@ -1,4 +1,5 @@
 #include "NanoScene.h"
+#include "NanoCamera.h"
 #include "NanoConfig.h"
 #include "NanoGraphicsPipeline.h"
 #include "NanoEngine.h"
@@ -19,6 +20,7 @@ void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScen
     memset(renderableScene->renderableObjects, 0, sizeof(struct RenderableObject*)*256);
     renderableScene->numTextures = 0;
     memset(renderableScene->textures, 0, sizeof(struct NanoImage*)*256);
+
 }
 
 void AddRenderableObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene){
@@ -76,6 +78,18 @@ void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* render
     }
 }
 
+void AddCameraToScene(RenderableScene* scene, NanoCamera camera) {
+    scene->camera = camera;
+    if (camera.aspectRatio == 0) {
+        float width = (float)s_NanoEngine->m_Renderer.m_pNanoContext->swapchainContext.info.currentExtent.width;
+        float height = (float)s_NanoEngine->m_Renderer.m_pNanoContext->swapchainContext.info.currentExtent.height;
+        scene->camera.aspectRatio = width / height; //update the camera aspect ratio from the engine's current aspect ratio
+    } else {
+        scene->camera.aspectRatio = camera.aspectRatio;
+    }
+    scene->camera.Update(&scene->camera, nullptr); //make sure to run one update cycle to update the view and proj matrices
+}
+
 void UpdateScene(RenderableScene* renderableScene, FrameData* data){
     if(renderableScene->rootNode == nullptr){ return;}
 
@@ -121,6 +135,13 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data){
         currHead++;
         currNode = queue[currHead];
     }
+
+    //update the camera
+    if(renderableScene->camera.Update) //update the camera
+        renderableScene->camera.Update(&renderableScene->camera, nullptr);
+
+    glm_mat4_copy(renderableScene->camera.proj, renderableScene->graphicsPipeline.uniformBuffer.proj);//update proj and view used the graphics pipeline
+    glm_mat4_copy(renderableScene->camera.view, renderableScene->graphicsPipeline.uniformBuffer.view);
 }
 
 void CompileRenderableScene(RenderableScene* renderableScene){

@@ -2,6 +2,7 @@
 #define NANOSCENE_H_
 
 #include <stdint.h>
+#include "NanoCamera.h"
 #include "NanoGraphicsPipeline.h"
 
 struct NanoRenderer;
@@ -59,6 +60,8 @@ struct RenderableScene {
 
     RenderableNode* rootNode;
 
+    NanoCamera camera;
+
     NanoGraphicsPipeline graphicsPipeline;
     int32_t ID;
 };
@@ -108,5 +111,7 @@ void CleanUpRendererableObject(RenderableObject* object);
 void CleanUpRenderableNode(RenderableNode* node);
 
 RenderableNode* AddChildRenderableNode(RenderableNode* renderableParent, RenderableNode* renderableChild);
+
+void AddCameraToScene(RenderableScene* scene, NanoCamera camera);
 
 #endif // NANOSCENE_H_
