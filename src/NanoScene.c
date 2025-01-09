@@ -27,12 +27,23 @@ void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScen
 
 RenderableScene ImportRenderableScene(const char* fileName){
     RenderableScene scene = {};
+
+    int res;
     jsmn_parser p;
-    jsmntok_t *tok;
-    size_t tokcount = 2;
+    jsmntok_t t[128] = {}; /* We expect no more than 128 tokens */
 
     /* Prepare parser */
     jsmn_init(&p);
+    uint32_t sizeOfBuffer = 0;
+    char* fileBuffer = ReadTextFile(fileName, &sizeOfBuffer);
+
+    res = jsmn_parse(&p, fileBuffer, sizeOfBuffer, t, sizeof(t) / sizeof(t[0]));
+
+    for(int i = 0; i < res; i++){
+        if(t[i].type == JSMN_OBJECT && t->size != 0){
+
+        }
+    }
     return scene;
 }
 

@@ -1,0 +1,12 @@
+{
+  "scene":
+  {
+    "title" : "My Scene",
+    "camera" :
+    {
+      "fov" : 40,
+      "lookAt" : [0,0,0],
+      "position" : [0,5,5]
+    }
+  }
+}

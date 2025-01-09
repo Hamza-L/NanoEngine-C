@@ -101,10 +101,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    SetForceShaderRecompile(true);
+
     NanoEngine nanoEngine = {};
     InitEngine(&nanoEngine);
 
     // create scene
+    RenderableScene importedScene = ImportRenderableScene("./Scenes/scene1.json");
     RenderableScene scene = {};
     InitRenderableScene(&nanoEngine, &scene);
 
@@ -146,7 +149,6 @@ int main(int argc, char *argv[]) {
     AddRootNodeToScene(rootNode, &scene);
 
     CompileRenderableScene(&scene);
-    RenderableScene testScene = scene;
     RenderScene(&scene);
 
     RunEngine(&nanoEngine);
