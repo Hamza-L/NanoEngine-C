@@ -269,6 +269,7 @@ void InitImage(uint32_t width, uint32_t height, IMAGE_FORMAT numChannels, NanoIm
     image->height = height;
     image->numChannels = IMAGE_FORMAT_RGBA;
     image->imageDataSize = imageSize;
+    image->isInitialized = true;
 }
 
 // file format default to RGBA for now
