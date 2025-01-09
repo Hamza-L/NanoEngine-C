@@ -11,6 +11,10 @@
 
 size_t SizeOf(const char* array[]);
 
+void WriteTextFile(const char* filename, void* buffer, long int bufferSize);
+
+char* ReadTextFile(const char* filename, uint32_t* sizeOfBuffer);
+
 void WriteBinaryFile(const char* filename, void* buffer, long int bufferSize);
 
 char* ReadBinaryFile(const char* filename, uint32_t* sizeOfBuffer);
