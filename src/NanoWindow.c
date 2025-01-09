@@ -11,8 +11,10 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
     NanoEngine* nanoEngine = glfwGetWindowUserPointer(window);
     nanoEngine->m_Window.framebufferResized = true;
 
-    if(nanoEngine->framebufferResize_callback)
-        nanoEngine->framebufferResize_callback(nanoEngine, &nanoEngine->m_Renderer.m_pNanoContext->m_frameData);
+    double newTime = glfwGetTime();
+    nanoEngine->m_Renderer.m_pNanoContext->m_frameData.deltaTime = newTime - nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time;
+    nanoEngine->m_Renderer.m_pNanoContext->m_frameData.time = newTime;
+    nanoEngine->m_Renderer.m_pNanoContext->m_frameData.currentFrame = nanoEngine->m_Renderer.m_pNanoContext->swapchainContext.currentFrame;
 
     PreDrawFrame(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
     DrawFrame(&nanoEngine->m_Renderer, &nanoEngine->m_Window);
