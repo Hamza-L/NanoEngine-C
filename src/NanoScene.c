@@ -11,6 +11,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "jsmn.h" //json parser
+
 NanoEngine* s_NanoEngine;
 static uint32_t s_numNodes;
 
@@ -21,6 +23,17 @@ void InitRenderableScene(NanoEngine* nanoEngine, RenderableScene* renderableScen
     renderableScene->numTextures = 0;
     memset(renderableScene->textures, 0, sizeof(struct NanoImage*)*256);
 
+}
+
+RenderableScene ImportRenderableScene(const char* fileName){
+    RenderableScene scene = {};
+    jsmn_parser p;
+    jsmntok_t *tok;
+    size_t tokcount = 2;
+
+    /* Prepare parser */
+    jsmn_init(&p);
+    return scene;
 }
 
 void AddRenderableObjectToScene(struct RenderableObject* object, RenderableScene* renderableScene){

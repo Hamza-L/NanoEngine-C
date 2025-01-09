@@ -95,6 +95,7 @@ typedef struct {
 } SphereParam;
 
 void InitRenderableScene(struct NanoEngine* nanoEngine, RenderableScene* renderableScene);
+RenderableScene ImportRenderableScene(const char* fileName);
 void AddRenderableObjectToScene(RenderableObject* object, RenderableScene* renderableScene);
 void AddRootNodeToScene(struct RenderableNode* rootNode, RenderableScene* renderableScene);
 void PropagateNodeTransform(struct RenderableNode* rootNode);
