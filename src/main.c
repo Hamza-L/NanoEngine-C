@@ -35,19 +35,6 @@ void UpdateNode(void* objectToUpdate, void* frameData){
     glm_rotate_at(object->localModel, pivot, fData->deltaTime * -0.8f, axis_y);
 };
 
-RenderableNode* testRenderableNode(NanoEngine* nanoEngine){
-    RenderableNode* rootNode = CreateEmptyRenderableNode();
-
-    SquareParam param1 = {.width = 1.0f,
-                          .height = 1.0f,
-                          .position = {-0.5f,0.5f,0.5f},
-                          .color = {0.8f, 0.7f, 0.3f, 1.0f}};
-    RenderableNode* plane = CreateRenderableNodeFromPrimitive(SQUARE, &param1);
-    AddChildRenderableNode(rootNode, plane);
-
-    return rootNode;
-}
-
 RenderableNode* MakeCubeNode(NanoEngine* nanoEngine){
     RenderableNode* cubeRoot = CreateEmptyRenderableNode();
 
@@ -122,8 +109,8 @@ int main(int argc, char *argv[]) {
     InitRenderableScene(&nanoEngine, &scene);
 
     RenderableNode* rootNode = CreateEmptyRenderableNode();
+
     RenderableNode* cube = nullptr;
-    RenderableNode* fpsCounter = nullptr;
     {
         cube = MakeCubeNode(&nanoEngine);
         float translation[3] = {0.0f,3.0f,0.0f};
@@ -131,19 +118,24 @@ int main(int argc, char *argv[]) {
         AddChildRenderableNode(rootNode, cube);
     }
 
+    RenderableNode* plane = nullptr;
     {
-        SquareParam fpsParam = {.width = 0.25f,
-                                .height = 0.25f,
-                                .position = {0.0f ,0.0f ,0.0f},
-                                .color = {1.0f, 0.0f, 1.0f, 1.0f}};
-        fpsCounter = CreateRenderableNodeFromPrimitive(SQUARE, &fpsParam);
-        float color[4] = {1.0f,1.0f,1.0f,1.0f};
-        fpsCounter->renderableObject.albedoTexture = CreateHostPersistentImage(&nanoEngine.m_ImageMemory.imageHostMemory, 256, 256, IMAGE_FORMAT_RGBA, color);
-        AddChildRenderableNode(rootNode, fpsCounter);
+        SquareParam param = {.width = 100.0f,
+                              .height = 100.0f,
+                              .position = {-50.0f,50.0f,0.0f},
+                              .color = {0.8f, 0.7f, 0.3f, 1.0f}};
+        float axis[3] = {1.0f, 0.0f, 0.0f};
+
+        plane = CreateRenderableNodeFromPrimitive(SQUARE, &param);
+        glm_rotate(plane->localModel, M_PI * -0.5f, axis);
+
+        InitImage(1024, 1024, IMAGE_FORMAT_RGBA,&plane->renderableObject.albedoTexture);
+
+        AddChildRenderableNode(rootNode, plane);
     }
 
     {
-        CameraParam param = {.fov = 30,
+        CameraParam param = {.fov = 40,
                              .lookAt = {0,0,0},
                              .position = {0,5,5}};
         NanoCamera camera = CreateCamera(param);
@@ -154,6 +146,7 @@ int main(int argc, char *argv[]) {
     AddRootNodeToScene(rootNode, &scene);
 
     CompileRenderableScene(&scene);
+    RenderableScene testScene = scene;
     RenderScene(&scene);
 
     RunEngine(&nanoEngine);
