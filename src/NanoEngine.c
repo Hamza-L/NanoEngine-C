@@ -53,7 +53,7 @@ ERR MainLoop(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){
 }
 
 void ProcessEvents(NanoEngine* nanoEngine){
-    NanoKey key = PopMostRecentInputKey();
+    NanoKey key = PeekMostRecentInputKey();
 
     if(key.key_id != -1){
         printf("PROCESSEVENTS: key pressed: %d\n", key.key_id);

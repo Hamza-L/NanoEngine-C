@@ -110,6 +110,7 @@ bool ShouldWindowClose(NanoWindow* nanoWindow){
     if(!nanoWindow->m_isInit){
         return true;
     }
-    return glfwWindowShouldClose(nanoWindow->_window);
+    NanoKey key = PeekMostRecentInputKey();
+    return glfwWindowShouldClose(nanoWindow->_window) || (key.key_id == GLFW_KEY_ESCAPE && key.key_state == KEY_STATE_PRESSED);
 }
 
