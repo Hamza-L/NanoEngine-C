@@ -43,7 +43,6 @@ set(Headers
     "src/NanoConfig.h"
     "src/NanoShader.h"
     "src/Str.h"
-    "src/stb_image.h"
 )
 
 source_group("Headers" FILES ${Headers})
@@ -92,6 +91,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/win/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/win/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/FREETYPE/win/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/JSMN"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/STB_IMAGE"
         "$ENV{VULKAN_SDK}/Include")
 
     target_link_directories(${PROJECT_NAME} PRIVATE
@@ -118,6 +119,8 @@ elseif(APPLE)
         "${CMAKE_CURRENT_SOURCE_DIR}/external/CGLM/mac/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/GFLW/mac/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/external/FREETYPE/mac/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/JSMN"
+        "${CMAKE_CURRENT_SOURCE_DIR}/external/STB_IMAGE"
         "~/VulkanSDK/1.3.290.0/macOS/include")
 
     target_link_directories(${PROJECT_NAME} PRIVATE
