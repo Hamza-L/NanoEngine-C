@@ -137,12 +137,13 @@ void AddTextToImage(NanoImage* nanoImage, const char* text, int fontSize, int ve
     }
 
     error = FT_New_Face( library,
-                         PrependCWD("Fonts/CascadiaCode.ttf").m_data, // can't use relative paths here
+                         PrependCWD("Fonts\\CascadiaCode.ttf").m_data, // can't use relative paths here
                          0,
                          &face );
 
+
     if ( error == FT_Err_Unknown_File_Format ) {
-        LOG_MSG(stderr, "UNKNOWW FILE FORMAT FOR GIVEN FONTS\n");
+        LOG_MSG(stderr, "UNKNOWN FILE FORMAT FOR GIVEN FONTS\n");
         abort();
     }
     else if ( error ) {

@@ -27,6 +27,7 @@ HeapString AllocHeapString(const char* string);
 String* AppendToString(String* srcString, const char* stringToAppend);
 HeapString* AppendToHeapString(HeapString* srcString, const char* stringToAppend);
 void SubString(String* srcString, int offset, int size);
+void TrimStringEnding(String* string);
 void CleanUpString(HeapString* stringToClean);
 
 // raw string

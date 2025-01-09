@@ -8,7 +8,6 @@
 
 #include "cglm/mat4.h"
 #include "vulkan/vulkan_core.h"
-#include <_abort.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
@@ -1007,9 +1006,7 @@ void createSwapchainSyncObjects(VkDevice device ,SwapchainSyncObjects* syncObjec
 }
 
 void PreDrawFrame(NanoRenderer* renderer, NanoWindow* window) {
-
     UpdateScene(s_sceneToRender, &renderer->m_pNanoContext->m_frameData);
-
 }
 
 void DrawFrame(NanoRenderer* nanoRenderer, NanoWindow* nanoWindow){

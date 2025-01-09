@@ -22,6 +22,14 @@ String CreateString(const char* string){
     return stringToReturn;
 }
 
+void TrimStringEnding(String* string){
+    int i = string->m_size;
+    while(string->m_data[--i] == ' '){
+        string->m_data[i] = '\0';
+    }
+    string->m_size = i + 1; //index -> size
+}
+
 void InitString(String* srcString, const char* string){
     int i = 0;
     while(string[i]){

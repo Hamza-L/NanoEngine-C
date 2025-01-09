@@ -103,7 +103,9 @@ RenderableNode* MakeCubeNode(NanoEngine* nanoEngine){
 int main(int argc, char *argv[]) {
 
     String cwd = CreateString(argv[0]);
-    SubString(&cwd, 0, strlen(argv[0]) - strlen("NanoEngine"));
+    TrimStringEnding(&cwd);
+    SubString(&cwd, 0, strlen(cwd.m_data) - (strlen(EXECUTABLE_NAME)));
+
     SetArg0(cwd.m_data);
     if(argc > 1){
         if(strcmp(argv[1], "-FSC") == 0){
@@ -123,7 +125,7 @@ int main(int argc, char *argv[]) {
     RenderableNode* cube = nullptr;
     RenderableNode* fpsCounter = nullptr;
     {
-        cube= MakeCubeNode(&nanoEngine);
+        cube = MakeCubeNode(&nanoEngine);
         float translation[3] = {0.0f,3.0f,0.0f};
         glm_translate(cube->localModel, translation);
         AddChildRenderableNode(rootNode, cube);

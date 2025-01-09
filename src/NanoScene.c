@@ -137,6 +137,9 @@ void UpdateScene(RenderableScene* renderableScene, FrameData* data){
     }
 
     //update the camera
+    int newWidth = s_NanoEngine->m_Renderer.m_pNanoContext->swapchainContext.info.currentExtent.width; //TODO: avoid depending on global s_NanoEngine pointer
+    int height = s_NanoEngine->m_Renderer.m_pNanoContext->swapchainContext.info.currentExtent.height;
+    renderableScene->camera.aspectRatio = (float)newWidth / height;
     if(renderableScene->camera.Update) //update the camera
         renderableScene->camera.Update(&renderableScene->camera, nullptr);
 
@@ -457,7 +460,7 @@ RenderableObject CreateRenderableObjectFromFile(const char* fileName){
 }
 
 RenderableNode* CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uint32_t* indices, uint32_t numIndices){
-    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    RenderableNode* node = (RenderableNode*)calloc(1,sizeof(RenderableNode));
     node->renderableObject = CreateRenderableObject(vertices, numVertices, indices, numIndices);
     node->NODE_ID = s_numNodes;
     node->numChild = 0;
@@ -467,7 +470,7 @@ RenderableNode* CreateRenderableNode(Vertex* vertices, uint32_t numVertices, uin
 }
 
 RenderableNode* CreateRenderableNodeFromPrimitive(Primitive primType, void* primParam){
-    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    RenderableNode* node = (RenderableNode*)calloc(1, sizeof(RenderableNode));
     node->renderableObject = CreateRenderableObjectFromPrimitive(primType, primParam);
     node->NODE_ID = s_numNodes;
     node->numChild = 0;
@@ -477,7 +480,7 @@ RenderableNode* CreateRenderableNodeFromPrimitive(Primitive primType, void* prim
 }
 
 RenderableNode* CreateRenderableNodeFromFile(const char* fileName){
-    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    RenderableNode* node = (RenderableNode*)calloc(1,sizeof(RenderableNode));
     node->renderableObject = CreateRenderableObjectFromFile(fileName);
     node->NODE_ID = s_numNodes;
     node->numChild = 0;
@@ -487,7 +490,7 @@ RenderableNode* CreateRenderableNodeFromFile(const char* fileName){
 }
 
 RenderableNode* CreateEmptyRenderableNode(){
-    RenderableNode* node = (RenderableNode*)malloc(sizeof(RenderableNode));
+    RenderableNode* node = (RenderableNode*)calloc(1, sizeof(RenderableNode));
     node->NODE_ID = s_numNodes;
     node->numChild = 0;
     node->renderableObject.ID = -1;

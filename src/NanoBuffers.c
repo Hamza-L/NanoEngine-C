@@ -41,7 +41,7 @@ void GetAttributeDescriptions(VkVertexInputAttributeDescription vertexInputBindi
 
 // usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT for vertices
 NanoVkBufferMemory CreateBuffer(NanoRenderer* nanoRenderer, VkBufferUsageFlagBits usage, VkMemoryPropertyFlagBits memProperties, uint32_t dataSize){
-    NanoVkBufferMemory vertexMem = {};
+    NanoVkBufferMemory vertexMem = {}; //TODO: rename to more general name
 
     VkBufferCreateInfo bufferInfo = {};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

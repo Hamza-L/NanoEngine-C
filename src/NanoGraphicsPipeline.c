@@ -120,7 +120,7 @@ void UpdateDescriptorSets(NanoRenderer* nanoRenderer, NanoGraphicsPipeline* grap
         VkDescriptorBufferInfo dynamicBufferInfo = {};
         dynamicBufferInfo.buffer = graphicsPipeline->uniformBufferDynamicMemory[i].buffer;
         dynamicBufferInfo.offset = 0;
-        dynamicBufferInfo.range = sizeof(UniformBufferObjectDynamic);
+        dynamicBufferInfo.range = sizeof(mat4); //this is the size of a dynamic buffer per object.. It only has the model transform
 
         descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[1].dstSet = graphicsPipeline->DescSets[i];

@@ -6,6 +6,11 @@ const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 const char* ENGINE_NAME = "NanoEngine";
 const char* APP_NAME = "NanoApplication";
+#if defined(_WIN64) || defined(_WIN32)
+const char* EXECUTABLE_NAME = "NanoEngine.exe";
+#else
+const char* EXECUTABLE_NAME = "NanoEngine";
+#endif
 
 static char s_arg0[512] = {};
 
@@ -45,7 +50,7 @@ void SetForceShaderRecompile(bool isForceCompile){
 }
 
 void SetArg0(char *arg0){
-    memcpy(s_arg0, arg0, 512);
+    memcpy(s_arg0, arg0, strlen(arg0));
 }
 
 char* GetArg0(){

@@ -2,7 +2,6 @@
 #include "NanoConfig.h"
 #include "Str.h"
 #include <stdlib.h>
-#include <unistd.h>
 #include "string.h"
 
 size_t SizeOf(const char** array){
@@ -38,10 +37,9 @@ char* ReadBinaryFile(const char* filename, uint32_t* sizeOfBuffer) {
     char *buffer = NULL;
 
     char cwd[512];
-    getcwd(cwd, 512);
 
     if ((file = fopen(filename, "rb")) == NULL ) {
-        LOG_MSG(stderr, "failed to open file at: %s because cwd is: %s\n", filename, cwd);
+        LOG_MSG(stderr, "failed to open file at: %s\n", filename);
         return buffer;
     }
 

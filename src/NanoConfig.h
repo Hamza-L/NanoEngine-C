@@ -42,6 +42,7 @@ extern const int WINDOW_WIDTH;
 extern const int WINDOW_HEIGHT;
 extern const char* ENGINE_NAME;
 extern const char* APP_NAME;
+extern const char* EXECUTABLE_NAME;
 extern const bool enableValidationLayers;
 extern bool FORCE_RECOMPILE;
 

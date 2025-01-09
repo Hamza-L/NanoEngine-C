@@ -51,15 +51,15 @@ ImageMemoryObject GetAllocateImageMemoryObject(ImageHostMemory* imageHostMemory,
         DEBUG_BREAK;
     }
 
-    ImageMemoryObject memMeshObj = imageHostMemory->imageMemObjects[imageHostMemory->numImageMemObjects];
+    ImageMemoryObject* memMeshObj = &imageHostMemory->imageMemObjects[imageHostMemory->numImageMemObjects];
 
-    memMeshObj.imageData = &imageHostMemory->ImageMemory[imageHostMemory->imageMemSize];
-    memMeshObj.imageMemSize = imageDataMemSize;
+    memMeshObj->imageData = &imageHostMemory->ImageMemory[imageHostMemory->imageMemSize];
+    memMeshObj->imageMemSize = imageDataMemSize;
 
     imageHostMemory->numImageMemObjects++;
     imageHostMemory->imageMemSize += imageDataMemSize;
 
-    return memMeshObj;
+    return *memMeshObj;
 }
 
 void CopyImageDataToAllocatedMemoryObject(ImageHostMemory* imageHostMemory, char* imageData, uint32_t imageDataMemSize, NanoImage* imageObject){
