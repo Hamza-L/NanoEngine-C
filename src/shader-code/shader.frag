@@ -42,6 +42,7 @@ void main() {
     float diffuse = max(0.0f,dot( fragNormal.xyz, lightDirection));
     float specular = max(0.0f,dot( fragNormal.xyz, halfVector ) );
     float distanceFromLight = length(fragLightPos - fragPos);
+    float distanceFromfragment = length(fragPos);
     if (diffuse == 0.0) {
         specular = 0.0;
     } else {
@@ -50,7 +51,7 @@ void main() {
 
     vec3 scatteredLight = 1.0f/distanceFromLight * colorToUse.xyz * diffuse * 10.0f;
     vec3 reflectedLight = vec3(1.0f,1.0f,1.0f) * specular;
-    vec3 ambientLight = colorToUse.xyz * 0.01f;
+    vec3 ambientLight = colorToUse.xyz * 0.01f * 40.0f/distanceFromLight;
 
     outColor = vec4(min( ambientLight + scatteredLight + reflectedLight, vec3(1,1,1)), 1.0);
 

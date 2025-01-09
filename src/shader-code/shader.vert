@@ -31,8 +31,7 @@ mat3 adjugate(in mat3 m) {
     return mat3(
         cross(m[1], m[2]),
         cross(m[2], m[0]),
-        cross(m[0], m[1])
-    );
+        cross(m[0], m[1]));
 }
 
 void main() {
@@ -45,5 +44,5 @@ void main() {
     fragTexUV = inTexUV;
     fragNormal = normalize(adjugate(mat3(uboInstance.model)) * inNormal);
 
-    fragLightPos = mat3(ubo.view) * vec3(4.0f,4.0f,4.0f);;
+    fragLightPos = mat3(ubo.view) * vec3(5.0f,5.0f,5.0f);;
 }
